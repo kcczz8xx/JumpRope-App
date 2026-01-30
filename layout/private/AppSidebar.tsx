@@ -8,6 +8,7 @@ import {
   ChevronDownIcon,
   GridIcon,
   HorizontaLDots,
+  BoxCubeIcon,
 } from "../../icons/index";
 import SidebarWidget from "./SidebarWidget";
 
@@ -24,6 +25,19 @@ const navItems: NavItem[] = [
     icon: <GridIcon />,
     name: "Dashboard",
     path: "/dashboard",
+  },
+  {
+    icon: <BoxCubeIcon />,
+    name: "學校服務",
+    subItems: [
+      { name: "儀表板", path: "/dashboard/school" },
+      { name: "報價管理", path: "/dashboard/school/quotations" },
+      { name: "課程管理", path: "/dashboard/school/courses" },
+      { name: "排班管理", path: "/dashboard/school/schedule" },
+      { name: "發票管理", path: "/dashboard/school/invoices" },
+      { name: "財務管理", path: "/dashboard/school/finance" },
+      { name: "我的課堂", path: "/dashboard/school/my-lessons" },
+    ],
   },
 ];
 

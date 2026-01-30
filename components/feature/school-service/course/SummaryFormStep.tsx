@@ -188,10 +188,6 @@ export default function SummaryFormStep({ formData }: SummaryFormStepProps) {
                     label="學期"
                     value={COURSE_TERM_LABELS[course.courseTerm]}
                   />
-                  <InfoRow
-                    label="開始日期"
-                    value={course.startDate || "未設定"}
-                  />
                   {course.endDate && (
                     <InfoRow label="結束日期" value={course.endDate} />
                   )}
