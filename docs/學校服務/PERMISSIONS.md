@@ -300,7 +300,7 @@ export function PermissionAwareComponent({
 ```typescript
 // app/(private)/dashboard/school/quotations/new/page.tsx
 import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
 
 export default async function NewQuotationPage() {
   const session = await getServerSession();
@@ -310,14 +310,24 @@ export default async function NewQuotationPage() {
     redirect("/login");
   }
 
-  // 檢查權限
+  // 檢查權限 - 非授權角色返回 404
   if (session.user.role !== "ADMIN") {
-    redirect("/dashboard/school/quotations?error=unauthorized");
+    notFound();
   }
 
   return <NewQuotationForm />;
 }
 ```
+
+### 權限檢查原則
+
+**重要：當用戶角色不符合頁面要求時，應使用 `notFound()` 返回 404 頁面，而非 redirect 或顯示錯誤訊息。**
+
+理由：
+
+- 安全性：不透露頁面存在性
+- 用戶體驗：避免非授權用戶看到無法訪問的內容
+- 一致性：統一的錯誤處理方式
 
 ### Client Component 範例
 
