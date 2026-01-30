@@ -1,0 +1,70 @@
+// ============================================
+// 用戶模組 - User Management
+// ============================================
+
+model User {
+  id String @id @default(cuid())
+
+  // 基本資料
+  phone       String  @unique // 電話號碼（註冊帳號）
+  email       String? @unique
+  nameChinese String? // 中文姓名
+  nameEnglish String? // 英文姓名
+
+  // 角色
+  role UserRole @default(STUDENT) // STUDENT, TUTOR, ADMIN
+
+  // 關聯
+  tutorProfile   TutorProfile? // 導師資料（一對一）
+  tutorLessons   SchoolTutorLesson[] // 任教記錄
+  sentQuotations SchoolQuotation[]   @relation("QuotationSentBy") // 發送的報價單
+
+  // 系統欄位
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("users")
+}
+
+enum UserRole {
+  STUDENT
+  TUTOR
+  ADMIN
+  STAFF
+}
+
+/// 導師資料
+model TutorProfile {
+  id String @id @default(cuid())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // 導師資格
+  certifications Json? // 證書資料（JSON）
+  specialties    String[] // 專長（個人花式/速度跳/團體等）
+
+  // 薪資設定
+  defaultSalaryMode   SalaryCalculationMode @default(PER_LESSON) // 預設薪資計算方式
+  defaultPerLessonFee Decimal?              @db.Decimal(10, 2) // 預設每堂薪資
+  defaultHourlyRate   Decimal?              @db.Decimal(10, 2) // 預設時薪
+  monthlyFixedSalary  Decimal?              @db.Decimal(10, 2) // 固定月薪
+
+  // 狀態
+  isActive   Boolean   @default(true)
+  approvedAt DateTime? // 審核通過日期
+  approvedBy String? // 審核人員 ID
+
+  // 備註
+  remarks String? @db.Text
+
+  // 系統欄位
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([userId])
+  @@index([isActive])
+  @@map("tutor_profiles")
+}

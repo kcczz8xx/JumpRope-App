@@ -132,37 +132,44 @@ await prisma.student.deleteMany();
 
 ---
 
-## 🔧 改表流程（3 步驟）
+## 🔧 改表流程（2 步驟）
 
-### 情境：新增學生的「等級」欄位
+### 情境：新增學生的「班級」欄位
 
-**Step 1：修改 `prisma/schema.prisma`**
+**Step 1：修改對應的 Schema 文件**
+
+你的系統使用多文件架構，Models 按類別分類：
+
+- `prisma/schema/student.prisma` - 學生相關
+- `prisma/schema/school.prisma` - 學校相關
+
+修改 `prisma/schema/student.prisma`：
 
 ```prisma
 model Student {
-  id        String   @id
-  name      String
-  email     String   @unique
-  grade     String?  // 新增這行
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  id          String       @id @default(dbgenerated("(gen_random_uuid())::text"))
+  name        String
+  email       String       @unique
+  phone       String?
+  age         Int?
+  level       String?      @default("beginner")
+  grade       String?      // 新增這行
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt   DateTime     @default(now()) @map("updated_at") @db.Timestamp(6)
 
   enrollments Enrollment[]
+
   @@map("students")
 }
 ```
 
-**Step 2：推送到資料庫**
+**Step 2：推送到資料庫（自動生成 Client）**
 
 ```bash
 pnpx prisma db push
 ```
 
-**Step 3：重新生成 Prisma Client**
-
-```bash
-pnpx prisma generate
-```
+> 💡 `db push` 會自動執行 `prisma generate`，無需額外命令
 
 **完成！現在可以使用新欄位：**
 
@@ -176,7 +183,7 @@ const student = await prisma.student.create({
 });
 ```
 
-**⏱️ 總耗時：2-3 分鐘**
+**⏱️ 總耗時：1-2 分鐘**
 
 ---
 
@@ -184,7 +191,15 @@ const student = await prisma.student.create({
 
 ### 情境：新增「課程評分」表
 
-**Step 1：在 `prisma/schema.prisma` 新增 Model**
+**Step 1：選擇對應的 Schema 文件新增 Model**
+
+根據 Model 類別選擇文件：
+
+- 學生相關 → `prisma/schema/student.prisma`
+- 學校/課程相關 → `prisma/schema/school.prisma`
+- 新類別 → 創建新文件（如 `prisma/schema/rating.prisma`）
+
+在 `prisma/schema/school.prisma` 新增：
 
 ```prisma
 model CourseRating {
@@ -193,31 +208,38 @@ model CourseRating {
   studentId String   @map("student_id")
   rating    Int
   comment   String?
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamp(6)
 
   course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@map("course_ratings")
 }
+```
 
-// 同時更新關聯的 Model
+同時在 `Course` model 中新增關聯：
+
+```prisma
 model Course {
   // ... 原有欄位
   ratings CourseRating[]  // 新增這行
 }
+```
 
+在 `prisma/schema/student.prisma` 的 `Student` model 中新增：
+
+```prisma
 model Student {
   // ... 原有欄位
   ratings CourseRating[]  // 新增這行
 }
 ```
 
-**Step 2：推送並生成**
+**Step 2：推送到資料庫**
 
 ```bash
 pnpx prisma db push
-pnpx prisma generate
 ```
 
 **完成！開始使用：**
@@ -239,18 +261,16 @@ const rating = await prisma.courseRating.create({
 
 ### 情境：刪除「課程評分」表
 
-**Step 1：從 `prisma/schema.prisma` 移除 Model**
+**Step 1：從對應的 Schema 文件移除 Model**
 
-```prisma
-// 刪除整個 CourseRating model
-// 同時移除 Course 和 Student 中的 ratings 關聯
-```
+1. 從 `prisma/schema/school.prisma` 刪除整個 `CourseRating` model
+2. 從 `Course` model 移除 `ratings CourseRating[]` 關聯
+3. 從 `prisma/schema/student.prisma` 的 `Student` model 移除 `ratings CourseRating[]` 關聯
 
-**Step 2：推送並生成**
+**Step 2：推送到資料庫**
 
 ```bash
 pnpx prisma db push
-pnpx prisma generate
 ```
 
 **完成！表格已從資料庫刪除**
@@ -398,16 +418,16 @@ export async function deleteStudent(id: string) {
 ```bash
 # ==================== 開發常用 ====================
 
-# 推送 schema 變更到資料庫（快速，開發用）
+# 推送 schema 變更到資料庫（自動生成 Client）
 pnpx prisma db push
 
-# 生成 Prisma Client（使用新 schema）
+# 單獨生成 Prisma Client（通常不需要，db push 會自動執行）
 pnpx prisma generate
 
 # 開啟 Prisma Studio（視覺化管理資料）
 pnpx prisma studio
 
-# 格式化 schema.prisma
+# 格式化所有 .prisma 文件
 pnpx prisma format
 
 # ==================== 資料庫管理 ====================
@@ -432,14 +452,16 @@ pnpm dev
 
 **1. 修改 Schema**
 
+在 `prisma/schema/student.prisma` 新增：
+
 ```prisma
-// prisma/schema.prisma
 model Grade {
   id        String   @id @default(dbgenerated("(gen_random_uuid())::text"))
   studentId String   @map("student_id")
   subject   String
   score     Int
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamp(6)
 
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
@@ -448,15 +470,14 @@ model Grade {
 
 model Student {
   // ... 原有欄位
-  grades Grade[]  // 新增
+  grades Grade[]  // 新增這行
 }
 ```
 
-**2. 推送並生成**
+**2. 推送到資料庫**
 
 ```bash
 pnpx prisma db push
-pnpx prisma generate
 ```
 
 **3. 建立 Actions**
@@ -540,44 +561,111 @@ pnpx prisma studio
 
 ## 🎯 你的當前 Models
 
+### 多文件 Schema 架構
+
 ```
-✅ Student      - 學生
-✅ School       - 學校
-✅ Course       - 課程
-✅ Class        - 課堂
-✅ Partnership  - 合作關係
-✅ Enrollment   - 報名（學生 ↔ 課程）
+prisma/
+├── schema.prisma              # 基礎配置（generator + datasource）
+└── schema/
+    ├── user.prisma            # 用戶相關
+    │   ├── User              - 用戶（電話註冊）
+    │   ├── UserRole          - 用戶角色（STUDENT/TUTOR/ADMIN/STAFF）
+    │   └── TutorProfile      - 導師資料
+    │
+    └── school.prisma          # 到校服務模組
+        │
+        │  # Enums
+        ├── PartnershipStatus  - 合作狀態
+        ├── QuotationStatus    - 報價狀態
+        ├── CourseType         - 課程類型
+        ├── CourseStatus       - 課程狀態（NEW）
+        ├── ChargingModel      - 收費模式
+        ├── LessonType         - 課堂類型
+        ├── LessonStatus       - 課堂狀態
+        ├── InvoiceStatus      - 發票狀態（含 PENDING_APPROVAL/VOID）
+        ├── PaymentStatus      - 付款狀態
+        ├── PaymentMethod      - 付款方式
+        ├── TutorRole          - 導師角色
+        ├── AttendanceStatus   - 出勤狀態
+        ├── SalaryCalculationMode - 薪資計算模式
+        └── CourseTerm         - 學期
+        │
+        │  # Models
+        ├── School             - 合作學校
+        ├── SchoolContact      - 學校聯絡人（@@unique: schoolId + email）
+        ├── SchoolQuotation    - 報價單（sentByUser → User）
+        ├── SchoolQuotationItem - 報價項目
+        ├── SchoolCourse       - 到校課程（含 status 欄位）
+        ├── SchoolLesson       - 到校課堂（invoice → SchoolInvoice）
+        ├── SchoolInvoice      - 發票（lessons[] 支援個別課堂出發票）
+        ├── SchoolInvoiceCourse - 發票-課程關聯
+        ├── SchoolReceipt      - 收據
+        └── SchoolTutorLesson  - 導師任教記錄（@@unique: lessonId + userId）
 ```
 
-**查看完整 Schema：** `prisma/schema.prisma`
+### 關聯圖
+
+```
+User ─────────────────────────────────────────────────────────┐
+  │                                                           │
+  ├── TutorProfile（一對一）                                   │
+  ├── SchoolTutorLesson[]（任教記錄）                          │
+  └── SchoolQuotation[]（發送的報價單，@relation: QuotationSentBy）
+                                                              │
+School ───────────────────────────────────────────────────────┤
+  │                                                           │
+  ├── SchoolContact[]（聯絡人）                                │
+  ├── SchoolQuotation[] ─── SchoolQuotationItem[]             │
+  ├── SchoolCourse[] ─┬─ SchoolLesson[] ─── SchoolTutorLesson[]
+  │                   │        │
+  │                   │        └── SchoolInvoice（可選，個別課堂出發票）
+  │                   │
+  │                   └── SchoolInvoiceCourse[]（多對多）
+  │                              │
+  ├── SchoolInvoice[] ──────────┴─── SchoolReceipt（一對一）
+  └── SchoolReceipt[]
+```
+
+### 重要約束
+
+| Model                 | 唯一約束                          | 說明                     |
+| --------------------- | --------------------------------- | ------------------------ |
+| `SchoolContact`       | `@@unique([schoolId, email])`     | 同一學校不可有重複電郵   |
+| `SchoolTutorLesson`   | `@@unique([lessonId, userId])`    | 防止同一課堂重複分配導師 |
+| `SchoolInvoiceCourse` | `@@unique([invoiceId, courseId])` | 同一發票不可重複加入課程 |
+
+**查看 Schema：**
+
+- 用戶相關：`prisma/schema/user.prisma`
+- 到校服務：`prisma/schema/school.prisma`
+- 基礎配置：`prisma/schema.prisma`
 
 ---
 
 ## ⚡ 快速參考
 
-### 改表 = 3 個命令
+### 改表 = 2 步驟
 
 ```bash
-# 1. 修改 prisma/schema.prisma
+# 1. 修改對應的 .prisma 文件（student.prisma 或 school.prisma）
 # 2. pnpx prisma db push
-# 3. pnpx prisma generate
 ```
 
-### 新表 = 同樣 3 個命令
+### 新表 = 2 步驟
 
 ```bash
-# 1. 在 schema.prisma 加 model
+# 1. 在對應的 .prisma 文件加 model（或創建新文件）
 # 2. pnpx prisma db push
-# 3. pnpx prisma generate
 ```
 
-### 刪表 = 同樣 3 個命令
+### 刪表 = 2 步驟
 
 ```bash
-# 1. 從 schema.prisma 移除 model
+# 1. 從對應的 .prisma 文件移除 model
 # 2. pnpx prisma db push
-# 3. pnpx prisma generate
 ```
+
+> 💡 **提示：** `db push` 會自動執行 `generate`，無需手動運行
 
 ---
 
@@ -645,11 +733,16 @@ const data = await prisma.student.findMany();
 
 **改表流程：**
 
-1. 改 `schema.prisma`
+1. 改對應的 `.prisma` 文件（`student.prisma` 或 `school.prisma`）
 2. `pnpx prisma db push`
-3. `pnpx prisma generate`
 
 **就這麼簡單！** 🎉
+
+**多文件優勢：**
+
+- ✅ 按類別分類，結構清晰
+- ✅ 多人協作不衝突
+- ✅ 易於維護和查找
 
 ---
 
