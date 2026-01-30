@@ -1,7 +1,7 @@
 import PageBreadcrumb from "@/components/tailadmin/common/PageBreadCrumb";
 import { Metadata } from "next";
-import { CourseList } from "./components/CourseList";
-import { courseMockData } from "@/lib/mock-data/school-service";
+import { CourseList } from "../../../../../components/feature/school-service/list/CourseList";
+import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
   title: "課程管理 | 學校服務",
@@ -9,7 +9,36 @@ export const metadata: Metadata = {
 };
 
 export default async function CoursesPage() {
-  const courses = await courseMockData.getCoursesWithSchool() as any;
+  const rawCourses = await prisma.schoolCourse.findMany({
+    where: {
+      deletedAt: null,
+    },
+    include: {
+      school: {
+        select: {
+          id: true,
+          schoolName: true,
+        },
+      },
+      _count: {
+        select: {
+          lessons: true,
+        },
+      },
+    },
+    orderBy: [{ createdAt: "desc" }],
+  });
+
+  // 將 Decimal 轉換為 number，避免 Server -> Client 傳遞錯誤
+  const courses = rawCourses.map((course) => ({
+    ...course,
+    studentPerLessonFee: course.studentPerLessonFee ? Number(course.studentPerLessonFee) : null,
+    studentHourlyFee: course.studentHourlyFee ? Number(course.studentHourlyFee) : null,
+    studentFullCourseFee: course.studentFullCourseFee ? Number(course.studentFullCourseFee) : null,
+    teamActivityFee: course.teamActivityFee ? Number(course.teamActivityFee) : null,
+    tutorPerLessonFee: course.tutorPerLessonFee ? Number(course.tutorPerLessonFee) : null,
+    tutorHourlyFee: course.tutorHourlyFee ? Number(course.tutorHourlyFee) : null,
+  }));
 
   return (
     <>

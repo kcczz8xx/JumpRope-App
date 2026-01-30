@@ -10,15 +10,25 @@ export async function GET() {
             select: {
                 id: true,
                 schoolName: true,
-                schoolNameEnglish: true,
-                partnershipStatus: true,
+                createdAt: true,
             },
             orderBy: {
-                schoolName: "asc",
+                createdAt: "desc",
             },
         });
 
-        return NextResponse.json(schools);
+        // 按學校名稱去重，保留最新的一筆
+        const uniqueSchools = schools.reduce((acc, school) => {
+            if (!acc.has(school.schoolName)) {
+                acc.set(school.schoolName, school);
+            }
+            return acc;
+        }, new Map<string, typeof schools[0]>());
+
+        const result = Array.from(uniqueSchools.values())
+            .sort((a, b) => a.schoolName.localeCompare(b.schoolName, 'zh-Hant'));
+
+        return NextResponse.json(result);
     } catch (error) {
         console.error("Failed to fetch schools:", error);
         return NextResponse.json(

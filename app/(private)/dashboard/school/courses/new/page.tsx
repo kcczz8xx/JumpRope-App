@@ -10,7 +10,7 @@ interface School {
   schoolName: string;
 }
 
-const USE_MOCK_DATA = true;
+const USE_MOCK_DATA = false;
 
 export default function NewCoursePage() {
   const [schools, setSchools] = useState<School[]>([]);

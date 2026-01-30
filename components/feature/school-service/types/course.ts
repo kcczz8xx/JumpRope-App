@@ -115,12 +115,6 @@ export interface CourseChargingData {
 
 export interface CourseFormData extends CourseBasicData, CourseChargingData { }
 
-export interface CoursePreview extends CourseFormData {
-    schoolName?: string;
-    estimatedRevenue: number;
-    estimatedCost: number;
-    estimatedProfit: number;
-}
 
 export const COURSE_TERM_LABELS: Record<CourseTerm, string> = {
     [CourseTerm.FULL_YEAR]: "全期",
@@ -138,21 +132,9 @@ export const CHARGING_MODEL_LABELS: Record<ChargingModel, string> = {
     [ChargingModel.TEAM_ACTIVITY]: "帶隊活動收費",
 };
 
-export const SALARY_MODE_LABELS: Record<SalaryCalculationMode, string> = {
-    [SalaryCalculationMode.PER_LESSON]: "按堂計算",
-    [SalaryCalculationMode.HOURLY]: "按小時計算",
-    [SalaryCalculationMode.MONTHLY_FIXED]: "固定月薪",
-};
 
 function generateUUID(): string {
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-        return crypto.randomUUID();
-    }
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });
+    return crypto.randomUUID();
 }
 
 export function generateAcademicYears(): string[] {
@@ -165,89 +147,9 @@ export function generateAcademicYears(): string[] {
     return years;
 }
 
-export function calculateEstimatedRevenue(
-    data: CourseFormData,
-    estimatedLessons: number = 12
-): number {
-    const studentCount = data.maxStudents || 0;
-    let totalRevenue = 0;
-
-    data.chargingModel.forEach((model) => {
-        switch (model) {
-            case ChargingModel.STUDENT_PER_LESSON:
-                totalRevenue += studentCount * (data.studentPerLessonFee || 0) * estimatedLessons;
-                break;
-            case ChargingModel.TUTOR_PER_LESSON:
-                totalRevenue += (data.tutorPerLessonFee || 0) * estimatedLessons;
-                break;
-            case ChargingModel.STUDENT_HOURLY:
-                totalRevenue += studentCount * (data.studentHourlyFee || 0) * estimatedLessons * 1.5;
-                break;
-            case ChargingModel.TUTOR_HOURLY:
-                totalRevenue += (data.tutorHourlyFee || 0) * estimatedLessons * 1.5;
-                break;
-            case ChargingModel.STUDENT_FULL_COURSE:
-                totalRevenue += studentCount * (data.studentFullCourseFee || 0);
-                break;
-            case ChargingModel.TEAM_ACTIVITY:
-                totalRevenue += data.teamActivityFee || 0;
-                break;
-        }
-    });
-
-    return totalRevenue;
-}
-
-export function calculateEstimatedCost(
-    data: CourseFormData,
-    estimatedLessons: number = 12
-): number {
-    const tutorCount = data.requiredTutors || 1;
-    return (data.tutorPerLessonFee || 0) * tutorCount * estimatedLessons;
-}
-
-export function calculateCourseItemRevenue(
-    course: CourseItemData,
-    estimatedLessons: number = 12
-): number {
-    const studentCount = course.maxStudents || 0;
-    let totalRevenue = 0;
-
-    course.chargingModel.forEach((model) => {
-        switch (model) {
-            case ChargingModel.STUDENT_PER_LESSON:
-                totalRevenue += studentCount * (course.studentPerLessonFee || 0) * estimatedLessons;
-                break;
-            case ChargingModel.TUTOR_PER_LESSON:
-                totalRevenue += (course.tutorPerLessonFee || 0) * estimatedLessons;
-                break;
-            case ChargingModel.STUDENT_HOURLY:
-                totalRevenue += studentCount * (course.studentHourlyFee || 0) * estimatedLessons * 1.5;
-                break;
-            case ChargingModel.TUTOR_HOURLY:
-                totalRevenue += (course.tutorHourlyFee || 0) * estimatedLessons * 1.5;
-                break;
-            case ChargingModel.STUDENT_FULL_COURSE:
-                totalRevenue += studentCount * (course.studentFullCourseFee || 0);
-                break;
-            case ChargingModel.TEAM_ACTIVITY:
-                totalRevenue += course.teamActivityFee || 0;
-                break;
-        }
-    });
-
-    return totalRevenue;
-}
-
-export function calculateCourseItemCost(
-    course: CourseItemData,
-    estimatedLessons: number = 12
-): number {
-    const tutorCount = course.requiredTutors || 1;
-    return (course.tutorPerLessonFee || 0) * tutorCount * estimatedLessons;
-}
 
 export function getDefaultSchoolData(): SchoolBasicData {
+    const today = new Date().toISOString().split("T")[0];
     return {
         schoolId: undefined,
         schoolName: "",
@@ -256,7 +158,7 @@ export function getDefaultSchoolData(): SchoolBasicData {
         phone: "",
         email: "",
         website: "",
-        partnershipStartDate: "",
+        partnershipStartDate: today,
         partnershipEndDate: null,
         confirmationChannel: "",
         remarks: "",
@@ -308,39 +210,9 @@ export function getDefaultNewCourseFormData(): NewCourseFormData {
 export function calculateAcademicYear(startDate: string, endDate: string | null): string {
     if (!startDate) return "";
 
-    const start = new Date(startDate);
-    const startYear = start.getFullYear();
+    const startYear = new Date(startDate).getFullYear();
+    const endYear = endDate ? new Date(endDate).getFullYear() : startYear;
 
-    if (endDate) {
-        const end = new Date(endDate);
-        const endYear = end.getFullYear();
-
-        if (endYear !== startYear) {
-            return `${startYear}-${endYear}`;
-        }
-    }
-
-    return `${startYear}`;
+    return endYear !== startYear ? `${startYear}-${endYear}` : `${startYear}`;
 }
 
-export function getDefaultCourseFormData(): CourseFormData {
-    return {
-        schoolId: "",
-        courseName: "",
-        courseType: "興趣班",
-        courseTerm: CourseTerm.FULL_YEAR,
-        academicYear: generateAcademicYears()[1],
-        startDate: null,
-        endDate: null,
-        requiredTutors: 1,
-        maxStudents: null,
-        courseDescription: null,
-        chargingModel: [ChargingModel.STUDENT_PER_LESSON],
-        studentPerLessonFee: null,
-        studentHourlyFee: null,
-        studentFullCourseFee: null,
-        teamActivityFee: null,
-        tutorPerLessonFee: null,
-        tutorHourlyFee: null,
-    };
-}

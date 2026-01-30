@@ -76,13 +76,43 @@ export default function SchoolFormStep({
     }
   }, [schoolData.partnershipStartDate, schoolData.partnershipEndDate]);
 
-  const handleSchoolSelect = (schoolId: string) => {
-    const selectedSchool = schools.find((s) => s.id === schoolId);
-    if (selectedSchool) {
+  const handleSchoolSelect = async (selectedSchoolId: string) => {
+    if (!selectedSchoolId) {
       onSchoolChange({
-        schoolId,
-        schoolName: selectedSchool.schoolName,
+        schoolId: undefined,
+        schoolName: "",
+        schoolNameEn: "",
+        address: "",
+        phone: "",
+        email: "",
+        website: "",
       });
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/school-service/schools/${selectedSchoolId}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("API Error:", response.status, errorData);
+        throw new Error(`Failed to fetch school data: ${response.status}`);
+      }
+
+      const school = await response.json();
+
+      // 只填入資料作為參考，不設置 schoolId
+      // 後端會根據學校名稱和合作日期判斷是否使用現有學校
+      onSchoolChange({
+        schoolId: undefined,
+        schoolName: school.schoolName || "",
+        schoolNameEn: school.schoolNameEn || "",
+        address: school.address || "",
+        phone: school.phone || "",
+        email: school.email || "",
+        website: school.website || "",
+      });
+    } catch (error) {
+      console.error("Error loading school data:", error);
     }
   };
 
@@ -117,7 +147,7 @@ export default function SchoolFormStep({
             </div>
           )}
 
-          <FormField label="選擇現有學校" error={errors.schoolId}>
+          <FormField label="學校資料庫" error={errors.schoolId}>
             {isLoadingSchools ? (
               <div className="h-11 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-700" />
             ) : (
@@ -139,6 +169,7 @@ export default function SchoolFormStep({
               error={errors.schoolName}
             >
               <Input
+                key={`schoolName-${schoolData.schoolId || 'new'}`}
                 type="text"
                 placeholder="例如：聖保羅小學"
                 defaultValue={schoolData.schoolName}
@@ -149,6 +180,7 @@ export default function SchoolFormStep({
 
             <FormField label="學校名稱（英文）" error={errors.schoolNameEn}>
               <Input
+                key={`schoolNameEn-${schoolData.schoolId || 'new'}`}
                 type="text"
                 placeholder="St. Paul's Primary School"
                 defaultValue={schoolData.schoolNameEn}
@@ -162,6 +194,7 @@ export default function SchoolFormStep({
 
           <FormField label="學校地址" required error={errors.address}>
             <Input
+              key={`address-${schoolData.schoolId || 'new'}`}
               type="text"
               placeholder="香港九龍..."
               defaultValue={schoolData.address}
@@ -173,6 +206,7 @@ export default function SchoolFormStep({
           <div className="grid gap-6 sm:grid-cols-2">
             <FormField label="學校電話" error={errors.phone}>
               <PhoneInput
+                key={`phone-${schoolData.schoolId || 'new'}`}
                 value={schoolData.phone}
                 placeholder="2123 4567"
                 onChange={(phone) => onSchoolChange({ phone })}
@@ -184,6 +218,7 @@ export default function SchoolFormStep({
 
             <FormField label="學校電郵" error={errors.email}>
               <Input
+                key={`email-${schoolData.schoolId || 'new'}`}
                 type="email"
                 placeholder="info@school.edu.hk"
                 defaultValue={schoolData.email}
@@ -195,6 +230,7 @@ export default function SchoolFormStep({
 
           <FormField label="學校網站" error={errors.website}>
             <Input
+              key={`website-${schoolData.schoolId || 'new'}`}
               type="url"
               placeholder="https://www.school.edu.hk"
               defaultValue={schoolData.website}

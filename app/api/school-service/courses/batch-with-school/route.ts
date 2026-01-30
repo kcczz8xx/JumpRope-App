@@ -16,27 +16,29 @@ export async function POST(request: NextRequest) {
 
         const result = await prisma.$transaction(async (tx) => {
             // 1. 處理學校
-            let schoolId = school.schoolId;
+            // 根據學校名稱和合作日期判斷是否使用現有學校
+            let schoolId: string | null = null;
+            const partnershipStart = school.partnershipStartDate ? new Date(school.partnershipStartDate) : null;
 
-            if (schoolId) {
-                // 更新現有學校
-                await tx.school.update({
-                    where: { id: schoolId },
-                    data: {
+            // 查找同名學校，且合作期間包含當前提交的開始日期
+            if (school.schoolName && partnershipStart) {
+                const existingSchool = await tx.school.findFirst({
+                    where: {
                         schoolName: school.schoolName,
-                        schoolNameEn: school.schoolNameEn,
-                        address: school.address,
-                        phone: school.phone,
-                        email: school.email,
-                        website: school.website,
-                        partnershipStartDate: school.partnershipStartDate ? new Date(school.partnershipStartDate) : undefined,
-                        partnershipEndDate: school.partnershipEndDate ? new Date(school.partnershipEndDate) : null,
-                        partnershipStartYear: school.partnershipStartYear,
-                        confirmationChannel: school.confirmationChannel,
-                        remarks: school.remarks,
+                        partnershipStartDate: { lte: partnershipStart },
+                        OR: [
+                            { partnershipEndDate: null },
+                            { partnershipEndDate: { gte: partnershipStart } },
+                        ],
                     },
                 });
-            } else {
+
+                if (existingSchool) {
+                    schoolId = existingSchool.id;
+                }
+            }
+
+            if (!schoolId) {
                 // 創建新學校
                 const newSchool = await tx.school.create({
                     data: {
@@ -51,7 +53,7 @@ export async function POST(request: NextRequest) {
                         partnershipStartYear: school.partnershipStartYear,
                         confirmationChannel: school.confirmationChannel,
                         remarks: school.remarks,
-                        partnershipStatus: "CONFIRMED", // 假設建立課程時已確認合作
+                        partnershipStatus: "CONFIRMED",
                     },
                 });
                 schoolId = newSchool.id;

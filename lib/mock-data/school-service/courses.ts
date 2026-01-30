@@ -7,12 +7,12 @@ export interface CourseWithSchool {
     courseType: string;
     courseTerm: CourseTerm;
     academicYear: string;
-    chargingModel: ChargingModel;
+    chargingModels: ChargingModel[];
     status: CourseStatus;
     requiredTutors: number;
     maxStudents: number | null;
-    startDate: string;
-    endDate: string | null;
+    startDate: Date | null;
+    endDate: Date | null;
     school: {
         id: string;
         schoolName: string;
@@ -257,12 +257,12 @@ export const courseMockData = {
                 courseType: course.courseType,
                 courseTerm: course.courseTerm,
                 academicYear: course.academicYear,
-                chargingModel: course.chargingModel,
+                chargingModels: [course.chargingModel],
                 status: course.status,
                 requiredTutors: course.requiredTutors,
                 maxStudents: course.maxStudents,
-                startDate: course.startDate.toISOString().split('T')[0],
-                endDate: course.endDate ? course.endDate.toISOString().split('T')[0] : null,
+                startDate: course.startDate,
+                endDate: course.endDate,
                 school: school ? {
                     id: school.id,
                     schoolName: school.schoolName,

@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import Label from "../form/Label";
+import Label from "../tailadmin/form/Label";
 import Input from "@/components/tailadmin/form/input/InputField";
 
 export default function ResetPasswordForm() {
