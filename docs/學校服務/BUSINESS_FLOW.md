@@ -78,7 +78,7 @@ VALUES ('XX小學', '九龍XX區', 'INQUIRY');
 
 -- 新增聯絡人
 INSERT INTO school_contacts (school_id, name_chinese, position, phone)
-VALUES ('[school_id]', '王老師', '體育科主任', '9123-4567');
+VALUES ('[school_id]', '王老師', '體育科主任', '9123 4567');
 
 -- 新增報價單（草稿）
 INSERT INTO school_quotations (school_id, quotation_number, status, inquiry_date)

@@ -462,13 +462,11 @@ export default function CoursesPage() {
           {data?.pagination && (
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-500">
-                顯示 {(data.pagination.page - 1) * data.pagination.pageSize + 1}
-                -
+                顯示 {(data.pagination.page - 1) * data.pagination.pageSize + 1}-
                 {Math.min(
                   data.pagination.page * data.pagination.pageSize,
                   data.pagination.total
-                )}{" "}
-                / 共 {data.pagination.total} 個課程
+                )} / 共 {data.pagination.total} 個課程
               </span>
               <Pagination
                 currentPage={data.pagination.page}

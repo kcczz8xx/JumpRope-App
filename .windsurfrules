@@ -1,0 +1,59 @@
+# 項目概述
+
+本項目為 Next.js App Router 架構的全端 Web 應用，前端頁面與後端 API 皆在同一專案內維護，並整合 Prisma 與資料庫進行資料存取。
+
+# 安裝、環境變量、運行與構建
+
+## 安裝
+
+- 使用 `pnpm` 作為套件管理器（已提供 `pnpm-lock.yaml`）。
+- 安裝依賴：`pnpm install`
+
+## 環境變量
+
+- 複製 `.env.example` 為 `.env`。
+- 設定必要環境變量：
+  - `DATABASE_URL`
+  - `NEXT_PUBLIC_APP_URL`
+
+## 開發/構建/啟動
+
+- `pnpm dev` — 啟動本地開發伺服器。
+- `pnpm build` — 產生生產環境構建。
+- `pnpm start` — 以構建結果啟動生產伺服器。
+- `pnpm lint` — 執行 ESLint（Next.js 設定）。
+- `pnpm test` — 執行 Jest 測試（單次）。
+- `pnpm test:watch` — Jest 監看模式。
+- `pnpm test:coverage` — 產生測試覆蓋率報告。
+
+# 目錄結構（前後端 / 路由 / API）
+
+- `app/`：Next.js App Router 路由與頁面，包含路由群組（例如 `(public)`、`(private)`）。
+  - `app/api/`：後端 API Route Handlers。
+- `components/`：可重用 UI 元件；測試放在 `components/__tests__/`。
+- `layout/`：共用版面配置（Layout wrappers）。
+- `context/`、`hooks/`、`lib/`、`utils/`：狀態管理、Hook、共用邏輯與工具函式。
+- `prisma/`：資料庫 Schema 與遷移檔（schema 位於 `prisma/schema/`）。
+- `public/`、`icons/`：靜態資源。
+- `docs/`、`scripts/`：專案文件與輔助腳本。
+
+# 技術棧與主要依賴
+
+- 框架：Next.js（App Router）。
+- 語言：TypeScript（嚴格模式，參見 `tsconfig.json`）。
+- 樣式：Tailwind CSS。
+- 測試：Jest + Testing Library（JSDOM 環境）。
+- 資料層：Prisma（Schema 位於 `prisma/`）。
+- Lint：ESLint（`eslint-config-next`）。
+
+# 代碼規範與測試規範
+
+- 格式：2 空格縮排、雙引號、分號。
+- 路徑：使用 `@/` 作為 repo root 的 alias。
+- 命名：React 元件使用 PascalCase，函式/變數使用 camelCase。
+- 測試：放在 `__tests__/` 或命名為 `*.test.ts(x)` / `*.spec.ts(x)`。
+
+# 提交流程
+
+- Commit 風格：Conventional Commits（如 `feat:`、`fix:`、`docs:`、`chore:`）。
+- PR：需包含摘要、關聯議題（若有）與 UI 截圖；並註記測試結果（例如 `pnpm test`）。

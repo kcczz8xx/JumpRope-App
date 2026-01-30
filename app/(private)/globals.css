@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "react-international-phone/style.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -912,4 +913,60 @@ pre[class*="language-"] {
 }
 pre[class*="language-"].line-numbers {
   padding-left: 2.8em !important;
+}
+
+/* React International Phone Custom Styles */
+.react-international-phone-input-container {
+  @apply flex items-center gap-0 w-full;
+}
+
+.react-international-phone-input-container
+  .react-international-phone-country-selector-button {
+  @apply flex items-center gap-2 px-3 py-2.5 h-11 border border-r-0 rounded-l-lg border-gray-300 bg-transparent hover:bg-gray-50 transition-colors duration-200;
+  @apply dark:border-gray-700 dark:hover:bg-gray-800;
+}
+
+.react-international-phone-input-container
+  .react-international-phone-country-selector-button__button-content {
+  @apply flex items-center gap-2;
+}
+
+.react-international-phone-input-container
+  .react-international-phone-country-selector-button__flag-emoji {
+  @apply text-base leading-none;
+}
+
+.react-international-phone-input-container
+  .react-international-phone-country-selector-button__dropdown-arrow {
+  @apply text-gray-500 dark:text-gray-400;
+}
+
+.react-international-phone-input-container
+  .react-international-phone-country-selector-button__dial-code {
+  @apply hidden;
+}
+
+.react-international-phone-input-container
+  input.react-international-phone-input {
+  @apply flex-1 h-11 border border-l-0 rounded-r-lg border-gray-300 px-4 py-2.5 text-sm bg-transparent;
+  @apply focus:border-brand-300 focus:ring-3 focus:ring-brand-500/20 focus:outline-hidden;
+  @apply dark:border-gray-700 dark:text-white/90 dark:focus:border-brand-800;
+}
+
+.react-international-phone-country-selector-dropdown {
+  @apply mt-2 rounded-lg border border-gray-200 bg-white shadow-theme-lg max-h-60 overflow-y-auto;
+  @apply dark:border-gray-700 dark:bg-gray-900;
+}
+
+.react-international-phone-country-selector-dropdown__list-item {
+  @apply px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer flex items-center gap-3;
+  @apply dark:text-gray-300 dark:hover:bg-gray-800;
+}
+
+.react-international-phone-country-selector-dropdown__list-item--selected {
+  @apply bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400;
+}
+
+.react-international-phone-country-selector-dropdown__list-item--focused {
+  @apply bg-gray-50 dark:bg-gray-800;
 }

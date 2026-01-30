@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { DashboardMetrics } from '../lib/data';
+import { DashboardMetrics } from '@/lib/mock-data/school-service/client';
 
 interface MetricCardsProps {
   metrics: DashboardMetrics;

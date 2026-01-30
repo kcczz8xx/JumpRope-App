@@ -1,4 +1,4 @@
-import { seedMockData } from '../lib/mock-data';
+import { seedMockData } from '../lib/mock-data/school-service';
 
 async function main() {
     console.log('🌱 Starting database seeding with mock data...\n');

@@ -1,9 +1,9 @@
-import PageBreadcrumb from "@/components/common/PageBreadCrumb";
+import PageBreadcrumb from "@/components/tailadmin/common/PageBreadCrumb";
 import { Metadata } from "next";
 import { MetricCards } from "./components/MetricCards";
 import { ActivityTimeline } from "./components/ActivityTimeline";
 import { QuickActions } from "./components/QuickActions";
-import { getDashboardMetrics, getRecentActivities } from "./lib/data";
+import { dashboardMockData } from "@/lib/mock-data/school-service";
 
 export const metadata: Metadata = {
   title: "管理儀表板 | 學校服務",
@@ -15,10 +15,8 @@ const MOCK_ROLE = "ADMIN";
 const MOCK_SCHOOL_ID = undefined;
 
 export default async function OverviewPage() {
-  const [metrics, activities] = await Promise.all([
-    getDashboardMetrics(MOCK_ROLE, MOCK_SCHOOL_ID),
-    getRecentActivities(MOCK_ROLE, MOCK_SCHOOL_ID),
-  ]);
+  const metrics = dashboardMockData.getMetrics();
+  const activities = dashboardMockData.getActivities(10);
 
   return (
     <div>

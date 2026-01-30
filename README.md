@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Jumprope App
 
-## Getting Started
+## 項目概述
 
-First, run the development server:
+本項目是基於 Next.js App Router 的全端應用，前端頁面與後端 API 路由統一在同一代碼庫中管理，並通過 Prisma 與數據庫交互。
+
+## 快速開始
+
+### 安裝依賴
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 環境變量
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cp .env.example .env
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+在 `.env` 中配置：
 
-## Learn More
+- `DATABASE_URL`
+- `NEXT_PUBLIC_APP_URL`
 
-To learn more about Next.js, take a look at the following resources:
+### 啓動開發環境
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+pnpm dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+訪問 `http://localhost:3000` 查看頁面。
 
-## Deploy on Vercel
+## 常用命令（全部使用 pnpm）
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `pnpm dev` — 啓動本地開發服務器
+- `pnpm build` — 生成生產構建
+- `pnpm start` — 運行生產服務器
+- `pnpm lint` — ESLint 檢查
+- `pnpm test` — Jest 單次測試
+- `pnpm test:watch` — Jest 監看模式
+- `pnpm test:coverage` — 生成測試覆蓋率報告
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 目錄結構與路由/API
+
+- `app/`：App Router 路由目錄，包含路由分組如 `(public)`、`(private)`
+
+  - `app/api/`：API Route Handlers
+  - `components/`：可復用 UI 組件（測試在 `components/__tests__/`）
+  - `layout/`：通用佈局包裝
+  - `context/`、`hooks/`、`lib/`、`utils/`：共享狀態、Hook、邏輯與工具
+  - `prisma/`：數據庫 Schema 與遷移（schema 在 `prisma/schema/`）
+  - `public/`、`icons/`：靜態資源
+  - `docs/`、`scripts/`：項目文檔與腳本
+
+  ## 技術棧與依賴
+
+  - Next.js（App Router）
+  - TypeScript（嚴格模式）
+  - Tailwind CSS
+  - Prisma
+  - Jest + Testing Library
+  - ESLint（`eslint-config-next`）

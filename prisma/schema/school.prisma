@@ -25,16 +25,6 @@ enum QuotationStatus {
   REVISED // 已修訂
 }
 
-enum CourseType {
-  REGULAR_CLASS // 恆常班（每週固定時間）
-  INTENSIVE // 集訓課程
-  TRIAL_CLASS // 試堂
-  HOLIDAY_CAMP // 假期訓練營
-  COMPETITION_PREP // 比賽訓練
-  AFTER_SCHOOL // 課後班
-  INTEREST_CLASS // 興趣班
-}
-
 enum ChargingModel {
   STUDENT_PER_LESSON // 學生每節課堂收費
   TUTOR_PER_LESSON // 導師每堂節數收費
@@ -115,7 +105,7 @@ enum SalaryCalculationMode {
 }
 
 enum CourseTerm {
-  FULL_YEAR // 全年不分學期
+  FULL_YEAR // 全期不分學期
   FIRST_TERM // 上學期
   SECOND_TERM // 下學期
   SUMMER // 暑期
@@ -276,7 +266,7 @@ model SchoolQuotationItem {
 
   // 課程資料
   courseName  String // 課程名稱
-  courseType  CourseType // 課程類型
+  courseType  String // 課程類型
   description String?    @db.Text // 課程描述
 
   // 收費資料
@@ -310,14 +300,15 @@ model SchoolCourse {
   school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
   // 課程基本資料
-  courseName String // 課程名稱
-  courseCode String? // 課程編號（可選）
-  courseType CourseType // 課程類型
+  courseName  String // 課程名稱
+  courseCode  String? // 課程編號（可選）
+  courseType  String // 課程類型
+  description String?    @db.Text // 課程描述
 
   // 學期設定
   courseTerm   CourseTerm @default(FULL_YEAR) // 學期類型
   academicYear String // 學年（例如：2024-2025）
-  startDate    DateTime // 課程開始日期
+  startDate    DateTime? // 課程開始日期
   endDate      DateTime? // 課程結束日期
 
   // 人數設定
@@ -325,7 +316,7 @@ model SchoolCourse {
   maxStudents    Int? // 最大學生人數
 
   // 收費模式
-  chargingModel ChargingModel // 收費模式
+  chargingModels ChargingModel[] @default([]) // 收費模式（多選）
 
   // 學生收費（依 chargingModel 而定，部分欄位可為 null）
   studentPerLessonFee  Decimal? @db.Decimal(10, 2) // 學生每堂收費

@@ -1,5 +1,5 @@
-import CountdownTimer from "@/components/common/CountdownTimer";
-import GridShape from "@/components/common/GridShape";
+import CountdownTimer from "@/components/tailadmin/common/CountdownTimer";
+import GridShape from "@/components/tailadmin/common/GridShape";
 import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -23,14 +23,14 @@ export default function ComingSoon() {
           <Link href="/" className="inline-block mb-6">
             <Image
               className="dark:hidden"
-              src="./images/logo/logo.svg"
+              src="/images/logo/logo.svg"
               alt="Logo"
               width={154}
               height={32}
             />
             <Image
               className="hidden dark:block"
-              src="./images/logo/logo-dark.svg"
+              src="/images/logo/logo-dark.svg"
               alt="Logo"
               width={154}
               height={32}

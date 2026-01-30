@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import ComponentCard from '@/components/common/ComponentCard';
-import Button from '@/components/ui/button/Button';
+import ComponentCard from '@/components/tailadmin/common/ComponentCard';
+import Button from '@/components/tailadmin/ui/button/Button';
 import { PlusIcon, BoxCubeIcon, DocsIcon, CalenderIcon, ListIcon } from '@/icons';
 
 interface QuickActionsProps {

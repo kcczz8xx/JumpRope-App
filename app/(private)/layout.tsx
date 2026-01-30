@@ -1,4 +1,5 @@
 import { Outfit } from "next/font/google";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "swiper/swiper-bundle.css";
 import "simplebar-react/dist/simplebar.min.css";
@@ -7,11 +8,18 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { TenantProvider } from "@/context/TenantContext";
 import { PermissionProvider } from "@/context/PermissionContext";
-import { TenantThemeProvider } from "@/components/layout/TenantThemeProvider";
+import { TenantThemeProvider } from "@/components/tailadmin/layout/TenantThemeProvider";
 
 const outfit = Outfit({
   subsets: ["latin"],
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
 
 export default function RootLayout({
   children,
