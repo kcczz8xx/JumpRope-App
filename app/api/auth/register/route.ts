@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { rateLimit, getClientIP, RATE_LIMIT_CONFIGS } from "@/lib/rate-limit";
+import { generateMemberNumber } from "@/lib/member-number";
 
 interface RegisterRequest {
     phone: string;
@@ -12,6 +14,19 @@ interface RegisterRequest {
 
 export async function POST(request: NextRequest) {
     try {
+        const clientIP = getClientIP(request);
+        const rateLimitResult = rateLimit(
+            `register:${clientIP}`,
+            RATE_LIMIT_CONFIGS.REGISTER
+        );
+
+        if (!rateLimitResult.success) {
+            return NextResponse.json(
+                { error: "請求過於頻繁，請稍後再試" },
+                { status: 429 }
+            );
+        }
+
         const body: RegisterRequest = await request.json();
         const { phone, password, email, nickname, title } = body;
 
@@ -52,6 +67,9 @@ export async function POST(request: NextRequest) {
 
         const passwordHash = await bcrypt.hash(password, 12);
 
+        // 自動生成有序會員編號
+        const memberNumber = await generateMemberNumber();
+
         const user = await prisma.user.create({
             data: {
                 phone,
@@ -59,6 +77,7 @@ export async function POST(request: NextRequest) {
                 nickname,
                 title,
                 passwordHash,
+                memberNumber,
                 role: "USER",
             },
             select: {
@@ -67,6 +86,7 @@ export async function POST(request: NextRequest) {
                 email: true,
                 nickname: true,
                 title: true,
+                memberNumber: true,
                 role: true,
                 createdAt: true,
             },

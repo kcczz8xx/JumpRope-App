@@ -1,13 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { rateLimit, getClientIP, RATE_LIMIT_CONFIGS } from "@/lib/rate-limit";
 
 interface SendResetCodeRequest {
     phone?: string;
     email?: string;
 }
 
+function generateOtpCode(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
 export async function POST(request: NextRequest) {
     try {
+        const clientIP = getClientIP(request);
+        const rateLimitResult = rateLimit(
+            `reset_send:${clientIP}`,
+            RATE_LIMIT_CONFIGS.RESET_PASSWORD
+        );
+
+        if (!rateLimitResult.success) {
+            return NextResponse.json(
+                { error: "請求過於頻繁，請稍後再試" },
+                { status: 429 }
+            );
+        }
+
         const body: SendResetCodeRequest = await request.json();
         const { phone, email } = body;
 
@@ -30,10 +48,28 @@ export async function POST(request: NextRequest) {
         }
 
         if (phone) {
-            // TODO: 發送 SMS 驗證碼
-            console.log(`[Reset Password] Sending OTP to phone: ${phone}`);
+            await prisma.otp.deleteMany({
+                where: {
+                    phone,
+                    purpose: "RESET_PASSWORD",
+                    verified: false,
+                },
+            });
+
+            const code = generateOtpCode();
+            const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+            await prisma.otp.create({
+                data: {
+                    phone,
+                    code,
+                    purpose: "RESET_PASSWORD",
+                    expiresAt,
+                },
+            });
+
+            console.log(`[Reset Password] Created OTP for phone: ${phone}`);
         } else if (email) {
-            // TODO: 發送電郵重設連結
             console.log(`[Reset Password] Sending reset link to email: ${email}`);
         }
 

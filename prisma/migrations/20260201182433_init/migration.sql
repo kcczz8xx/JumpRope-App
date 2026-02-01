@@ -1,11 +1,11 @@
 -- CreateEnum
+CREATE TYPE "OtpPurpose" AS ENUM ('REGISTER', 'RESET_PASSWORD');
+
+-- CreateEnum
 CREATE TYPE "PartnershipStatus" AS ENUM ('INQUIRY', 'QUOTATION_SENT', 'NEGOTIATING', 'CONFIRMED', 'ACTIVE', 'SUSPENDED', 'TERMINATED');
 
 -- CreateEnum
 CREATE TYPE "QuotationStatus" AS ENUM ('DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED', 'REVISED');
-
--- CreateEnum
-CREATE TYPE "CourseType" AS ENUM ('REGULAR_CLASS', 'INTENSIVE', 'TRIAL_CLASS', 'HOLIDAY_CAMP', 'COMPETITION_PREP', 'AFTER_SCHOOL', 'INTEREST_CLASS');
 
 -- CreateEnum
 CREATE TYPE "ChargingModel" AS ENUM ('STUDENT_PER_LESSON', 'TUTOR_PER_LESSON', 'STUDENT_HOURLY', 'TUTOR_HOURLY', 'STUDENT_FULL_COURSE', 'TEAM_ACTIVITY');
@@ -41,7 +41,42 @@ CREATE TYPE "CourseTerm" AS ENUM ('FULL_YEAR', 'FIRST_TERM', 'SECOND_TERM', 'SUM
 CREATE TYPE "CourseStatus" AS ENUM ('DRAFT', 'SCHEDULED', 'ACTIVE', 'COMPLETED', 'CANCELLED', 'SUSPENDED');
 
 -- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('STUDENT', 'TUTOR', 'ADMIN', 'STAFF');
+CREATE TYPE "DocumentStatus" AS ENUM ('VALID', 'EXPIRED', 'EXPIRING_SOON', 'PENDING', 'NOT_SUBMITTED');
+
+-- CreateEnum
+CREATE TYPE "DocumentType" AS ENUM ('SEXUAL_CONVICTION_CHECK', 'FIRST_AID_CERTIFICATE', 'IDENTITY_DOCUMENT', 'COACHING_CERTIFICATE', 'OTHER_CERTIFICATE');
+
+-- CreateEnum
+CREATE TYPE "Gender" AS ENUM ('MALE', 'FEMALE');
+
+-- CreateEnum
+CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'STAFF', 'TUTOR', 'PARENT', 'STUDENT', 'USER');
+
+-- CreateTable
+CREATE TABLE "otps" (
+    "id" TEXT NOT NULL,
+    "phone" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "purpose" "OtpPurpose" NOT NULL,
+    "verified" BOOLEAN NOT NULL DEFAULT false,
+    "attempts" INTEGER NOT NULL DEFAULT 0,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "otps_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "password_reset_tokens" (
+    "id" TEXT NOT NULL,
+    "phone" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "used" BOOLEAN NOT NULL DEFAULT false,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "password_reset_tokens_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable
 CREATE TABLE "schools" (
@@ -120,7 +155,7 @@ CREATE TABLE "school_quotation_items" (
     "id" TEXT NOT NULL,
     "quotationId" TEXT NOT NULL,
     "courseName" TEXT NOT NULL,
-    "courseType" "CourseType" NOT NULL,
+    "courseType" TEXT NOT NULL,
     "description" TEXT,
     "chargingModel" "ChargingModel" NOT NULL,
     "unitPrice" DECIMAL(10,2) NOT NULL,
@@ -143,14 +178,15 @@ CREATE TABLE "school_courses" (
     "schoolId" TEXT NOT NULL,
     "courseName" TEXT NOT NULL,
     "courseCode" TEXT,
-    "courseType" "CourseType" NOT NULL,
+    "courseType" TEXT NOT NULL,
+    "description" TEXT,
     "courseTerm" "CourseTerm" NOT NULL DEFAULT 'FULL_YEAR',
     "academicYear" TEXT NOT NULL,
-    "startDate" TIMESTAMP(3) NOT NULL,
+    "startDate" TIMESTAMP(3),
     "endDate" TIMESTAMP(3),
     "requiredTutors" INTEGER NOT NULL DEFAULT 1,
     "maxStudents" INTEGER,
-    "chargingModel" "ChargingModel" NOT NULL,
+    "chargingModels" "ChargingModel"[] DEFAULT ARRAY[]::"ChargingModel"[],
     "studentPerLessonFee" DECIMAL(10,2),
     "studentHourlyFee" DECIMAL(10,2),
     "studentFullCourseFee" DECIMAL(10,2),
@@ -296,25 +332,9 @@ CREATE TABLE "school_tutor_lessons" (
 );
 
 -- CreateTable
-CREATE TABLE "users" (
-    "id" TEXT NOT NULL,
-    "phone" TEXT NOT NULL,
-    "email" TEXT,
-    "nameChinese" TEXT,
-    "nameEnglish" TEXT,
-    "role" "UserRole" NOT NULL DEFAULT 'STUDENT',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    "deletedAt" TIMESTAMP(3),
-
-    CONSTRAINT "users_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "tutor_profiles" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "certifications" JSONB,
     "specialties" TEXT[],
     "defaultSalaryMode" "SalaryCalculationMode" NOT NULL DEFAULT 'PER_LESSON',
     "defaultPerLessonFee" DECIMAL(10,2),
@@ -330,6 +350,112 @@ CREATE TABLE "tutor_profiles" (
 
     CONSTRAINT "tutor_profiles_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateTable
+CREATE TABLE "tutor_documents" (
+    "id" TEXT NOT NULL,
+    "tutorProfileId" TEXT NOT NULL,
+    "documentType" "DocumentType" NOT NULL,
+    "name" TEXT NOT NULL,
+    "status" "DocumentStatus" NOT NULL DEFAULT 'NOT_SUBMITTED',
+    "referenceNumber" TEXT,
+    "certificateType" TEXT,
+    "issuingBody" TEXT,
+    "issueDate" TIMESTAMP(3),
+    "expiryDate" TIMESTAMP(3),
+    "documentUrl" TEXT,
+    "uploadDate" TIMESTAMP(3),
+    "reviewedAt" TIMESTAMP(3),
+    "reviewedBy" TEXT,
+    "reviewNote" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "tutor_documents_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "users" (
+    "id" TEXT NOT NULL,
+    "memberNumber" TEXT,
+    "title" TEXT,
+    "phone" TEXT NOT NULL,
+    "email" TEXT,
+    "nameChinese" TEXT,
+    "nameEnglish" TEXT,
+    "nickname" TEXT,
+    "gender" "Gender",
+    "passwordHash" TEXT,
+    "identityCardNumber" TEXT,
+    "whatsappEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "role" "UserRole" NOT NULL DEFAULT 'USER',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+
+    CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "user_addresses" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "region" TEXT,
+    "district" TEXT,
+    "address" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "user_addresses_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "user_bank_accounts" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "bankName" TEXT,
+    "accountNumber" TEXT,
+    "accountHolderName" TEXT,
+    "fpsId" TEXT,
+    "fpsEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "user_bank_accounts_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "user_children" (
+    "id" TEXT NOT NULL,
+    "parentId" TEXT NOT NULL,
+    "memberNumber" TEXT,
+    "nameChinese" TEXT NOT NULL,
+    "nameEnglish" TEXT,
+    "birthYear" INTEGER,
+    "school" TEXT,
+    "gender" "Gender",
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+
+    CONSTRAINT "user_children_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE INDEX "otps_phone_purpose_idx" ON "otps"("phone", "purpose");
+
+-- CreateIndex
+CREATE INDEX "otps_expiresAt_idx" ON "otps"("expiresAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "password_reset_tokens_token_key" ON "password_reset_tokens"("token");
+
+-- CreateIndex
+CREATE INDEX "password_reset_tokens_phone_idx" ON "password_reset_tokens"("phone");
+
+-- CreateIndex
+CREATE INDEX "password_reset_tokens_expiresAt_idx" ON "password_reset_tokens"("expiresAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "schools_schoolCode_key" ON "schools"("schoolCode");
@@ -458,12 +584,6 @@ CREATE INDEX "school_tutor_lessons_lessonDate_idx" ON "school_tutor_lessons"("le
 CREATE UNIQUE INDEX "school_tutor_lessons_lessonId_userId_key" ON "school_tutor_lessons"("lessonId", "userId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "users_phone_key" ON "users"("phone");
-
--- CreateIndex
-CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
-
--- CreateIndex
 CREATE UNIQUE INDEX "tutor_profiles_userId_key" ON "tutor_profiles"("userId");
 
 -- CreateIndex
@@ -471,6 +591,36 @@ CREATE INDEX "tutor_profiles_userId_idx" ON "tutor_profiles"("userId");
 
 -- CreateIndex
 CREATE INDEX "tutor_profiles_isActive_idx" ON "tutor_profiles"("isActive");
+
+-- CreateIndex
+CREATE INDEX "tutor_documents_tutorProfileId_idx" ON "tutor_documents"("tutorProfileId");
+
+-- CreateIndex
+CREATE INDEX "tutor_documents_documentType_idx" ON "tutor_documents"("documentType");
+
+-- CreateIndex
+CREATE INDEX "tutor_documents_status_idx" ON "tutor_documents"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_memberNumber_key" ON "users"("memberNumber");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_phone_key" ON "users"("phone");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "user_addresses_userId_key" ON "user_addresses"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "user_bank_accounts_userId_key" ON "user_bank_accounts"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "user_children_memberNumber_key" ON "user_children"("memberNumber");
+
+-- CreateIndex
+CREATE INDEX "user_children_parentId_idx" ON "user_children"("parentId");
 
 -- AddForeignKey
 ALTER TABLE "school_contacts" ADD CONSTRAINT "school_contacts_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -516,3 +666,15 @@ ALTER TABLE "school_tutor_lessons" ADD CONSTRAINT "school_tutor_lessons_userId_f
 
 -- AddForeignKey
 ALTER TABLE "tutor_profiles" ADD CONSTRAINT "tutor_profiles_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "tutor_documents" ADD CONSTRAINT "tutor_documents_tutorProfileId_fkey" FOREIGN KEY ("tutorProfileId") REFERENCES "tutor_profiles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_addresses" ADD CONSTRAINT "user_addresses_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_bank_accounts" ADD CONSTRAINT "user_bank_accounts_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_children" ADD CONSTRAINT "user_children_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

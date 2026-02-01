@@ -1,9 +1,24 @@
 "use client";
 import React, { useState } from "react";
 import { useModal } from "@/hooks/useModal";
+import { parsePhoneNumber } from "libphonenumber-js";
 import UserInfoEditModal, { UserInfoFormData } from "./UserInfoEditModal";
 
+const formatPhoneNumber = (phone: string | null | undefined) => {
+  if (!phone) return "";
+  try {
+    const phoneNumber = parsePhoneNumber(phone);
+    if (phoneNumber) {
+      return phoneNumber.formatInternational();
+    }
+  } catch (error) {
+    // 如果解析失敗，返回原始值
+  }
+  return phone;
+};
+
 interface UserInfoCardProps {
+  nickname?: string;
   title?: string;
   nameChinese?: string;
   nameEnglish?: string;
@@ -13,31 +28,53 @@ interface UserInfoCardProps {
   phone?: string;
   whatsappEnabled?: boolean;
   memberNumber?: string;
-  onSave?: (data: UserInfoFormData) => void;
 }
 
 export default function UserInfoCard({
+  nickname: initialNickname = "",
   title = "",
   nameChinese = "",
   nameEnglish = "",
   identityCardNumber = "",
   gender = "",
-  email = "",
-  phone = "",
-  whatsappEnabled = false,
+  email: initialEmail = "",
+  phone: initialPhone = "",
+  whatsappEnabled: initialWhatsappEnabled = false,
   memberNumber = "",
-  onSave,
 }: UserInfoCardProps) {
   const { isOpen, openModal, closeModal } = useModal();
   const [isLoading, setIsLoading] = useState(false);
+  const [nickname, setNickname] = useState(initialNickname);
+  const [email, setEmail] = useState(initialEmail);
+  const [phone, setPhone] = useState(initialPhone);
+  const [whatsappEnabled, setWhatsappEnabled] = useState(
+    initialWhatsappEnabled
+  );
 
-  const handleSave = async (data: UserInfoFormData) => {
+  const handleSave = async (data: Partial<UserInfoFormData>) => {
     setIsLoading(true);
     try {
-      if (onSave) {
-        await onSave(data);
+      const response = await fetch("/api/user/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "更新失敗");
       }
+
+      if (data.nickname !== undefined) setNickname(data.nickname);
+      if (data.email !== undefined) setEmail(data.email);
+      if (data.phone !== undefined) setPhone(data.phone);
+      if (data.whatsappEnabled !== undefined)
+        setWhatsappEnabled(data.whatsappEnabled);
+
       closeModal();
+    } catch (error) {
+      console.error("Update profile error:", error);
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -51,7 +88,7 @@ export default function UserInfoCard({
   return (
     <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-        <div>
+        <div className="flex-1">
           <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90 mb-3 lg:mb-6">
             個人資料
           </h4>
@@ -70,56 +107,103 @@ export default function UserInfoCard({
 
             <div>
               <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                暱稱
+              </p>
+              {nickname ? (
+                <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                  {nickname}
+                </p>
+              ) : (
+                <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                  未填寫
+                </span>
+              )}
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
                 稱呼
               </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                {title || "-"}
-              </p>
+              {title ? (
+                <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                  {title}
+                </p>
+              ) : (
+                <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                  未填寫
+                </span>
+              )}
             </div>
 
             <div>
               <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
                 中文全名
               </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                {nameChinese || "-"}
-              </p>
+              {nameChinese ? (
+                <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                  {nameChinese}
+                </p>
+              ) : (
+                <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                  未填寫
+                </span>
+              )}
             </div>
 
             <div>
               <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
                 英文全名
               </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                {nameEnglish || "-"}
-              </p>
+              {nameEnglish ? (
+                <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                  {nameEnglish}
+                </p>
+              ) : (
+                <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                  未填寫
+                </span>
+              )}
             </div>
 
-            <div>
-              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                身份證號碼
-              </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                {identityCardNumber || "-"}
-              </p>
-            </div>
+            {identityCardNumber && (
+              <div>
+                <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                  身份證號碼
+                </p>
+                <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                  {identityCardNumber}
+                </p>
+              </div>
+            )}
 
             <div>
               <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
                 性別
               </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                {gender || "-"}
-              </p>
+              {gender ? (
+                <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                  {gender}
+                </p>
+              ) : (
+                <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                  未填寫
+                </span>
+              )}
             </div>
 
             <div>
               <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
                 電郵地址
               </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                {email || "-"}
-              </p>
+              {email ? (
+                <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                  {email}
+                </p>
+              ) : (
+                <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                  未填寫
+                </span>
+              )}
             </div>
 
             <div>
@@ -128,7 +212,7 @@ export default function UserInfoCard({
               </p>
               <div className="flex items-center gap-2">
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  {phone || "-"}
+                  {formatPhoneNumber(phone)}
                 </p>
                 {whatsappEnabled && phone && (
                   <span className="inline-flex rounded-full bg-success-100 px-2 py-0.5 text-xs font-medium text-success-600 dark:bg-success-900/30 dark:text-success-400">
@@ -168,6 +252,7 @@ export default function UserInfoCard({
         onSave={handleSave}
         isLoading={isLoading}
         initialData={{
+          nickname,
           title,
           nameChinese,
           nameEnglish,

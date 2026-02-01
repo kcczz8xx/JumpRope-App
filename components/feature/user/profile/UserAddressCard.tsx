@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useModal } from "@/hooks/useModal";
 import UserAddressEditModal, {
   UserAddressFormData,
@@ -13,15 +14,14 @@ interface UserAddressCardProps {
   region?: string;
   district?: string;
   address?: string;
-  onSave?: (data: UserAddressFormData) => void;
 }
 
 export default function UserAddressCard({
   region = "",
   district = "",
   address = "",
-  onSave,
 }: UserAddressCardProps) {
+  const router = useRouter();
   const displayRegion =
     region || (district ? getRegionLabel(getRegionByDistrict(district)) : "");
   const { isOpen, openModal, closeModal } = useModal();
@@ -30,51 +30,118 @@ export default function UserAddressCard({
   const handleSave = async (data: UserAddressFormData) => {
     setIsLoading(true);
     try {
-      if (onSave) {
-        await onSave(data);
+      const response = await fetch("/api/user/address", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "更新失敗");
       }
+
       closeModal();
+      router.refresh();
+    } catch (error) {
+      console.error("Update address error:", error);
+      throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleDelete = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/user/address", {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "刪除失敗");
+      }
+
+      closeModal();
+      router.refresh();
+    } catch (error) {
+      console.error("Delete address error:", error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const hasData = displayRegion || district || address;
+
   return (
     <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90 mb-3 lg:mb-6">
-            地址
-          </h4>
-
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
-            <div>
-              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                地域
-              </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                {displayRegion || "-"}
-              </p>
-            </div>
-
-            <div>
-              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                地區
-              </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                {district || "-"}
-              </p>
-            </div>
-
-            <div className="lg:col-span-2">
-              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                詳細地址
-              </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                {address || "-"}
-              </p>
-            </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-3 lg:mb-6">
+            <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90">
+              地址
+            </h4>
+            {!hasData && (
+              <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+                未有資料
+              </span>
+            )}
           </div>
+
+          {hasData ? (
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
+              <div>
+                <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                  地域
+                </p>
+                {displayRegion ? (
+                  <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                    {displayRegion}
+                  </p>
+                ) : (
+                  <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                    未填寫
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                  地區
+                </p>
+                {district ? (
+                  <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                    {district}
+                  </p>
+                ) : (
+                  <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                    未填寫
+                  </span>
+                )}
+              </div>
+
+              <div className="lg:col-span-2">
+                <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                  詳細地址
+                </p>
+                {address ? (
+                  <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                    {address}
+                  </p>
+                ) : (
+                  <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                    未填寫
+                  </span>
+                )}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              請點擊編輯按鈕新增地址資料
+            </p>
+          )}
         </div>
 
         <button
@@ -104,7 +171,9 @@ export default function UserAddressCard({
         isOpen={isOpen}
         onClose={closeModal}
         onSave={handleSave}
+        onDelete={handleDelete}
         isLoading={isLoading}
+        hasExistingData={!!hasData}
         initialData={{ region, district, address }}
       />
     </div>

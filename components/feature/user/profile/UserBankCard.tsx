@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useModal } from "@/hooks/useModal";
 import UserBankEditModal, { UserBankFormData } from "./UserBankEditModal";
 
@@ -10,7 +11,6 @@ interface UserBankCardProps {
   fpsId?: string;
   fpsEnabled?: boolean;
   notes?: string;
-  onSave?: (data: UserBankFormData) => void;
 }
 
 export default function UserBankCard({
@@ -20,86 +20,159 @@ export default function UserBankCard({
   fpsId = "",
   fpsEnabled = false,
   notes = "",
-  onSave,
 }: UserBankCardProps) {
+  const router = useRouter();
   const { isOpen, openModal, closeModal } = useModal();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSave = async (data: UserBankFormData) => {
     setIsLoading(true);
     try {
-      if (onSave) {
-        await onSave(data);
+      const response = await fetch("/api/user/bank", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "更新失敗");
       }
+
       closeModal();
+      router.refresh();
+    } catch (error) {
+      console.error("Update bank error:", error);
+      throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleDelete = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/user/bank", {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "刪除失敗");
+      }
+
+      closeModal();
+      router.refresh();
+    } catch (error) {
+      console.error("Delete bank error:", error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const hasData = bankName || accountNumber || accountHolderName || fpsId;
+
   return (
     <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90 mb-3 lg:mb-6">
-            收款資料
-          </h4>
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-3 lg:mb-6">
+            <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90">
+              收款資料
+            </h4>
+            {!hasData && (
+              <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+                未有資料
+              </span>
+            )}
+          </div>
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
-            <div>
-              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                所屬銀行
-              </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                {bankName || "-"}
-              </p>
-            </div>
-
-            <div>
-              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                戶口號碼
-              </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                {accountNumber || "-"}
-              </p>
-            </div>
-
-            <div>
-              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                戶口持有人姓名
-              </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                {accountHolderName || "-"}
-              </p>
-            </div>
-
-            <div>
-              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                轉數快 ID
-              </p>
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  {fpsId || "-"}
+          {hasData ? (
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
+              <div>
+                <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                  所屬銀行
                 </p>
-                {fpsEnabled && (
-                  <span className="inline-flex rounded-full bg-success-100 px-2 py-0.5 text-xs font-medium text-success-600 dark:bg-success-900/30 dark:text-success-400">
-                    已啟用
+                {bankName ? (
+                  <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                    {bankName}
+                  </p>
+                ) : (
+                  <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                    未填寫
                   </span>
                 )}
               </div>
-            </div>
 
-            {notes && (
-              <div className="lg:col-span-2">
+              <div>
                 <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                  備註
+                  戶口號碼
                 </p>
-                <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  {notes}
-                </p>
+                {accountNumber ? (
+                  <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                    {accountNumber}
+                  </p>
+                ) : (
+                  <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                    未填寫
+                  </span>
+                )}
               </div>
-            )}
-          </div>
+
+              <div>
+                <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                  戶口持有人姓名
+                </p>
+                {accountHolderName ? (
+                  <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                    {accountHolderName}
+                  </p>
+                ) : (
+                  <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                    未填寫
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                  轉數快 ID
+                </p>
+                <div className="flex items-center gap-2">
+                  {fpsId ? (
+                    <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                      {fpsId}
+                    </p>
+                  ) : (
+                    <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                      未填寫
+                    </span>
+                  )}
+                  {fpsEnabled && fpsId && (
+                    <span className="inline-flex rounded-full bg-success-100 px-2 py-0.5 text-xs font-medium text-success-600 dark:bg-success-900/30 dark:text-success-400">
+                      已啟用
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {notes && (
+                <div className="lg:col-span-2">
+                  <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                    備註
+                  </p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                    {notes}
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              請點擊編輯按鈕新增收款資料
+            </p>
+          )}
         </div>
 
         <button
@@ -129,7 +202,9 @@ export default function UserBankCard({
         isOpen={isOpen}
         onClose={closeModal}
         onSave={handleSave}
+        onDelete={handleDelete}
         isLoading={isLoading}
+        hasExistingData={!!hasData}
         initialData={{
           bankName,
           accountNumber,

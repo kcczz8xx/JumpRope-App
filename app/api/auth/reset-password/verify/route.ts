@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import crypto from "crypto";
+import { rateLimit, getClientIP, RATE_LIMIT_CONFIGS } from "@/lib/rate-limit";
 
 interface VerifyResetCodeRequest {
     phone: string;
@@ -7,6 +10,19 @@ interface VerifyResetCodeRequest {
 
 export async function POST(request: NextRequest) {
     try {
+        const clientIP = getClientIP(request);
+        const rateLimitResult = rateLimit(
+            `reset_verify:${clientIP}`,
+            RATE_LIMIT_CONFIGS.OTP_VERIFY
+        );
+
+        if (!rateLimitResult.success) {
+            return NextResponse.json(
+                { error: "請求過於頻繁，請稍後再試" },
+                { status: 429 }
+            );
+        }
+
         const body: VerifyResetCodeRequest = await request.json();
         const { phone, code } = body;
 
@@ -24,25 +40,69 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // TODO: 實作驗證邏輯
-        // 1. 從資料庫或快取取得儲存的驗證碼
-        // 2. 比對驗證碼是否正確
-        // 3. 檢查驗證碼是否過期
-        // 4. 生成重設密碼 token
-        console.log(`[Reset Password] Verifying OTP ${code} for ${phone}`);
+        const otp = await prisma.otp.findFirst({
+            where: {
+                phone,
+                purpose: "RESET_PASSWORD",
+                verified: false,
+            },
+            orderBy: { createdAt: "desc" },
+        });
 
-        // 模擬驗證：接受任何 6 位數驗證碼
-        const isValid = /^\d{6}$/.test(code);
+        if (!otp) {
+            return NextResponse.json(
+                { error: "驗證碼不存在，請重新發送" },
+                { status: 400 }
+            );
+        }
 
-        if (!isValid) {
+        if (new Date() > otp.expiresAt) {
+            return NextResponse.json(
+                { error: "驗證碼已過期，請重新發送" },
+                { status: 400 }
+            );
+        }
+
+        if (otp.attempts >= 5) {
+            return NextResponse.json(
+                { error: "嘗試次數過多，請重新發送驗證碼" },
+                { status: 429 }
+            );
+        }
+
+        if (otp.code !== code) {
+            await prisma.otp.update({
+                where: { id: otp.id },
+                data: { attempts: { increment: 1 } },
+            });
+
             return NextResponse.json(
                 { error: "驗證碼錯誤" },
                 { status: 400 }
             );
         }
 
-        // TODO: 生成並返回重設密碼 token
-        const resetToken = `reset_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        await prisma.otp.update({
+            where: { id: otp.id },
+            data: { verified: true },
+        });
+
+        await prisma.passwordResetToken.deleteMany({
+            where: { phone, used: false },
+        });
+
+        const resetToken = crypto.randomBytes(32).toString("hex");
+        const tokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+        await prisma.passwordResetToken.create({
+            data: {
+                phone,
+                token: resetToken,
+                expiresAt: tokenExpiresAt,
+            },
+        });
+
+        console.log(`[Reset Password] Verified OTP and created reset token for ${phone}`);
 
         return NextResponse.json(
             { message: "驗證成功", verified: true, resetToken },

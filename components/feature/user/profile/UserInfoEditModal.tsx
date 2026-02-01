@@ -1,13 +1,13 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Modal } from "@/components/tailadmin/ui/modal";
 import Label from "@/components/tailadmin/form/Label";
 import Input from "@/components/tailadmin/form/input/InputField";
-import Select from "@/components/tailadmin/form/select/Select";
 import Switch from "@/components/tailadmin/form/switch/Switch";
-import Button from "@/components/tailadmin/ui/button/Button";
+import PhoneInput from "@/components/tailadmin/form/group-input/PhoneInput";
 
 export interface UserInfoFormData {
+  nickname: string;
   title: string;
   nameChinese: string;
   nameEnglish: string;
@@ -21,21 +21,17 @@ export interface UserInfoFormData {
 interface UserInfoEditModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: UserInfoFormData) => void;
+  onSave: (data: Partial<UserInfoFormData>) => void;
   initialData?: Partial<UserInfoFormData>;
   isLoading?: boolean;
 }
 
-const TITLE_OPTIONS = [
-  { value: "先生", label: "先生" },
-  { value: "女士", label: "女士" },
-  { value: "小姐", label: "小姐" },
-];
+type EditStep = "form" | "otp-email" | "otp-phone";
 
-const GENDER_OPTIONS = [
-  { value: "MALE", label: "男" },
-  { value: "FEMALE", label: "女" },
-];
+const GENDER_LABELS: Record<string, string> = {
+  MALE: "男",
+  FEMALE: "女",
+};
 
 export default function UserInfoEditModal({
   isOpen,
@@ -44,28 +40,425 @@ export default function UserInfoEditModal({
   initialData = {},
   isLoading = false,
 }: UserInfoEditModalProps) {
-  const [formData, setFormData] = useState<UserInfoFormData>({
-    title: initialData.title || "",
-    nameChinese: initialData.nameChinese || "",
-    nameEnglish: initialData.nameEnglish || "",
-    identityCardNumber: initialData.identityCardNumber || "",
-    gender: initialData.gender || "",
-    email: initialData.email || "",
-    phone: initialData.phone || "",
-    whatsappEnabled: initialData.whatsappEnabled || false,
-  });
+  const [step, setStep] = useState<EditStep>("form");
+  const [nickname, setNickname] = useState(initialData.nickname || "");
+  const [email, setEmail] = useState(initialData.email || "");
+  const [phone, setPhone] = useState(initialData.phone || "");
+  const [whatsappEnabled, setWhatsappEnabled] = useState(
+    initialData.whatsappEnabled || false
+  );
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [otpError, setOtpError] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  const [pendingField, setPendingField] = useState<"email" | "phone" | null>(
+    null
+  );
+  const [pendingValue, setPendingValue] = useState("");
+  const inputsRef = useRef<HTMLInputElement[]>([]);
 
-  const handleChange = (
-    field: keyof UserInfoFormData,
-    value: string | boolean
+  const originalEmail = initialData.email || "";
+  const originalPhone = initialData.phone || "";
+
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [countdown]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setStep("form");
+      setNickname(initialData.nickname || "");
+      setEmail(initialData.email || "");
+      setPhone(initialData.phone || "");
+      setWhatsappEnabled(initialData.whatsappEnabled || false);
+      setOtp(["", "", "", "", "", ""]);
+      setOtpError("");
+      setPendingField(null);
+      setPendingValue("");
+    }
+  }, [isOpen, initialData]);
+
+  const handleOtpChange = (value: string, index: number) => {
+    if (!/^\d*$/.test(value)) return;
+    const updatedOtp = [...otp];
+    updatedOtp[index] = value;
+    setOtp(updatedOtp);
+    if (value && index < 5) {
+      inputsRef.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (
+    event: React.KeyboardEvent<HTMLInputElement>,
+    index: number
   ) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (event.key === "Backspace" && !otp[index] && index > 0) {
+      inputsRef.current[index - 1]?.focus();
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave(formData);
+  const handleOtpPaste = (event: React.ClipboardEvent<HTMLInputElement>) => {
+    event.preventDefault();
+    const pasteData = event.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, 6)
+      .split("");
+    const updatedOtp = [...otp];
+    pasteData.forEach((char, idx) => {
+      if (idx < 6) updatedOtp[idx] = char;
+    });
+    setOtp(updatedOtp);
+    const filledIndex = Math.min(pasteData.length - 1, 5);
+    inputsRef.current[filledIndex]?.focus();
   };
+
+  const sendOtp = async (field: "email" | "phone", value: string) => {
+    setOtpLoading(true);
+    setOtpError("");
+    try {
+      const response = await fetch("/api/auth/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: field === "phone" ? value : originalPhone,
+          email: field === "email" ? value : undefined,
+          purpose: "update-contact",
+        }),
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        setOtpError(data.error || "發送驗證碼失敗");
+        return false;
+      }
+      setCountdown(60);
+      return true;
+    } catch {
+      setOtpError("發送驗證碼失敗，請稍後再試");
+      return false;
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const verifyOtp = async () => {
+    const otpCode = otp.join("");
+    if (otpCode.length !== 6) {
+      setOtpError("請輸入完整的 6 位驗證碼");
+      return false;
+    }
+    setOtpLoading(true);
+    setOtpError("");
+    try {
+      const response = await fetch("/api/auth/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: pendingField === "phone" ? pendingValue : originalPhone,
+          code: otpCode,
+          purpose: "update-contact",
+        }),
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        setOtpError(data.error || "驗證碼錯誤");
+        setOtp(["", "", "", "", "", ""]);
+        inputsRef.current[0]?.focus();
+        return false;
+      }
+      return true;
+    } catch {
+      setOtpError("驗證失敗，請稍後再試");
+      return false;
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const emailChanged = email !== originalEmail;
+    const phoneChanged = phone !== originalPhone;
+
+    if (emailChanged && step === "form") {
+      setPendingField("email");
+      setPendingValue(email);
+      const sent = await sendOtp("email", email);
+      if (sent) {
+        setStep("otp-email");
+        setOtp(["", "", "", "", "", ""]);
+      }
+      return;
+    }
+
+    if (phoneChanged && step === "form") {
+      setPendingField("phone");
+      setPendingValue(phone);
+      const sent = await sendOtp("phone", phone);
+      if (sent) {
+        setStep("otp-phone");
+        setOtp(["", "", "", "", "", ""]);
+      }
+      return;
+    }
+
+    if (step === "otp-email") {
+      const verified = await verifyOtp();
+      if (!verified) return;
+
+      if (phone !== originalPhone) {
+        setPendingField("phone");
+        setPendingValue(phone);
+        const sent = await sendOtp("phone", phone);
+        if (sent) {
+          setStep("otp-phone");
+          setOtp(["", "", "", "", "", ""]);
+        }
+        return;
+      }
+    }
+
+    if (step === "otp-phone") {
+      const verified = await verifyOtp();
+      if (!verified) return;
+    }
+
+    onSave({
+      nickname,
+      email,
+      phone,
+      whatsappEnabled,
+    });
+  };
+
+  const handleResendOtp = async () => {
+    if (countdown > 0 || !pendingField || !pendingValue) return;
+    await sendOtp(pendingField, pendingValue);
+    setOtp(["", "", "", "", "", ""]);
+    inputsRef.current[0]?.focus();
+  };
+
+  const handleBackToForm = () => {
+    setStep("form");
+    setOtp(["", "", "", "", "", ""]);
+    setOtpError("");
+    setPendingField(null);
+    setPendingValue("");
+  };
+
+  const renderOtpStep = (fieldLabel: string) => (
+    <div>
+      <button
+        type="button"
+        onClick={handleBackToForm}
+        className="mb-4 inline-flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+      >
+        <svg
+          className="w-4 h-4 mr-1"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15 19l-7-7 7-7"
+          />
+        </svg>
+        返回
+      </button>
+      <h4 className="mb-2 text-lg font-semibold text-gray-800 dark:text-white/90">
+        驗證{fieldLabel}
+      </h4>
+      <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
+        驗證碼已發送至 {pendingValue}，請輸入 6 位數驗證碼
+      </p>
+
+      {otpError && (
+        <div className="mb-4 rounded-lg bg-error-50 p-3 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400">
+          {otpError}
+        </div>
+      )}
+
+      <div className="flex gap-2 mb-4">
+        {otp.map((digit, index) => (
+          <input
+            key={index}
+            type="text"
+            inputMode="numeric"
+            maxLength={1}
+            value={digit}
+            onChange={(e) => handleOtpChange(e.target.value, index)}
+            onKeyDown={(e) => handleOtpKeyDown(e, index)}
+            onPaste={handleOtpPaste}
+            ref={(el) => {
+              if (el) inputsRef.current[index] = el;
+            }}
+            className="h-12 w-full rounded-lg border border-gray-300 bg-transparent text-center text-xl font-semibold text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+            disabled={otpLoading}
+          />
+        ))}
+      </div>
+
+      <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
+        沒有收到驗證碼？{" "}
+        {countdown > 0 ? (
+          <span className="text-gray-400">{countdown} 秒後可重新發送</span>
+        ) : (
+          <button
+            type="button"
+            onClick={handleResendOtp}
+            className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
+            disabled={otpLoading}
+          >
+            重新發送
+          </button>
+        )}
+      </p>
+
+      <div className="flex items-center justify-end gap-3">
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={otpLoading || isLoading}
+          className="inline-flex items-center justify-center font-medium gap-2 rounded-lg transition px-4 py-3 text-sm bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/3 dark:hover:text-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          取消
+        </button>
+        <button
+          type="submit"
+          disabled={otpLoading || isLoading}
+          className="inline-flex items-center justify-center font-medium gap-2 rounded-lg transition px-4 py-3 text-sm bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {otpLoading ? "驗證中..." : "確認驗證"}
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderFormStep = () => (
+    <div>
+      <h4 className="mb-6 text-lg font-semibold text-gray-800 dark:text-white/90">
+        編輯個人資料
+      </h4>
+
+      {/* 唯讀欄位 */}
+      <div className="mb-6 rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+        <p className="mb-3 text-xs font-medium text-gray-500 dark:text-gray-400">
+          以下資料無法自行修改，如需變更請聯絡客服
+        </p>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <span className="text-gray-500 dark:text-gray-400">稱呼：</span>
+            <span className="ml-2 text-gray-800 dark:text-white/90">
+              {initialData.title || "-"}
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-500 dark:text-gray-400">性別：</span>
+            <span className="ml-2 text-gray-800 dark:text-white/90">
+              {initialData.gender ? GENDER_LABELS[initialData.gender] : "-"}
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-500 dark:text-gray-400">中文全名：</span>
+            <span className="ml-2 text-gray-800 dark:text-white/90">
+              {initialData.nameChinese || "-"}
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-500 dark:text-gray-400">英文全名：</span>
+            <span className="ml-2 text-gray-800 dark:text-white/90">
+              {initialData.nameEnglish || "-"}
+            </span>
+          </div>
+          <div className="col-span-2">
+            <span className="text-gray-500 dark:text-gray-400">
+              身份證號碼：
+            </span>
+            <span className="ml-2 text-gray-800 dark:text-white/90">
+              {initialData.identityCardNumber || "-"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 可編輯欄位 */}
+      <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
+        <div className="col-span-1 sm:col-span-2">
+          <Label>暱稱</Label>
+          <Input
+            type="text"
+            placeholder="請輸入暱稱"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+          />
+        </div>
+
+        <div className="col-span-1">
+          <Label>
+            電郵地址
+            {email !== originalEmail && (
+              <span className="ml-2 text-xs text-warning-500">需驗證</span>
+            )}
+          </Label>
+          <Input
+            type="email"
+            placeholder="請輸入電郵地址"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+
+        <div className="col-span-1">
+          <Label>
+            電話號碼
+            {phone !== originalPhone && (
+              <span className="ml-2 text-xs text-warning-500">需驗證</span>
+            )}
+          </Label>
+          <PhoneInput
+            value={phone}
+            onChange={(value) => setPhone(value)}
+            placeholder="9123 4567"
+            defaultCountry="hk"
+            showValidation={true}
+          />
+        </div>
+
+        <div className="col-span-1 sm:col-span-2">
+          <Switch
+            label="啟用 WhatsApp 聯絡"
+            defaultChecked={whatsappEnabled}
+            onChange={(checked) => setWhatsappEnabled(checked)}
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-end w-full gap-3 mt-6">
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={isLoading || otpLoading}
+          className="inline-flex items-center justify-center font-medium gap-2 rounded-lg transition px-4 py-3 text-sm bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/3 dark:hover:text-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          取消
+        </button>
+        <button
+          type="submit"
+          disabled={isLoading || otpLoading}
+          className="inline-flex items-center justify-center font-medium gap-2 rounded-lg transition px-4 py-3 text-sm bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isLoading || otpLoading ? "處理中..." : "儲存"}
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <Modal
@@ -74,111 +467,9 @@ export default function UserInfoEditModal({
       className="max-w-[600px] p-5 lg:p-8"
     >
       <form onSubmit={handleSubmit}>
-        <h4 className="mb-6 text-lg font-semibold text-gray-800 dark:text-white/90">
-          編輯個人資料
-        </h4>
-
-        <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
-          <div className="col-span-1">
-            <Label>稱呼</Label>
-            <Select
-              options={TITLE_OPTIONS}
-              placeholder="請選擇稱呼"
-              defaultValue={formData.title}
-              onChange={(value) => handleChange("title", value)}
-            />
-          </div>
-
-          <div className="col-span-1">
-            <Label>性別</Label>
-            <Select
-              options={GENDER_OPTIONS}
-              placeholder="請選擇性別"
-              defaultValue={formData.gender}
-              onChange={(value) =>
-                handleChange("gender", value as "MALE" | "FEMALE")
-              }
-            />
-          </div>
-
-          <div className="col-span-1">
-            <Label>中文全名</Label>
-            <Input
-              type="text"
-              placeholder="請輸入中文全名"
-              defaultValue={formData.nameChinese}
-              onChange={(e) => handleChange("nameChinese", e.target.value)}
-            />
-          </div>
-
-          <div className="col-span-1">
-            <Label>英文全名</Label>
-            <Input
-              type="text"
-              placeholder="請輸入英文全名"
-              defaultValue={formData.nameEnglish}
-              onChange={(e) => handleChange("nameEnglish", e.target.value)}
-            />
-          </div>
-
-          <div className="col-span-1 sm:col-span-2">
-            <Label>身份證號碼</Label>
-            <Input
-              type="text"
-              placeholder="例如：A123456(7)"
-              defaultValue={formData.identityCardNumber}
-              onChange={(e) =>
-                handleChange("identityCardNumber", e.target.value)
-              }
-            />
-          </div>
-
-          <div className="col-span-1">
-            <Label>電郵地址</Label>
-            <Input
-              type="email"
-              placeholder="請輸入電郵地址"
-              defaultValue={formData.email}
-              onChange={(e) => handleChange("email", e.target.value)}
-            />
-          </div>
-
-          <div className="col-span-1">
-            <Label>電話號碼</Label>
-            <Input
-              type="tel"
-              placeholder="請輸入電話號碼"
-              defaultValue={formData.phone}
-              onChange={(e) => handleChange("phone", e.target.value)}
-            />
-          </div>
-
-          <div className="col-span-1 sm:col-span-2">
-            <Switch
-              label="啟用 WhatsApp 聯絡"
-              defaultChecked={formData.whatsappEnabled}
-              onChange={(checked) => handleChange("whatsappEnabled", checked)}
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center justify-end w-full gap-3 mt-6">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onClose}
-            disabled={isLoading}
-          >
-            取消
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => onSave(formData)}
-            disabled={isLoading}
-          >
-            {isLoading ? "儲存中..." : "儲存"}
-          </Button>
-        </div>
+        {step === "form" && renderFormStep()}
+        {step === "otp-email" && renderOtpStep("新電郵地址")}
+        {step === "otp-phone" && renderOtpStep("新電話號碼")}
       </form>
     </Modal>
   );

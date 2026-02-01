@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Modal } from "@/components/tailadmin/ui/modal";
 import Label from "@/components/tailadmin/form/Label";
-import Select from "@/components/tailadmin/form/select/Select";
+import SearchableSelect from "@/components/tailadmin/form/select/SearchableSelect";
 import TextArea from "@/components/tailadmin/form/input/TextArea";
 import Button from "@/components/tailadmin/ui/button/Button";
 import {
@@ -20,16 +20,20 @@ interface UserAddressEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (data: UserAddressFormData) => void;
+  onDelete?: () => void;
   initialData?: Partial<UserAddressFormData>;
   isLoading?: boolean;
+  hasExistingData?: boolean;
 }
 
 export default function UserAddressEditModal({
   isOpen,
   onClose,
   onSave,
+  onDelete,
   initialData = {},
   isLoading = false,
+  hasExistingData = false,
 }: UserAddressEditModalProps) {
   const [region, setRegion] = useState<string>("");
   const [district, setDistrict] = useState<string>("");
@@ -84,7 +88,7 @@ export default function UserAddressEditModal({
         <div className="space-y-5">
           <div>
             <Label>地域</Label>
-            <Select
+            <SearchableSelect
               options={regionOptions}
               placeholder="請選擇地域（香港島/九龍/新界）"
               defaultValue={region}
@@ -94,9 +98,9 @@ export default function UserAddressEditModal({
 
           <div>
             <Label>地區</Label>
-            <Select
+            <SearchableSelect
               options={districtOptions}
-              placeholder={region ? "請選擇分區" : "請先選擇地域"}
+              placeholder={region ? "請選擇或搜尋分區" : "請先選擇地域"}
               defaultValue={district}
               onChange={setDistrict}
             />
@@ -114,22 +118,37 @@ export default function UserAddressEditModal({
           </div>
         </div>
 
-        <div className="flex items-center justify-end w-full gap-3 mt-6">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onClose}
-            disabled={isLoading}
-          >
-            取消
-          </Button>
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={isLoading || !district || !address}
-          >
-            {isLoading ? "儲存中..." : "儲存"}
-          </Button>
+        <div className="flex items-center justify-between w-full mt-6">
+          {hasExistingData && onDelete ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onDelete}
+              disabled={isLoading}
+              className="text-error-500 border-error-300 hover:bg-error-50 dark:text-error-400 dark:border-error-500/50 dark:hover:bg-error-500/10"
+            >
+              刪除資料
+            </Button>
+          ) : (
+            <div />
+          )}
+          <div className="flex items-center gap-3">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onClose}
+              disabled={isLoading}
+            >
+              取消
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={isLoading || !district || !address}
+            >
+              {isLoading ? "儲存中..." : "儲存"}
+            </Button>
+          </div>
         </div>
       </div>
     </Modal>

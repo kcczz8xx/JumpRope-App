@@ -14,7 +14,7 @@
 | 電話格式驗證     | ✅ 已完成 | 使用 `libphonenumber-js` |
 | OTP 發送 API     | ✅ 已完成 | `/api/auth/otp/send`     |
 | 註冊 API         | ✅ 已完成 | `/api/auth/register`     |
-| 密碼重設 API     | ⏳ 待完成 | SMS 服務待整合           |
+| 密碼重設 API     | ✅ 已完成 | OTP + Token 機制         |
 
 ---
 
@@ -120,7 +120,18 @@ interface OtpFormProps {
 
 ### 4. ResetPasswordForm（重設密碼表單）
 
-**檔案位置**：`components/auth/ResetPasswordForm.tsx`
+**檔案位置**：`components/auth/ResetPasswordForm.tsx`（主組件）
+
+**分拆子組件**：
+
+```
+components/auth/reset-password/
+├── types.ts                      # 類型定義
+├── ResetPasswordRequestStep.tsx  # 輸入電話/電郵步驟
+├── ResetPasswordOtpStep.tsx      # OTP 驗證步驟
+├── ResetPasswordNewStep.tsx      # 設定新密碼步驟
+└── ResetPasswordSuccessStep.tsx  # 成功頁面
+```
 
 **功能特點**：
 
@@ -169,13 +180,21 @@ interface OtpFormProps {
 | 發送 OTP      | `app/api/auth/otp/send/route.ts`      | 電話驗證             |
 | 驗證 OTP      | `app/api/auth/otp/verify/route.ts`    | 驗證碼確認           |
 
-### ⏳ 待完成
+### ✅ 密碼重設 API（已完成）
 
-| API        | 路徑                                          | 說明           |
-| ---------- | --------------------------------------------- | -------------- |
-| 發送重設碼 | `app/api/auth/reset-password/send/route.ts`   | SMS 服務待整合 |
-| 驗證重設碼 | `app/api/auth/reset-password/verify/route.ts` | -              |
-| 重設密碼   | `app/api/auth/reset-password/reset/route.ts`  | -              |
+| API        | 路徑                                          | 說明                   |
+| ---------- | --------------------------------------------- | ---------------------- |
+| 發送重設碼 | `app/api/auth/reset-password/send/route.ts`   | 電話 OTP / 電郵連結    |
+| 驗證重設碼 | `app/api/auth/reset-password/verify/route.ts` | 驗證後發放 Reset Token |
+| 重設密碼   | `app/api/auth/reset-password/reset/route.ts`  | Token 驗證 + 密碼更新  |
+
+### ✅ 修改密碼 API（已完成）
+
+| API      | 路徑                                    | 說明                   |
+| -------- | --------------------------------------- | ---------------------- |
+| 修改密碼 | `app/api/auth/change-password/route.ts` | 驗證舊密碼後設定新密碼 |
+
+**對應組件**：`components/feature/user/profile/UserChangePasswordModal.tsx`
 
 ---
 

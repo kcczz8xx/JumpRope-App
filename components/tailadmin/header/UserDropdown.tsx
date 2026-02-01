@@ -1,16 +1,16 @@
 "use client";
-import Image from "next/image";
 import Link from "next/link";
 import React, { useState } from "react";
+import { signOut, useSession } from "next-auth/react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 
 export default function UserDropdown() {
+  const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
-  const [imageError, setImageError] = useState(false);
 
-  const userName = "使用者";
-  const userInitial = userName.charAt(0);
+  const userName = session?.user?.name || "使用者";
+  const userInitial = userName.charAt(0).toUpperCase();
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -20,10 +20,6 @@ export default function UserDropdown() {
     setIsOpen(false);
   }
 
-  function handleImageError() {
-    setImageError(true);
-  }
-
   return (
     <div className="relative">
       <button
@@ -31,18 +27,7 @@ export default function UserDropdown() {
         className="flex items-center dropdown-toggle text-gray-700 dark:text-gray-400 dropdown-toggle"
       >
         <span className="mr-3 overflow-hidden rounded-full h-11 w-11 flex items-center justify-center bg-brand-500 text-white font-semibold text-lg">
-          {!imageError ? (
-            <Image
-              width={44}
-              height={44}
-              src="/images/user/owner.jpg"
-              alt="User"
-              onError={handleImageError}
-              className="rounded-full"
-            />
-          ) : (
-            userInitial
-          )}
+          {userInitial}
         </span>
 
         <span className="block mr-1 font-medium text-theme-sm">{userName}</span>
@@ -74,10 +59,10 @@ export default function UserDropdown() {
       >
         <div>
           <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
-            使用者名稱
+            {userName}
           </span>
           <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
-            user@example.com
+            {session?.user?.email || session?.user?.phone || ""}
           </span>
         </div>
 
@@ -108,9 +93,9 @@ export default function UserDropdown() {
             </DropdownItem>
           </li>
         </ul>
-        <Link
-          href="/signin"
-          className="flex items-center gap-3 px-3 py-2 mt-3 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+        <button
+          onClick={() => signOut({ callbackUrl: "/signin" })}
+          className="flex items-center gap-3 px-3 py-2 mt-3 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300 w-full"
         >
           <svg
             className="fill-gray-500 group-hover:fill-gray-700 dark:group-hover:fill-gray-300"
@@ -128,7 +113,7 @@ export default function UserDropdown() {
             />
           </svg>
           登出
-        </Link>
+        </button>
       </Dropdown>
     </div>
   );

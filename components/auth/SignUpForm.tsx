@@ -87,7 +87,11 @@ export default function SignUpForm() {
       const response = await fetch("/api/auth/otp/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: formData.phone, purpose: "register" }),
+        body: JSON.stringify({
+          phone: formData.phone,
+          email: formData.email,
+          purpose: "register",
+        }),
       });
 
       const data = await response.json();
@@ -221,7 +225,11 @@ export default function SignUpForm() {
       const response = await fetch("/api/auth/otp/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: formData.phone, purpose: "register" }),
+        body: JSON.stringify({
+          phone: formData.phone,
+          email: formData.email,
+          purpose: "register",
+        }),
       });
 
       if (!response.ok) {

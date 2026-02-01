@@ -1,13 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { OtpPurpose } from "@prisma/client";
+import { rateLimit, getClientIP, RATE_LIMIT_CONFIGS } from "@/lib/rate-limit";
 
 interface VerifyOtpRequest {
     phone: string;
     code: string;
-    purpose: "register" | "reset-password";
+    purpose: "register" | "reset-password" | "update-contact";
+}
+
+function mapPurpose(purpose: "register" | "reset-password" | "update-contact"): OtpPurpose {
+    if (purpose === "register") return OtpPurpose.REGISTER;
+    if (purpose === "reset-password") return OtpPurpose.RESET_PASSWORD;
+    return OtpPurpose.UPDATE_CONTACT;
 }
 
 export async function POST(request: NextRequest) {
     try {
+        const clientIP = getClientIP(request);
+        const rateLimitResult = rateLimit(
+            `otp_verify:${clientIP}`,
+            RATE_LIMIT_CONFIGS.OTP_VERIFY
+        );
+
+        if (!rateLimitResult.success) {
+            return NextResponse.json(
+                { error: "請求過於頻繁，請稍後再試" },
+                { status: 429 }
+            );
+        }
+
         const body: VerifyOtpRequest = await request.json();
         const { phone, code, purpose } = body;
 
@@ -25,23 +47,56 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // TODO: 實作驗證邏輯
-        // 目前為模擬驗證，實際整合時需要：
-        // 1. 從資料庫或快取取得儲存的驗證碼
-        // 2. 比對驗證碼是否正確
-        // 3. 檢查驗證碼是否過期
-        // 4. 驗證成功後刪除或標記已使用
-        console.log(`[OTP] Verifying OTP ${code} for ${phone}, purpose: ${purpose}`);
+        const otpPurpose = mapPurpose(purpose);
 
-        // 模擬驗證：接受任何 6 位數驗證碼
-        const isValid = /^\d{6}$/.test(code);
+        const otp = await prisma.otp.findFirst({
+            where: {
+                phone,
+                purpose: otpPurpose,
+                verified: false,
+            },
+            orderBy: { createdAt: "desc" },
+        });
 
-        if (!isValid) {
+        if (!otp) {
+            return NextResponse.json(
+                { error: "驗證碼不存在，請重新發送" },
+                { status: 400 }
+            );
+        }
+
+        if (new Date() > otp.expiresAt) {
+            return NextResponse.json(
+                { error: "驗證碼已過期，請重新發送" },
+                { status: 400 }
+            );
+        }
+
+        if (otp.attempts >= 5) {
+            return NextResponse.json(
+                { error: "嘗試次數過多，請重新發送驗證碼" },
+                { status: 429 }
+            );
+        }
+
+        if (otp.code !== code) {
+            await prisma.otp.update({
+                where: { id: otp.id },
+                data: { attempts: { increment: 1 } },
+            });
+
             return NextResponse.json(
                 { error: "驗證碼錯誤" },
                 { status: 400 }
             );
         }
+
+        await prisma.otp.update({
+            where: { id: otp.id },
+            data: { verified: true },
+        });
+
+        console.log(`[OTP] Verified OTP for ${phone}, purpose: ${purpose}`);
 
         return NextResponse.json(
             { message: "驗證成功", verified: true },

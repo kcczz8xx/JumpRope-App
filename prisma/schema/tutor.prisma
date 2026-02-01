@@ -52,9 +52,11 @@ enum DocumentStatus {
 }
 
 enum DocumentType {
+  IDENTITY_DOCUMENT // 身份證明文件（香港身份證）
   SEXUAL_CONVICTION_CHECK // 性罪行定罪紀錄查核
-  FIRST_AID_CERTIFICATE // 急救證書
-  IDENTITY_DOCUMENT // 身份證明文件
+  BANK_DOCUMENT // 銀行資料文件（月結單/銀行卡）
+  ADDRESS_PROOF // 住址證明（郵寄支票/文件用）
+  FIRST_AID_CERTIFICATE // 急救證書（可選）
   COACHING_CERTIFICATE // 教練證書
   OTHER_CERTIFICATE // 其他證書
 }

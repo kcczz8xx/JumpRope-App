@@ -1,0 +1,47 @@
+// ============================================
+// 認證模組 - Authentication
+// ============================================
+
+// OTP 驗證碼
+model Otp {
+  id String @id @default(cuid())
+
+  phone   String // 電話號碼
+  code    String // 6 位數驗證碼
+  purpose OtpPurpose // 用途：註冊、重設密碼
+
+  // 狀態
+  verified  Boolean @default(false) // 是否已驗證
+  attempts  Int     @default(0) // 嘗試次數
+  expiresAt DateTime // 過期時間
+
+  createdAt DateTime @default(now())
+
+  @@index([phone, purpose])
+  @@index([expiresAt])
+  @@map("otps")
+}
+
+enum OtpPurpose {
+  REGISTER
+  RESET_PASSWORD
+  UPDATE_CONTACT
+}
+
+// 密碼重設 Token
+model PasswordResetToken {
+  id String @id @default(cuid())
+
+  phone String // 電話號碼
+  token String @unique // 重設 token
+
+  // 狀態
+  used      Boolean @default(false) // 是否已使用
+  expiresAt DateTime // 過期時間
+
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}

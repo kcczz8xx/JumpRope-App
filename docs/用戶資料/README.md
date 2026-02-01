@@ -288,8 +288,8 @@ enum DocumentType {
 - [x] NextAuth.js 整合
 - [x] OTP API 實作
 - [x] 電話格式驗證（`libphonenumber-js`）
-- [ ] 建立 API Route (`/api/user/profile`)
-- [ ] 實作 Server Actions 取得用戶資料
+- [x] 建立 API Route (`/api/user/profile`, `/api/user/address`, `/api/user/bank`)
+- [x] 建立導師文件 API (`/api/user/tutor/document`)
 
 ### Phase 2: 編輯功能
 
@@ -298,7 +298,8 @@ enum DocumentType {
 - [x] UserBankEditModal 編輯 Modal
 - [x] UserChildEditModal 新增/編輯/刪除功能
 - [x] 整合 Modal 到 Card 組件
-- [ ] 實作 Server Actions 更新資料
+- [x] API Route 已實作（取代 Server Actions）
+- [ ] 整合 API 到 Modal 組件
 
 ### Phase 3: 導師文件管理
 
@@ -318,12 +319,13 @@ enum DocumentType {
 
 ### Modal 組件清單
 
-| 組件名稱               | 檔案路徑                                                   | 狀態      | 說明          |
-| ---------------------- | ---------------------------------------------------------- | --------- | ------------- |
-| `UserInfoEditModal`    | `components/feature/user/profile/UserInfoEditModal.tsx`    | ✅ 已完成 | 編輯個人資料  |
-| `UserAddressEditModal` | `components/feature/user/profile/UserAddressEditModal.tsx` | ✅ 已完成 | 編輯地址      |
-| `UserBankEditModal`    | `components/feature/user/profile/UserBankEditModal.tsx`    | ✅ 已完成 | 編輯銀行資料  |
-| `UserChildEditModal`   | `components/feature/user/profile/UserChildEditModal.tsx`   | ✅ 已完成 | 新增/編輯學員 |
+| 組件名稱                  | 檔案路徑                                                      | 狀態      | 說明          |
+| ------------------------- | ------------------------------------------------------------- | --------- | ------------- |
+| `UserInfoEditModal`       | `components/feature/user/profile/UserInfoEditModal.tsx`       | ✅ 已完成 | 編輯個人資料  |
+| `UserAddressEditModal`    | `components/feature/user/profile/UserAddressEditModal.tsx`    | ✅ 已完成 | 編輯地址      |
+| `UserBankEditModal`       | `components/feature/user/profile/UserBankEditModal.tsx`       | ✅ 已完成 | 編輯銀行資料  |
+| `UserChildEditModal`      | `components/feature/user/profile/UserChildEditModal.tsx`      | ✅ 已完成 | 新增/編輯學員 |
+| `UserChangePasswordModal` | `components/feature/user/profile/UserChangePasswordModal.tsx` | ✅ 已完成 | 修改密碼      |
 
 ### UserInfoEditModal
 
@@ -441,7 +443,17 @@ components/auth/
 ├── SignUpForm.tsx                 # 註冊表單
 ├── OtpForm.tsx                    # OTP 驗證表單
 ├── ResetPasswordForm.tsx          # 重設密碼表單
-└── signup/                        # 註冊子組件
+├── signup/                        # 註冊子組件
+│   ├── types.ts
+│   ├── SignUpFormStep.tsx
+│   ├── SignUpOtpStep.tsx
+│   └── SignUpEmailFallback.tsx
+└── reset-password/                # 重設密碼子組件
+    ├── types.ts
+    ├── ResetPasswordRequestStep.tsx
+    ├── ResetPasswordOtpStep.tsx
+    ├── ResetPasswordNewStep.tsx
+    └── ResetPasswordSuccessStep.tsx
 
 components/feature/user/profile/
 ├── UserMetaCard.tsx               # 用戶頭像卡片
@@ -453,14 +465,33 @@ components/feature/user/profile/
 ├── UserInfoEditModal.tsx          # 編輯個人資料 Modal
 ├── UserAddressEditModal.tsx       # 編輯地址 Modal（香港十八區）
 ├── UserBankEditModal.tsx          # 編輯銀行資料 Modal
-└── UserChildEditModal.tsx         # 新增/編輯學員 Modal
+├── UserChildEditModal.tsx         # 新增/編輯學員 Modal
+├── UserChangePasswordModal.tsx    # 修改密碼 Modal
+└── tutor-documents/               # 導師文件子組件
+    ├── index.ts
+    ├── types.ts
+    ├── FileUploadArea.tsx
+    ├── DocumentTable.tsx
+    └── TutorDocumentEditModal.tsx
 
 app/api/auth/
 ├── [...nextauth]/route.ts         # NextAuth 路由
 ├── register/route.ts              # 註冊 API
-└── otp/
-    ├── send/route.ts              # 發送 OTP
-    └── verify/route.ts            # 驗證 OTP
+├── change-password/route.ts       # 修改密碼 API
+├── otp/
+│   ├── send/route.ts              # 發送 OTP
+│   └── verify/route.ts            # 驗證 OTP
+└── reset-password/
+    ├── send/route.ts              # 發送重設碼
+    ├── verify/route.ts            # 驗證重設碼
+    └── reset/route.ts             # 重設密碼
+
+app/api/user/
+├── profile/route.ts               # 個人資料 API (GET/PUT)
+├── address/route.ts               # 地址 API (GET/PUT)
+├── bank/route.ts                  # 銀行資料 API (GET/PUT)
+└── tutor/
+    └── document/route.ts          # 導師文件 API (GET/POST/PUT/DELETE)
 
 app/(private)/dashboard/(user)/profile/
 └── page.tsx

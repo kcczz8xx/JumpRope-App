@@ -13,23 +13,15 @@
 - `UserAddress` 新增 `region` 欄位支援香港十八區
 - `User` 新增 `passwordHash`, `nickname` 欄位
 
-#### 2. UI 組件（展示卡片）
+#### 2. UI 組件
 
-所有組件位於 `components/feature/user/profile/`：
+**詳細組件清單參見**：`docs/用戶資料/README.md`
 
-- `UserMetaCard.tsx` - 用戶頭像與角色
-- `UserInfoCard.tsx` - 個人基本資料（已整合 Modal）
-- `UserAddressCard.tsx` - 地址（已整合 Modal，支援十八區）
-- `UserBankCard.tsx` - 銀行資料（已整合 Modal）
-- `UserChildrenCard.tsx` - 學員列表（已整合 Modal，支援新增/編輯/刪除）
-- `UserTutorCard.tsx` - 導師文件管理
+所有組件位於 `components/feature/user/profile/`，包含：
 
-#### 3. 編輯表單 Modal
-
-- `UserInfoEditModal.tsx`
-- `UserAddressEditModal.tsx` - 層級式選單（Region -> District）
-- `UserBankEditModal.tsx`
-- `UserChildEditModal.tsx` - 支援 create/edit 模式
+- 6 個展示卡片（`*Card.tsx`）
+- 5 個編輯 Modal（`*EditModal.tsx` + `UserChangePasswordModal.tsx`）
+- `tutor-documents/` 子目錄（導師文件管理組件）
 
 #### 4. 常數檔案
 
@@ -42,6 +34,10 @@
 - **密碼加密**：bcrypt
 - **OTP API**：`/api/auth/otp/send` + `/api/auth/otp/verify`
 - **註冊 API**：`/api/auth/register`
+- **密碼重設 API**：`/api/auth/reset-password/*`（send/verify/reset）
+- **修改密碼 API**：`/api/auth/change-password`
+- **Rate Limiting**：`lib/rate-limit.ts`（防止暴力破解）
+- **Middleware**：`middleware.ts`（Dashboard 路由保護）
 
 ---
 
@@ -53,14 +49,18 @@
 - [x] 執行 Migration
 - [x] NextAuth.js 整合
 - [x] OTP API 實作
-- [ ] **建立 API Route (`/api/user/profile`)**
-- [ ] **實作 Server Actions 取得/更新用戶資料**
+- [x] 密碼重設 API 實作
+- [x] Rate Limiting 安全強化
+- [x] Middleware 路由保護
+- [x] 建立 API Route (`/api/user/profile`, `/api/user/address`, `/api/user/bank`)
+- [x] 建立導師文件 API (`/api/user/tutor/document`)
 
 ### Phase 2: 編輯功能
 
 - [x] 所有編輯 Modal 已完成
 - [x] Modal 已整合到 Card 組件
-- [ ] **實作 Server Actions 更新資料**
+- [x] API Route 已實作（取代 Server Actions）
+- [ ] 整合 API 到 Modal 組件
 
 ### Phase 3: 導師文件管理
 
@@ -87,31 +87,17 @@
 
 ## 關鍵檔案位置
 
+**完整檔案結構參見**：`docs/用戶資料/README.md`
+
 ```
-prisma/schema/
-├── user.prisma                    # 用戶相關 Schema
-└── tutor.prisma                   # 導師相關 Schema
-
-lib/constants/
-└── hk-address-data.ts             # 香港十八區資料
-
-components/feature/user/profile/
-├── UserMetaCard.tsx
-├── UserInfoCard.tsx
-├── UserAddressCard.tsx
-├── UserBankCard.tsx
-├── UserChildrenCard.tsx
-├── UserTutorCard.tsx
-├── UserInfoEditModal.tsx
-├── UserAddressEditModal.tsx
-├── UserBankEditModal.tsx
-└── UserChildEditModal.tsx
-
-app/(private)/dashboard/(user)/profile/
-└── page.tsx                       # 使用 Mock 數據
-
-docs/用戶資料/
-└── README.md                      # 完整開發文檔
+app/api/auth/           # 認證 API (8 個檔案)
+app/api/user/           # 用戶資料 API (4 個檔案)
+components/auth/        # 認證表單 (13 個檔案)
+components/feature/user/profile/  # 用戶資料組件 (16 個檔案)
+lib/auth/               # NextAuth 設定
+lib/rate-limit.ts       # Rate Limiting
+lib/member-number.ts    # 會員編號生成
+prisma/schema/          # Prisma Schema
 ```
 
 ---
