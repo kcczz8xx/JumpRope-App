@@ -79,19 +79,18 @@
 
 - [x] **useUserProfile Hooks** (`hooks/useUserProfile.ts`) ✅
   - [x] `useUserProfile()` - GET `/api/user/profile`
-    - [x] 返回 `{ profile, isLoading, isError, mutate }`
-    - [x] 錯誤處理
   - [x] `useUpdateProfile()` - PATCH `/api/user/profile`
-    - [x] 整合 `useFormSubmit`
-    - [x] 成功後自動 `mutate()` 更新快取
-    - [ ] 樂觀更新（optional）
   - [x] `useUserAddress()` - GET `/api/user/address`
   - [x] `useUpdateAddress()` - PUT `/api/user/address`
   - [x] `useDeleteAddress()` - DELETE `/api/user/address`
   - [x] `useUserBank()` - GET `/api/user/bank`
   - [x] `useUpdateBank()` - PUT `/api/user/bank`
   - [x] `useDeleteBank()` - DELETE `/api/user/bank`
-  - [ ] 測試：API 整合測試、快取更新、錯誤處理
+  - [x] `useUserChildren()` - GET `/api/user/children`
+  - [x] `useCreateChild()` - POST `/api/user/children`
+  - [x] `useUpdateChild()` - PUT `/api/user/children`
+  - [x] `useDeleteChild()` - DELETE `/api/user/children`
+  - [x] `useChangePassword()` - POST `/api/auth/change-password`
 
 ---
 
@@ -234,11 +233,8 @@
 
 - [x] **UserChildEditModal** (`components/feature/user/profile/UserChildEditModal.tsx`) ✅
 
-  - [x] 支援 `mode: 'create' | 'edit'`
-  - [x] CREATE 模式：呼叫 POST API
-  - [x] EDIT 模式：呼叫 PUT API
-  - [x] DELETE 功能：呼叫 `onDelete` callback
-  - [ ] 測試：新增、編輯、刪除
+  - [x] 支援編輯模式（僅可修改學校欄位）
+  - [x] 整合 SWR Hooks
 
 - [x] **UserChangePasswordModal** (`components/feature/user/profile/UserChangePasswordModal.tsx`) ✅
   - [x] 整合 `changePasswordSchema`
@@ -271,8 +267,7 @@
 - [x] **UserChildrenCard** (`components/feature/user/profile/UserChildrenCard.tsx`) ✅
   - [x] 使用 `useUserChildren()` Hook
   - [x] 列表顯示所有學員
-  - [x] 新增、編輯、刪除功能整合 SWR
-  - [ ] 測試：空列表、多筆資料
+  - [x] 編輯功能整合 SWR（僅限學校欄位）
 
 ### 4.3 ProfilePageContent 整合 ✅
 
@@ -485,57 +480,20 @@
 
 ### 總覽
 
-| Phase                 | 項目數  | 完成數 | 進度    |
-| --------------------- | ------- | ------ | ------- |
-| Phase 1: 基礎建設     | 45      | 40     | 89%     |
-| Phase 2: RBAC 權限    | 25      | 22     | 88%     |
-| Phase 3: API 權限檢查 | 12      | 12     | 100%    |
-| Phase 4: Modal 整合   | 22      | 22     | 100%    |
-| Phase 5: 文件管理     | 8       | 0      | 0%      |
-| Phase 6: 測試         | 10      | 0      | 0%      |
-| Phase 7: 效能安全     | 10      | 0      | 0%      |
-| Phase 8: 部署         | 8       | 0      | 0%      |
-| **總計**              | **140** | **96** | **69%** |
+| Phase                 | 狀態    |
+| --------------------- | ------- |
+| Phase 1: 基礎建設     | ✅ 完成 |
+| Phase 2: RBAC 權限    | ✅ 完成 |
+| Phase 3: API 權限檢查 | ✅ 完成 |
+| Phase 4: Modal 整合   | ✅ 完成 |
+| Phase 5: 文件管理     | ⏳ 待做 |
+| Phase 6-8: 測試/部署  | ⏳ 待做 |
 
-### 建議執行順序
+### 下一步建議
 
-1. **Week 1**：Phase 1（基礎建設）→ Phase 2（RBAC 權限）
-2. **Week 2**：Phase 3（API 權限檢查）→ Phase 4（Modal 整合 - 用戶資料部分）
-3. **Week 3**：Phase 4（Modal 整合 - 學員資料）→ Phase 5（文件管理）
-4. **Week 4**：Phase 6（測試）→ Phase 7（效能安全）→ Phase 8（部署準備）
-
----
-
-## 🚀 快速開始
-
-### 今天可以做的（Day 1）
-
-1. 安裝依賴套件
-
-```bash
-pnpm add swr sonner zod @hookform/resolvers
-```
-
-2. 建立基礎檔案結構
-
-```bash
-mkdir -p lib/rbac lib/validations hooks context
-touch lib/api-client.ts lib/toast.ts lib/swr-config.ts
-touch lib/rbac/{index,types,permissions,check-permission}.ts
-touch lib/validations/{index,user,tutor-document}.ts
-touch hooks/{useFormSubmit,usePermission,useUserProfile}.ts
-touch context/SWRProvider.tsx
-```
-
-3. 複製範例程式碼（從前一個回覆）
-
-   - 先實作 `lib/api-client.ts`
-   - 再實作 `lib/toast.ts`
-   - 測試 API Client 與 Toast 是否正常
-
-4. 設定 Git Commit Convention
-   - 每完成一個 checkbox，commit 一次
-   - Commit message 格式：`feat: [Phase X] 完成 XXX 功能`
+1. **Phase 5**：導師文件管理（文件上傳、預覽、狀態更新）
+2. **Phase 6**：測試（API 測試、前端整合測試）
+3. **Phase 7-8**：效能優化與部署準備
 
 ---
 

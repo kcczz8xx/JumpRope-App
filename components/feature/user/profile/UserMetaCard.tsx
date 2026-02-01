@@ -120,14 +120,6 @@ export default function UserMetaCard({
             </button>
             <button
               type="button"
-              onClick={onAccountSettings}
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/3 dark:hover:text-gray-200"
-            >
-              <SettingsIcon />
-              <span>帳戶設定</span>
-            </button>
-            <button
-              type="button"
               onClick={handleLogout}
               className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-error-300 bg-white px-4 py-2.5 text-sm font-medium text-error-600 shadow-theme-xs hover:bg-error-50 dark:border-error-700 dark:bg-gray-800 dark:text-error-400 dark:hover:bg-error-900/20"
             >

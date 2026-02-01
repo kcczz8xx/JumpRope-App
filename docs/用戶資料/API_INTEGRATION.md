@@ -12,18 +12,22 @@
 
 ```
 lib/
-├── api-client.ts              # API Client Wrapper
-├── toast.ts                   # Toast 通知工具
-├── swr-config.ts              # SWR 全局配置
+├── client/
+│   ├── api.ts                 # API Client Wrapper
+│   ├── toast.ts               # Toast 通知工具
+│   ├── swr-config.ts          # SWR 配置
+│   └── index.ts               # 統一導出
 ├── rbac/                      # RBAC 權限模組
 │   ├── index.ts
 │   ├── types.ts               # UserRole 類型
 │   ├── permissions.ts         # 權限常數與檢查函式
 │   └── check-permission.ts    # Server-side 權限檢查
-└── validations/               # Zod 驗證 Schema
-    ├── index.ts
-    ├── user.ts                # 用戶資料驗證
-    └── tutor-document.ts      # 導師文件驗證
+├── validations/               # Zod 驗證 Schema
+│   ├── index.ts
+│   ├── user.ts                # 用戶資料驗證
+│   └── tutor-document.ts      # 導師文件驗證
+└── server/
+    └── rate-limit.ts          # Rate Limiting
 
 hooks/
 ├── useFormSubmit.ts           # 表單提交 Hook（防重複）
@@ -42,22 +46,20 @@ components/
 
 ## 1. API Client Wrapper
 
-**檔案**: `lib/api-client.ts`
+**檔案**: `lib/client/api.ts`
 
 統一處理 API 請求、錯誤處理、類型安全。
 
 ### 類型定義
 
 ```typescript
-type ApiResult<T> =
-  | { data: T; error: null }
-  | { data: null; error: string };
+type ApiResult<T> = { data: T; error: null } | { data: null; error: string };
 ```
 
 ### 使用方式
 
 ```typescript
-import { api } from "@/lib/api-client";
+import { api } from "@/lib/client";
 
 // GET 請求
 const result = await api.get<UserProfile>("/api/user/profile");
@@ -85,14 +87,14 @@ await api.upload<Document>("/api/upload", formData);
 
 ## 2. Toast 通知系統
 
-**檔案**: `lib/toast.ts`, `components/ui/Toaster.tsx`
+**檔案**: `lib/client/toast.ts`, `components/ui/Toaster.tsx`
 
 基於 `sonner` 的 Toast 通知系統。
 
 ### 使用方式
 
 ```typescript
-import { toast } from "@/lib/toast";
+import { toast } from "@/lib/client";
 
 toast.success("儲存成功");
 toast.error("操作失敗");
@@ -115,13 +117,13 @@ toast.loading("處理中...");
 
 ### Schema 列表
 
-| Schema                   | 用途           |
-| ------------------------ | -------------- |
-| `userInfoSchema`         | 用戶基本資料   |
-| `userAddressSchema`      | 地址           |
-| `userBankSchema`         | 銀行收款資料   |
-| `userChildSchema`        | 學員資料       |
-| `changePasswordSchema`   | 修改密碼       |
+| Schema                 | 用途         |
+| ---------------------- | ------------ |
+| `userInfoSchema`       | 用戶基本資料 |
+| `userAddressSchema`    | 地址         |
+| `userBankSchema`       | 銀行收款資料 |
+| `userChildSchema`      | 學員資料     |
+| `changePasswordSchema` | 修改密碼     |
 
 ### 使用方式
 
@@ -261,7 +263,14 @@ type Permission =
 
 ```typescript
 const PERMISSIONS: Record<Permission, UserRole[]> = {
-  USER_PROFILE_READ_OWN: ["USER", "TUTOR", "PARENT", "STUDENT", "STAFF", "ADMIN"],
+  USER_PROFILE_READ_OWN: [
+    "USER",
+    "TUTOR",
+    "PARENT",
+    "STUDENT",
+    "STAFF",
+    "ADMIN",
+  ],
   USER_PROFILE_UPDATE_OWN: ["USER", "TUTOR", "PARENT", "STUDENT"],
   USER_PROFILE_READ_ANY: ["STAFF", "ADMIN"],
   USER_PROFILE_UPDATE_ANY: ["ADMIN"],
@@ -374,12 +383,12 @@ import { PermissionGate } from "@/components/auth/PermissionGate";
 
 根據角色保護特定路由：
 
-| 路由                 | 允許角色               |
-| -------------------- | ---------------------- |
-| `/dashboard/admin`   | ADMIN                  |
-| `/dashboard/staff`   | STAFF, ADMIN           |
-| `/dashboard/tutor`   | TUTOR, STAFF, ADMIN    |
-| `/dashboard/school`  | STAFF, ADMIN           |
+| 路由                | 允許角色            |
+| ------------------- | ------------------- |
+| `/dashboard/admin`  | ADMIN               |
+| `/dashboard/staff`  | STAFF, ADMIN        |
+| `/dashboard/tutor`  | TUTOR, STAFF, ADMIN |
+| `/dashboard/school` | STAFF, ADMIN        |
 
 ---
 
@@ -393,7 +402,7 @@ import { PermissionGate } from "@/components/auth/PermissionGate";
 
 ### 6.2 SWR 配置
 
-**檔案**: `lib/swr-config.ts`
+**檔案**: `lib/client/swr-config.ts`
 
 ```typescript
 const swrConfig: SWRConfiguration = {
@@ -409,16 +418,21 @@ const swrConfig: SWRConfiguration = {
 
 **檔案**: `hooks/useUserProfile.ts`
 
-| Hook                  | 用途             | API 端點           |
-| --------------------- | ---------------- | ------------------ |
-| `useUserProfile`      | 獲取用戶資料     | GET /api/user/profile  |
-| `useUpdateProfile`    | 更新用戶資料     | PATCH /api/user/profile|
-| `useUserAddress`      | 獲取地址         | GET /api/user/address  |
-| `useUpdateAddress`    | 更新地址         | PUT /api/user/address  |
-| `useDeleteAddress`    | 刪除地址         | DELETE /api/user/address|
-| `useUserBank`         | 獲取銀行資料     | GET /api/user/bank     |
-| `useUpdateBank`       | 更新銀行資料     | PUT /api/user/bank     |
-| `useDeleteBank`       | 刪除銀行資料     | DELETE /api/user/bank  |
+| Hook                | 用途         | API 端點                       |
+| ------------------- | ------------ | ------------------------------ |
+| `useUserProfile`    | 獲取用戶資料 | GET /api/user/profile          |
+| `useUpdateProfile`  | 更新用戶資料 | PATCH /api/user/profile        |
+| `useUserAddress`    | 獲取地址     | GET /api/user/address          |
+| `useUpdateAddress`  | 更新地址     | PUT /api/user/address          |
+| `useDeleteAddress`  | 刪除地址     | DELETE /api/user/address       |
+| `useUserBank`       | 獲取銀行資料 | GET /api/user/bank             |
+| `useUpdateBank`     | 更新銀行資料 | PUT /api/user/bank             |
+| `useDeleteBank`     | 刪除銀行資料 | DELETE /api/user/bank          |
+| `useUserChildren`   | 獲取學員列表 | GET /api/user/children         |
+| `useCreateChild`    | 新增學員     | POST /api/user/children        |
+| `useUpdateChild`    | 更新學員     | PUT /api/user/children         |
+| `useDeleteChild`    | 刪除學員     | DELETE /api/user/children      |
+| `useChangePassword` | 修改密碼     | POST /api/auth/change-password |
 
 ### 使用範例
 
@@ -447,13 +461,13 @@ function ProfilePage() {
 
 ## 7. 依賴套件
 
-| 套件                    | 版本   | 用途             |
-| ----------------------- | ------ | ---------------- |
-| `swr`                   | 2.4.0  | 資料獲取與快取   |
-| `sonner`                | 2.0.7  | Toast 通知       |
-| `react-hook-form`       | 7.71.1 | 表單管理         |
-| `@hookform/resolvers`   | 5.2.2  | Zod 整合         |
-| `zod`                   | 4.3.6  | Schema 驗證      |
+| 套件                  | 版本   | 用途           |
+| --------------------- | ------ | -------------- |
+| `swr`                 | 2.4.0  | 資料獲取與快取 |
+| `sonner`              | 2.0.7  | Toast 通知     |
+| `react-hook-form`     | 7.71.1 | 表單管理       |
+| `@hookform/resolvers` | 5.2.2  | Zod 整合       |
+| `zod`                 | 4.3.6  | Schema 驗證    |
 
 ---
 
@@ -469,9 +483,7 @@ function ProfilePage() {
         <PermissionProvider>
           <ThemeProvider>
             <TenantThemeProvider>
-              <SidebarProvider>
-                {children}
-              </SidebarProvider>
+              <SidebarProvider>{children}</SidebarProvider>
             </TenantThemeProvider>
           </ThemeProvider>
         </PermissionProvider>
@@ -484,9 +496,8 @@ function ProfilePage() {
 
 ---
 
-## 9. 下一步
+## 9. 待辦事項
 
-- [ ] 整合 SWR Hooks 到 Modal 組件
-- [ ] 實作導師文件 SWR Hooks
-- [ ] 實作學員資料 SWR Hooks
-- [ ] 完善 Server-side 權限檢查（`checkPermission` 在 API Route 使用）
+- [ ] 導師文件上傳組件整合
+- [ ] 文件預覽/下載功能
+- [ ] 文件狀態自動更新（Cron Job）

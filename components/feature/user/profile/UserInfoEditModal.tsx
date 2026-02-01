@@ -55,6 +55,8 @@ export default function UserInfoEditModal({
     null
   );
   const [pendingValue, setPendingValue] = useState("");
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [emailNeedsVerify, setEmailNeedsVerify] = useState(false);
   const inputsRef = useRef<HTMLInputElement[]>([]);
 
   const originalEmail = initialData.email || "";
@@ -78,6 +80,8 @@ export default function UserInfoEditModal({
       setOtpError("");
       setPendingField(null);
       setPendingValue("");
+      setPhoneVerified(false);
+      setEmailNeedsVerify(false);
     }
   }, [isOpen, initialData]);
 
@@ -184,33 +188,27 @@ export default function UserInfoEditModal({
     const emailChanged = email !== originalEmail;
     const phoneChanged = phone !== originalPhone;
 
-    if (emailChanged && step === "form") {
-      setPendingField("email");
-      setPendingValue(email);
-      const sent = await sendOtp("email", email);
-      if (sent) {
-        setStep("otp-email");
-        setOtp(["", "", "", "", "", ""]);
+    // Step 1: 從表單提交，同時發送所有需要的 OTP
+    if (step === "form") {
+      // 同時發送兩者的 OTP（如果都有變更）
+      if (phoneChanged && emailChanged) {
+        setEmailNeedsVerify(true);
+        // 同時發送兩個 OTP
+        const [phoneSent, emailSent] = await Promise.all([
+          sendOtp("phone", phone),
+          sendOtp("email", email),
+        ]);
+        if (phoneSent && emailSent) {
+          setPendingField("phone");
+          setPendingValue(phone);
+          setStep("otp-phone");
+          setOtp(["", "", "", "", "", ""]);
+        }
+        return;
       }
-      return;
-    }
 
-    if (phoneChanged && step === "form") {
-      setPendingField("phone");
-      setPendingValue(phone);
-      const sent = await sendOtp("phone", phone);
-      if (sent) {
-        setStep("otp-phone");
-        setOtp(["", "", "", "", "", ""]);
-      }
-      return;
-    }
-
-    if (step === "otp-email") {
-      const verified = await verifyOtp();
-      if (!verified) return;
-
-      if (phone !== originalPhone) {
+      // 只有電話變更
+      if (phoneChanged) {
         setPendingField("phone");
         setPendingValue(phone);
         const sent = await sendOtp("phone", phone);
@@ -220,13 +218,43 @@ export default function UserInfoEditModal({
         }
         return;
       }
+
+      // 只有電郵變更
+      if (emailChanged) {
+        setPendingField("email");
+        setPendingValue(email);
+        const sent = await sendOtp("email", email);
+        if (sent) {
+          setStep("otp-email");
+          setOtp(["", "", "", "", "", ""]);
+        }
+        return;
+      }
     }
 
+    // Step 2: 驗證電話 OTP
     if (step === "otp-phone") {
+      const verified = await verifyOtp();
+      if (!verified) return;
+      setPhoneVerified(true);
+
+      // 如果 email 也需要驗證，進入 email OTP 步驟
+      if (emailNeedsVerify) {
+        setPendingField("email");
+        setPendingValue(email);
+        setStep("otp-email");
+        setOtp(["", "", "", "", "", ""]);
+        return;
+      }
+    }
+
+    // Step 3: 驗證電郵 OTP
+    if (step === "otp-email") {
       const verified = await verifyOtp();
       if (!verified) return;
     }
 
+    // 所有驗證完成，提交資料
     onSave({
       nickname,
       email,

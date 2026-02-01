@@ -1,4 +1,4 @@
-import { prisma } from '../../prisma';
+import { prisma } from '@/lib/db/prisma';
 import { ChargingModel, CourseTerm, CourseStatus } from '@prisma/client';
 
 export interface CourseWithSchool {

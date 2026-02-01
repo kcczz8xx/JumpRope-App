@@ -114,8 +114,6 @@ export default function OtpForm({
           setOtp(["", "", "", "", "", ""]);
           inputsRef.current[0]?.focus();
         }
-      } else {
-        console.log("OTP submitted:", otpCode);
       }
     } catch {
       setError("驗證失敗，請稍後再試");

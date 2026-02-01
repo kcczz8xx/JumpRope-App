@@ -1,4 +1,4 @@
-import { prisma } from '../../prisma';
+import { prisma } from '@/lib/db/prisma';
 import { InvoiceStatus, PaymentStatus, PaymentMethod } from '@prisma/client';
 
 const invoices = [

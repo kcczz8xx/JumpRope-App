@@ -1,4 +1,4 @@
-import { prisma } from '../../prisma';
+import { prisma } from '@/lib/db/prisma';
 import { QuotationStatus, ChargingModel } from '@prisma/client';
 
 const quotations = [

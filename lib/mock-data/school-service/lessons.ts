@@ -1,4 +1,4 @@
-import { prisma } from '../../prisma';
+import { prisma } from '@/lib/db/prisma';
 import { LessonType, LessonStatus, CourseTerm, PaymentStatus } from '@prisma/client';
 
 function generateLessons() {

@@ -1,4 +1,4 @@
-import { prisma } from '../../prisma';
+import { prisma } from '@/lib/db/prisma';
 import { schoolMockData } from './schools';
 import { getSchoolsList } from './schools.data';
 import { courseMockData } from './courses';

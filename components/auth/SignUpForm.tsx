@@ -207,7 +207,6 @@ export default function SignUpForm() {
     setIsLoading(true);
     try {
       // TODO: 調用發送電郵驗證 API
-      console.log("Sending email verification to:", formData.email);
       setError("");
       alert("驗證連結已發送到您的電郵，請查收");
     } catch {

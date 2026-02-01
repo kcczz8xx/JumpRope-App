@@ -1,10 +1,13 @@
 "use client";
 
 import { useSidebar } from "@/context/SidebarContext";
+import { usePermission } from "@/hooks/usePermission";
 import AppHeader from "@/layout/private/AppHeader";
 import AppSidebar from "@/layout/private/AppSidebar";
 import AppFooter from "@/layout/private/AppFooter";
 import Backdrop from "@/layout/private/Backdrop";
+import LoadingOverlay from "@/components/ui/LoadingOverlay";
+import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import React from "react";
 import { usePathname } from "next/navigation";
 
@@ -14,18 +17,8 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
+  const { isLoading: isAuthLoading } = usePermission();
   const pathname = usePathname();
-
-  // Performance monitoring
-  const startTime = performance.now();
-  console.log(
-    `⚡ Performance: Layout render started at ${startTime.toFixed(2)}ms`
-  );
-
-  // Responsive design testing log
-  console.log(
-    `📱 Responsive: isExpanded=${isExpanded}, isHovered=${isHovered}, isMobileOpen=${isMobileOpen}, pathname=${pathname}`
-  );
 
   // Route-specific styles for the main content container
   const getRouteSpecificStyles = () => {
@@ -50,18 +43,10 @@ export default function AdminLayout({
     ? "xl:ml-[290px]"
     : "xl:ml-[90px]";
 
-  console.log(`📱 Responsive: mainContentMargin=${mainContentMargin}`);
-
-  // Performance monitoring - layout render complete
-  const endTime = performance.now();
-  console.log(
-    `⚡ Performance: Layout render completed in ${(endTime - startTime).toFixed(
-      2
-    )}ms`
-  );
-
   return (
     <div className="min-h-screen xl:flex">
+      {/* Loading Overlay for auth check */}
+      <LoadingOverlay isLoading={isAuthLoading} />
       {/* Sidebar and Backdrop */}
       <AppSidebar />
       <Backdrop />
@@ -72,7 +57,9 @@ export default function AdminLayout({
         {/* Header */}
         <AppHeader />
         {/* Page Content */}
-        <div className={`grow ${getRouteSpecificStyles()}`}>{children}</div>
+        <ErrorBoundary>
+          <div className={`grow ${getRouteSpecificStyles()}`}>{children}</div>
+        </ErrorBoundary>
 
         {/* Footer */}
         <AppFooter />

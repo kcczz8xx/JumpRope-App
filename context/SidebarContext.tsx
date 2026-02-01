@@ -36,9 +36,6 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
   const pathname = usePathname();
 
-  // SidebarContext testing log
-  console.log(`📱 SidebarContext: isExpanded=${isExpanded}, isMobileOpen=${isMobileOpen}, isMobile=${isMobile}, isHovered=${isHovered}`);
-
   // Close sidebar on route change (for mobile)
   useEffect(() => {
     setIsMobileOpen(false);

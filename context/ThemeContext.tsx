@@ -18,9 +18,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   const [theme, setTheme] = useState<Theme>("light");
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // ThemeContext testing log
-  console.log(`🎨 ThemeContext: theme=${theme}, isInitialized=${isInitialized}`);
-
   useEffect(() => {
     // This code will only run on the client side
     const savedTheme = localStorage.getItem("theme") as Theme | null;
