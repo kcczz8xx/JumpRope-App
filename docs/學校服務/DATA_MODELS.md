@@ -64,26 +64,32 @@ model School {
   id                     String    @id @default(cuid())
 
   // 基本資料
-  schoolName             String    @map("school_name")
-  schoolNameEnglish      String?   @map("school_name_english")
-  schoolType             SchoolType @default(PRIMARY) @map("school_type")
-  district               String?
-  address                String?
-  phone                  String?
-  fax                    String?
-  email                  String?
-  website                String?
+  schoolName             String                    // 學校名稱（中文）
+  schoolNameEn           String?                   // 學校名稱（英文）
+  schoolCode             String?   @unique         // 學校編號（可選）
+
+  // 聯絡資料
+  address                String                    // 學校地址
+  phone                  String?                   // 學校電話
+  fax                    String?                   // 傳真
+  email                  String?                   // 學校電郵
+  website                String?                   // 學校網站
 
   // 合作狀態
-  partnershipStatus      PartnershipStatus @default(INQUIRY) @map("partnership_status")
-  partnershipStartDate   DateTime? @map("partnership_start_date")
-  partnershipStartYear   String?   @map("partnership_start_year")  // e.g., "2024-2025"
-  confirmationChannel    String?   @map("confirmation_channel")
+  partnershipStatus      PartnershipStatus @default(INQUIRY)
+  partnershipStartDate   DateTime?                 // 合作開始日期
+  partnershipEndDate     DateTime?                 // 合作結束日期
+  partnershipStartYear   String?                   // 合作開始學年（例如：2024-2025）
+  partnershipEndYear     String?                   // 合作結束學年
+  confirmationChannel    String?                   // 合作確認渠道（電話/電郵/會議）
+
+  // 備註
+  remarks                String?   @db.Text
 
   // 系統欄位
-  createdAt              DateTime  @default(now()) @map("created_at")
-  updatedAt              DateTime  @updatedAt @map("updated_at")
-  deletedAt              DateTime? @map("deleted_at")
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  deletedAt              DateTime?                 // Soft delete
 
   // 關聯
   contacts               SchoolContact[]
@@ -92,23 +98,18 @@ model School {
   invoices               SchoolInvoice[]
   receipts               SchoolReceipt[]
 
+  @@index([partnershipStatus])
+  @@index([schoolName])
   @@map("schools")
-}
-
-enum SchoolType {
-  PRIMARY           // 小學
-  SECONDARY         // 中學
-  KINDERGARTEN      // 幼稚園
-  SPECIAL           // 特殊學校
-  INTERNATIONAL     // 國際學校
-  OTHER             // 其他
 }
 
 enum PartnershipStatus {
   INQUIRY           // 查詢中
-  QUOTATION_SENT    // 已發報價
+  QUOTATION_SENT    // 已發送報價
+  NEGOTIATING       // 洽談中
   CONFIRMED         // 已確認合作
-  INACTIVE          // 不活躍
+  ACTIVE            // 合作中
+  SUSPENDED         // 暫停合作
   TERMINATED        // 已終止
 }
 ```
@@ -118,12 +119,16 @@ enum PartnershipStatus {
 | 欄位                   | 類型     | 必填 | 說明                           |
 | ---------------------- | -------- | ---- | ------------------------------ |
 | `schoolName`           | String   | ✅   | 學校中文名稱                   |
-| `schoolNameEnglish`    | String   | -    | 學校英文名稱                   |
-| `schoolType`           | Enum     | ✅   | 學校類型                       |
-| `district`             | String   | -    | 所屬地區                       |
+| `schoolNameEn`         | String   | -    | 學校英文名稱                   |
+| `schoolCode`           | String   | -    | 學校編號（唯一）               |
+| `address`              | String   | ✅   | 學校地址                       |
 | `partnershipStatus`    | Enum     | ✅   | 合作狀態                       |
-| `partnershipStartDate` | DateTime | -    | 開始合作日期                   |
-| `partnershipStartYear` | String   | -    | 開始合作學年（如 "2024-2025"） |
+| `partnershipStartDate` | DateTime | -    | 合作開始日期                   |
+| `partnershipEndDate`   | DateTime | -    | 合作結束日期                   |
+| `partnershipStartYear` | String   | -    | 合作開始學年（如 "2024-2025"） |
+| `partnershipEndYear`   | String   | -    | 合作結束學年                   |
+| `confirmationChannel`  | String   | -    | 確認渠道（電話/電郵/會議）     |
+| `remarks`              | Text     | -    | 備註                           |
 
 ---
 
@@ -132,25 +137,35 @@ enum PartnershipStatus {
 ```prisma
 model SchoolContact {
   id                String    @id @default(cuid())
-  schoolId          String    @map("school_id")
+  schoolId          String
+  school            School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
   // 聯絡人資料
-  nameChinese       String    @map("name_chinese")
-  nameEnglish       String?   @map("name_english")
-  position          String?
-  phone             String?
-  mobile            String?
-  email             String?
-  isPrimary         Boolean   @default(false) @map("is_primary")
+  salutation        String?                   // 稱謂（先生/女士/校長等）
+  nameChinese       String                    // 中文姓名
+  nameEnglish       String?                   // 英文姓名
+  position          String?                   // 職位
+  department        String?                   // 部門
+
+  // 聯絡方式
+  phone             String?                   // 電話
+  mobile            String?                   // 手提電話
+  email             String?                   // 電郵
+
+  // 主要聯絡人標記
+  isPrimary         Boolean   @default(false)
+
+  // 備註
+  remarks           String?   @db.Text
 
   // 系統欄位
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
-  deletedAt         DateTime? @map("deleted_at")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
 
-  // 關聯
-  school            School    @relation(fields: [schoolId], references: [id])
-
+  @@unique([schoolId, email])  // 同一學校不可有重複電郵的聯絡人
+  @@index([schoolId])
+  @@index([isPrimary])
   @@map("school_contacts")
 }
 ```
@@ -161,42 +176,51 @@ model SchoolContact {
 
 ```prisma
 model SchoolQuotation {
-  id                  String    @id @default(cuid())
-  schoolId            String    @map("school_id")
+  id                    String    @id @default(cuid())
+  schoolId              String
+  school                School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  // 報價編號
+  quotationNumber       String    @unique           // 自動生成（例如：Q2024-001）
+
+  // 報價狀態
+  status                QuotationStatus @default(DRAFT)
+
+  // 查詢需求記錄
+  inquiryDate           DateTime?                   // 查詢日期
+  desiredStartDate      DateTime?                   // 希望開始日期
+  estimatedStudentCount Int?                        // 預計學生人數
+  desiredSchedule       String?   @db.Text          // 希望上課時間（文字描述）
+  inquiryRemarks        String?   @db.Text          // 查詢內容備註
 
   // 報價資料
-  quotationNumber     String    @unique @map("quotation_number")  // Q2024-001
-  quotationDate       DateTime  @map("quotation_date")
-  validUntil          DateTime? @map("valid_until")
-  status              QuotationStatus @default(DRAFT)
-  totalAmount         Decimal?  @map("total_amount") @db.Decimal(10, 2)
-
-  // 查詢記錄
-  inquiryDate         DateTime? @map("inquiry_date")
-  inquiryNotes        String?   @map("inquiry_notes") @db.Text
-  expectedStartDate   DateTime? @map("expected_start_date")
-  expectedStudentCount Int?     @map("expected_student_count")
-  preferredSchedule   String?   @map("preferred_schedule")  // 文字描述
+  quotationDate         DateTime  @default(now())   // 報價日期
+  validUntil            DateTime?                   // 報價有效期至
+  totalAmount           Decimal?  @db.Decimal(10, 2) // 報價總金額
 
   // 發送記錄
-  sentDate            DateTime? @map("sent_date")
-  sentTo              String?   @map("sent_to")
-  sentMethod          String?   @map("sent_method")  // email, whatsapp, etc.
+  sentDate              DateTime?                   // 發送日期
+  sentBy                String?                     // 發送人員 ID
+  sentByUser            User?     @relation("QuotationSentBy", fields: [sentBy], references: [id])
 
   // 回應記錄
-  respondedDate       DateTime? @map("responded_date")
-  rejectionReason     String?   @map("rejection_reason") @db.Text
+  respondedDate         DateTime?                   // 回應日期
+  rejectionReason       String?   @db.Text          // 拒絕原因
 
-  // 系統欄位
-  createdAt           DateTime  @default(now()) @map("created_at")
-  updatedAt           DateTime  @updatedAt @map("updated_at")
-  deletedAt           DateTime? @map("deleted_at")
-  createdBy           String?   @map("created_by")
+  // 備註
+  remarks               String?   @db.Text
 
   // 關聯
-  school              School    @relation(fields: [schoolId], references: [id])
-  items               SchoolQuotationItem[]
+  items                 SchoolQuotationItem[]       // 報價項目
 
+  // 系統欄位
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  deletedAt             DateTime?
+
+  @@index([schoolId])
+  @@index([status])
+  @@index([quotationNumber])
   @@map("school_quotations")
 }
 
@@ -206,6 +230,7 @@ enum QuotationStatus {
   ACCEPTED          // 已接受
   REJECTED          // 已拒絕
   EXPIRED           // 已過期
+  REVISED           // 已修訂
 }
 ```
 
@@ -224,52 +249,44 @@ DRAFT → SENT → ACCEPTED
 ```prisma
 model SchoolQuotationItem {
   id                  String    @id @default(cuid())
-  quotationId         String    @map("quotation_id")
+  quotationId         String
+  quotation           SchoolQuotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
 
-  // 項目資料
-  courseName          String    @map("course_name")
-  courseType          CourseType @map("course_type")
-  description         String?   @db.Text
+  // 課程資料
+  courseName          String                    // 課程名稱
+  courseType          String                    // 課程類型
+  description         String?   @db.Text        // 課程描述
 
-  // 收費設定
-  chargingModel       ChargingModel @map("charging_model")
-  unitPrice           Decimal   @map("unit_price") @db.Decimal(10, 2)
-  quantity            Int
-  totalPrice          Decimal   @map("total_price") @db.Decimal(10, 2)
+  // 收費資料
+  chargingModel       ChargingModel             // 收費模式
+  unitPrice           Decimal   @db.Decimal(10, 2) // 單價
+  quantity            Int                       // 數量（堂數/小時數等）
+  totalPrice          Decimal   @db.Decimal(10, 2) // 小計
 
-  // 課程安排（建議）
-  lessonsPerWeek      Int?      @map("lessons_per_week")
-  lessonDuration      Int?      @map("lesson_duration")  // 分鐘
-  expectedStudents    Int?      @map("expected_students")
-  requiredTutors      Int?      @map("required_tutors")
+  // 課程安排
+  lessonsPerWeek      Int?                      // 每週堂數
+  durationMinutes     Int?                      // 每堂時長（分鐘）
+  estimatedStudents   Int?                      // 預計學生人數
+  requiredTutors      Int?                      // 所需導師人數
+
+  // 備註
+  remarks             String?   @db.Text
 
   // 系統欄位
-  sortOrder           Int       @default(0) @map("sort_order")
-  createdAt           DateTime  @default(now()) @map("created_at")
-  updatedAt           DateTime  @updatedAt @map("updated_at")
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
-  // 關聯
-  quotation           SchoolQuotation @relation(fields: [quotationId], references: [id])
-
+  @@index([quotationId])
   @@map("school_quotation_items")
 }
 
-enum CourseType {
-  REGULAR_CLASS       // 恆常班
-  INTEREST_CLASS      // 興趣班
-  TRAINING_TEAM       // 訓練隊
-  WORKSHOP            // 工作坊
-  COMPETITION         // 比賽培訓
-  SUMMER_COURSE       // 暑期班
-  OTHER               // 其他
-}
-
 enum ChargingModel {
-  STUDENT_PER_LESSON    // 學生每堂收費
-  STUDENT_PER_TERM      // 學生每學期收費
-  FIXED_PER_LESSON      // 固定每堂收費
-  FIXED_PER_TERM        // 固定每學期收費
-  PACKAGE               // 套餐收費
+  STUDENT_PER_LESSON    // 學生每節課堂收費
+  TUTOR_PER_LESSON      // 導師每堂節數收費
+  STUDENT_HOURLY        // 學生課堂時數收費
+  TUTOR_HOURLY          // 導師時薪節數收費
+  STUDENT_FULL_COURSE   // 學生全期課程收費
+  TEAM_ACTIVITY         // 帶隊活動收費
 }
 ```
 
@@ -280,61 +297,77 @@ enum ChargingModel {
 ```prisma
 model SchoolCourse {
   id                    String    @id @default(cuid())
-  schoolId              String    @map("school_id")
+  schoolId              String
+  school                School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
-  // 課程資料
-  courseName            String    @map("course_name")
-  courseType            CourseType @map("course_type")
-  courseTerm            CourseTerm @map("course_term")
-  academicYear          String    @map("academic_year")  // "2024-2025"
+  // 課程基本資料
+  courseName            String                    // 課程名稱
+  courseCode            String?                   // 課程編號（可選）
+  courseType            String                    // 課程類型
+  description           String?   @db.Text        // 課程描述
 
-  // 日期設定
-  startDate             DateTime  @map("start_date")
-  endDate               DateTime? @map("end_date")
+  // 學期設定
+  courseTerm            CourseTerm @default(FULL_YEAR) // 學期類型
+  academicYear          String                    // 學年（例如：2024-2025）
+  startDate             DateTime?                 // 課程開始日期
+  endDate               DateTime?                 // 課程結束日期
 
   // 人數設定
-  requiredTutors        Int       @default(1) @map("required_tutors")
-  maxStudents           Int?      @map("max_students")
+  requiredTutors        Int       @default(1)     // 所需導師人數
+  maxStudents           Int?                      // 最大學生人數
 
-  // 收費設定
-  chargingModel         ChargingModel @map("charging_model")
-  studentPerLessonFee   Decimal?  @map("student_per_lesson_fee") @db.Decimal(10, 2)
-  studentPerTermFee     Decimal?  @map("student_per_term_fee") @db.Decimal(10, 2)
-  fixedPerLessonFee     Decimal?  @map("fixed_per_lesson_fee") @db.Decimal(10, 2)
-  fixedPerTermFee       Decimal?  @map("fixed_per_term_fee") @db.Decimal(10, 2)
+  // 收費模式（多選）
+  chargingModels        ChargingModel[] @default([])
 
-  // 導師薪資設定
-  tutorPerLessonFee     Decimal?  @map("tutor_per_lesson_fee") @db.Decimal(10, 2)
+  // 學生收費（依 chargingModel 而定）
+  studentPerLessonFee   Decimal?  @db.Decimal(10, 2) // 學生每堂收費
+  studentHourlyFee      Decimal?  @db.Decimal(10, 2) // 學生時薪收費
+  studentFullCourseFee  Decimal?  @db.Decimal(10, 2) // 學生全期收費
+  teamActivityFee       Decimal?  @db.Decimal(10, 2) // 帶隊活動收費
 
-  // 狀態
+  // 導師薪資（依 chargingModel 而定）
+  tutorPerLessonFee     Decimal?  @db.Decimal(10, 2) // 導師每堂收費
+  tutorHourlyFee        Decimal?  @db.Decimal(10, 2) // 導師時薪
+
+  // 付款模式
+  paymentMode           String?                   // 付款模式（例如：月結30天、即時付款）
+
+  // 課程狀態
   status                CourseStatus @default(DRAFT)
 
-  // 系統欄位
-  createdAt             DateTime  @default(now()) @map("created_at")
-  updatedAt             DateTime  @updatedAt @map("updated_at")
-  deletedAt             DateTime? @map("deleted_at")
+  // 備註
+  remarks               String?   @db.Text
 
   // 關聯
-  school                School    @relation(fields: [schoolId], references: [id])
   lessons               SchoolLesson[]
-  invoiceCourses        SchoolInvoiceCourse[]
+  invoiceCourses        SchoolInvoiceCourse[]     // 多對多關聯
 
+  // 系統欄位
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  deletedAt             DateTime?
+
+  @@index([schoolId])
+  @@index([academicYear])
+  @@index([courseType])
+  @@index([status])
   @@map("school_courses")
 }
 
 enum CourseTerm {
+  FULL_YEAR             // 全期不分學期
   FIRST_TERM            // 上學期
   SECOND_TERM           // 下學期
-  FULL_YEAR             // 全年
-  SUMMER                // 暑假
-  SPECIAL               // 特別
+  SUMMER                // 暑期
 }
 
 enum CourseStatus {
   DRAFT                 // 草稿
+  SCHEDULED             // 已排程
   ACTIVE                // 進行中
   COMPLETED             // 已完成
   CANCELLED             // 已取消
+  SUSPENDED             // 已暫停
 }
 ```
 
@@ -345,54 +378,69 @@ enum CourseStatus {
 ```prisma
 model SchoolLesson {
   id                  String    @id @default(cuid())
-  courseId            String    @map("course_id")
+  courseId            String
+  course              SchoolCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
-  // 時間設定
-  lessonDate          DateTime  @map("lesson_date")
-  startTime           String    @map("start_time")  // "14:00"
-  endTime             String    @map("end_time")    // "15:30"
-  weekday             Int                            // 1-7 (一至日)
+  // 課堂基本資料
+  lessonDate          DateTime                  // 上課日期
+  startTime           String                    // 開始時間（HH:mm 格式）
+  endTime             String                    // 結束時間（HH:mm 格式）
+  weekday             Int                       // 星期（1-7，1=Monday）
 
-  // 課堂資料
-  lessonType          LessonType @default(REGULAR) @map("lesson_type")
-  lessonTerm          CourseTerm @map("lesson_term")
-  lessonNumber        Int?      @map("lesson_number")  // 第幾堂
+  // 課堂類型
+  lessonType          LessonType @default(REGULAR) // 恆常/補堂/加操
+  lessonTerm          CourseTerm?               // 所屬學期（若課程分學期）
 
-  // 執行狀態
-  lessonStatus        LessonStatus @default(SCHEDULED) @map("lesson_status")
-  studentCount        Int?      @map("student_count")  // 實際人數
-  notes               String?   @db.Text
+  // 學生資料
+  studentCount        Int?                      // 實際學生人數
 
-  // 收費計算
-  feeLesson           Decimal?  @map("fee_lesson") @db.Decimal(10, 2)  // 該堂收費
+  // 課堂狀態
+  lessonStatus        LessonStatus @default(SCHEDULED)
 
-  // 開票狀態
-  invoiceStatus       InvoiceStatus @default(NOT_INVOICED) @map("invoice_status")
-  paymentStatus       PaymentStatus @default(UNPAID) @map("payment_status")
+  // 收費資料（用於生成 Invoice）
+  feeMode             String?                   // 收費模式
+  feePerMode          Decimal?  @db.Decimal(10, 2) // 單價
+  feeLesson           Decimal?  @db.Decimal(10, 2) // 本課堂收費金額
 
-  // 系統欄位
-  createdAt           DateTime  @default(now()) @map("created_at")
-  updatedAt           DateTime  @updatedAt @map("updated_at")
-  deletedAt           DateTime? @map("deleted_at")
+  // 發票狀態
+  invoiceStatus       String?   @default("NOT_INVOICED") // 發票狀態
+  invoiceId           String?                   // 關聯的發票 ID
+  invoice             SchoolInvoice? @relation(fields: [invoiceId], references: [id])
+
+  // 付款狀態
+  paymentStatus       PaymentStatus @default(PENDING)
+
+  // 備註
+  remarks             String?   @db.Text
 
   // 關聯
-  course              SchoolCourse @relation(fields: [courseId], references: [id])
-  tutorLessons        SchoolTutorLesson[]
+  tutorLessons        SchoolTutorLesson[]       // 導師任教記錄
 
+  // 系統欄位
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  @@index([courseId])
+  @@index([lessonDate])
+  @@index([lessonStatus])
+  @@index([invoiceStatus])
+  @@index([invoiceId])
   @@map("school_lessons")
 }
 
 enum LessonType {
-  REGULAR             // 正常課堂
+  REGULAR             // 恆常課堂
   MAKEUP              // 補堂
-  EXTRA               // 加操
-  TRIAL               // 試堂
+  EXTRA_PRACTICE      // 加操
 }
 
 enum LessonStatus {
   SCHEDULED           // 已排程
+  IN_PROGRESS         // 進行中
   COMPLETED           // 已完成
   CANCELLED           // 已取消
+  POSTPONED           // 已延期
 }
 
 enum InvoiceStatus {
@@ -414,61 +462,89 @@ enum PaymentStatus {
 
 ```prisma
 model SchoolTutorLesson {
-  id                  String    @id @default(cuid())
-  lessonId            String    @map("lesson_id")
-  userId              String    @map("user_id")
-  courseId            String    @map("course_id")  // 冗餘，方便查詢
-
-  // 角色設定
-  tutorRole           TutorRole @default(ASSISTANT) @map("tutor_role")
-
-  // 簽到資料
-  attendanceStatus    AttendanceStatus @default(SCHEDULED) @map("attendance_status")
-  checkInTime         DateTime? @map("check_in_time")
-  checkOutTime        DateTime? @map("check_out_time")
-  checkInImage        String?   @map("check_in_image")
-  geoLocation         String?   @map("geo_location")  // "22.3193,114.1694"
-  workingMinutes      Int?      @map("working_minutes")
-
-  // 課堂時間（冗餘，方便排班查詢）
-  lessonDate          DateTime  @map("lesson_date")
-  startTime           String    @map("start_time")
-  endTime             String    @map("end_time")
-
-  // 薪資計算
-  salaryCalculationMode SalaryMode @default(PER_LESSON) @map("salary_calculation_mode")
-  salaryAmount        Decimal?  @map("salary_amount") @db.Decimal(10, 2)
-
-  // 系統欄位
-  createdAt           DateTime  @default(now()) @map("created_at")
-  updatedAt           DateTime  @updatedAt @map("updated_at")
+  id                    String    @id @default(cuid())
 
   // 關聯
-  lesson              SchoolLesson @relation(fields: [lessonId], references: [id])
-  user                User      @relation(fields: [userId], references: [id])
+  lessonId              String
+  lesson                SchoolLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  userId                String                    // 關聯到 User.id
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId              String                    // 冗餘欄位，方便查詢
 
-  @@unique([lessonId, userId])
+  // 導師角色
+  tutorRole             TutorRole @default(HEAD_COACH)
+
+  // 出勤狀態
+  attendanceStatus      AttendanceStatus @default(SCHEDULED)
+  notificationStatus    String?                   // 通知狀態（已通知/未通知）
+
+  // 簽到資料
+  checkInImage          String?                   // 簽到相片 URL
+  geoLocation           String?                   // 簽到地理位置（經緯度）
+  checkInTime           DateTime?                 // 簽到時間
+  checkOutTime          DateTime?                 // 簽退時間
+  workingMinutes        Int?                      // 實際工作分鐘數
+
+  // 薪資計算
+  salaryCalculationMode SalaryCalculationMode?    // 薪資計算方式
+  baseLessonSalary      Decimal?  @db.Decimal(10, 2) // 基本課堂薪資
+  salaryDetails         Json?                     // 薪資明細（JSON）
+  totalSalary           Decimal?  @db.Decimal(10, 2) // 總薪資
+
+  // 付款狀態
+  paymentStatus         PaymentStatus @default(PENDING)
+  paymentId             String?                   // 關聯到薪資發放記錄
+
+  // 課堂資料（冗餘，方便查詢）
+  lessonDate            DateTime?                 // 上課日期
+  startTime             String?                   // 開始時間
+  endTime               String?                   // 結束時間
+  lessonLocation        String?                   // 上課地點（學校名稱）
+
+  // 教案
+  lessonPlanId          String?                   // 教案 ID
+
+  // 備註
+  attendanceRemarks     String?   @db.Text
+
+  // 系統欄位
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  deletedAt             DateTime?
+
+  @@unique([lessonId, userId])  // 防止同一課堂重複分配同一導師
+  @@index([lessonId])
+  @@index([userId])
+  @@index([courseId])
+  @@index([attendanceStatus])
+  @@index([paymentStatus])
+  @@index([lessonDate])
   @@map("school_tutor_lessons")
 }
 
 enum TutorRole {
   HEAD_COACH          // 主教
-  ASSISTANT           // 助教
-  TRAINEE             // 實習
+  ASSISTANT_COACH     // 副教
+  TEACHING_ASSISTANT  // 助教
+  SUBSTITUTE          // 代課
+  STAFF               // 工作人員
+  NOT_APPLICABLE      // 不適用
 }
 
 enum AttendanceStatus {
-  SCHEDULED           // 已排程
+  SCHEDULED           // 已排班
+  CONFIRMED           // 已確認
   CHECKED_IN          // 已簽到
-  COMPLETED           // 已完成（簽退）
+  COMPLETED           // 已完成
   ABSENT              // 缺席
   LATE                // 遲到
+  EARLY_LEAVE         // 早退
 }
 
-enum SalaryMode {
-  PER_LESSON          // 每堂計薪
-  PER_HOUR            // 每小時計薪
-  FIXED               // 固定薪資
+enum SalaryCalculationMode {
+  PER_LESSON          // 按堂
+  HOURLY              // 按小時
+  MONTHLY_FIXED       // 固定月薪
 }
 ```
 
@@ -479,56 +555,79 @@ enum SalaryMode {
 ```prisma
 model SchoolInvoice {
   id                    String    @id @default(cuid())
-  schoolId              String    @map("school_id")
+  schoolId              String
+  school                School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
-  // 發票資料
-  invoiceNumber         String    @unique @map("invoice_number")  // INV-2024-001
-  invoiceDate           DateTime  @map("invoice_date")
-  dueDate               DateTime? @map("due_date")
-  paymentTermsDays      Int       @default(30) @map("payment_terms_days")
+  // 發票編號
+  invoiceNumber         String    @unique           // 發票編號（自動生成）
+  invoiceToken          String?   @unique           // 發票 Token（用於查詢）
+
+  // 發票類型
+  invoiceType           String?                     // 發票類型（課程/設備/其他服務）
+
+  // 發票日期
+  invoiceDate           DateTime  @default(now())   // 發票日期
+
+  // 付款條款
+  paymentTermsDays      Int       @default(30)      // 付款期限（天數）
+  dueDate               DateTime?                   // 到期日
+
+  // 發票狀態
+  status                InvoiceStatus @default(DRAFT)
+  invoiceProgress       String?                     // 發票進度（舊欄位保留）
 
   // 金額
-  invoiceAmount         Decimal   @map("invoice_amount") @db.Decimal(10, 2)
-  paidAmount            Decimal   @default(0) @map("paid_amount") @db.Decimal(10, 2)
-
-  // 狀態
-  status                InvoiceDocStatus @default(DRAFT)
-
-  // 收件人資料
-  recipientNameChinese  String?   @map("recipient_name_chinese")
-  recipientNameEnglish  String?   @map("recipient_name_english")
-  contactPosition       String?   @map("contact_position")
-  contactEmail          String?   @map("contact_email")
-  mailingAddress        String?   @map("mailing_address") @db.Text
+  invoiceAmount         Decimal   @db.Decimal(10, 2) // 發票總金額
 
   // 發送記錄
-  sentDate              DateTime? @map("sent_date")
-  sentMethod            String?   @map("sent_method")
+  sentDate              DateTime?                   // 發送日期
+
+  // 收件人資料（可與 SchoolContact 不同）
+  salutation            String?                     // 稱謂
+  recipientNameChinese  String?                     // 收件人中文姓名
+  recipientNameEnglish  String?                     // 收件人英文姓名
+  contactPosition       String?                     // 職位
+  contactPhone          String?                     // 聯絡電話
+  contactEmail          String?                     // 聯絡電郵
+  schoolPhone           String?                     // 學校電話
+  schoolFax             String?                     // 學校傳真
+  mailingAddress        String?   @db.Text          // 郵寄地址
+
+  // 項目明細（JSON 格式）
+  courseItems           Json?                       // 課程項目
+  onsiteServiceItems    Json?                       // 到校服務項目
+  equipmentSalesItems   Json?                       // 設備銷售項目
+  otherServiceItems     Json?                       // 其他服務項目
 
   // 備註
-  notes                 String?   @db.Text
-
-  // 系統欄位
-  createdAt             DateTime  @default(now()) @map("created_at")
-  updatedAt             DateTime  @updatedAt @map("updated_at")
-  deletedAt             DateTime? @map("deleted_at")
-  createdBy             String?   @map("created_by")
+  invoiceRemarks        String?   @db.Text
 
   // 關聯
-  school                School    @relation(fields: [schoolId], references: [id])
-  invoiceCourses        SchoolInvoiceCourse[]
-  receipts              SchoolReceipt[]
+  courses               SchoolInvoiceCourse[]       // 多對多關聯到課程
+  receipt               SchoolReceipt?              // 一對一關聯收據
+  lessons               SchoolLesson[]              // 直接關聯的課堂
 
+  // 系統欄位
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  deletedAt             DateTime?
+
+  @@index([schoolId])
+  @@index([status])
+  @@index([invoiceNumber])
+  @@index([invoiceDate])
   @@map("school_invoices")
 }
 
-enum InvoiceDocStatus {
+enum InvoiceStatus {
   DRAFT                 // 草稿
+  PENDING_APPROVAL      // 待審核
+  PENDING_SEND          // 待發送
   SENT                  // 已發送
-  PAID                  // 已付款
-  PARTIAL               // 部分付款
   OVERDUE               // 已逾期
+  PAID                  // 已付款
   CANCELLED             // 已取消
+  VOID                  // 作廢
 }
 ```
 
@@ -539,25 +638,24 @@ enum InvoiceDocStatus {
 ```prisma
 model SchoolInvoiceCourse {
   id                  String    @id @default(cuid())
-  invoiceId           String    @map("invoice_id")
-  courseId            String    @map("course_id")
+  invoiceId           String
+  invoice             SchoolInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  courseId            String
+  course              SchoolCourse  @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
-  // 課堂範圍
-  lessonDateStart     DateTime? @map("lesson_date_start")
-  lessonDateEnd       DateTime? @map("lesson_date_end")
-  lessonCount         Int?      @map("lesson_count")
-
-  // 金額
+  // 此課程在發票中的金額（可能只計部分課堂）
   amount              Decimal   @db.Decimal(10, 2)
-  description         String?
+
+  // 備註
+  remarks             String?   @db.Text
 
   // 系統欄位
-  createdAt           DateTime  @default(now()) @map("created_at")
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
-  // 關聯
-  invoice             SchoolInvoice @relation(fields: [invoiceId], references: [id])
-  course              SchoolCourse  @relation(fields: [courseId], references: [id])
-
+  @@unique([invoiceId, courseId])  // 同一發票不可重複加入同一課程
+  @@index([invoiceId])
+  @@index([courseId])
   @@map("school_invoice_courses")
 }
 ```
@@ -568,55 +666,59 @@ model SchoolInvoiceCourse {
 
 ```prisma
 model SchoolReceipt {
-  id                      String    @id @default(cuid())
-  schoolId                String    @map("school_id")
-  invoiceId               String    @map("invoice_id")
+  id                       String    @id @default(cuid())
+  schoolId                 String
+  school                   School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  invoiceId                String    @unique  // 一張發票對應一張收據
+  invoice                  SchoolInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
-  // 收據資料
-  receiptNumber           String    @unique @map("receipt_number")  // REC-2024-001
+  // 收據編號
+  receiptNumber            String    @unique           // 收據編號（自動生成）
+  paymentNumber            String?                     // 付款編號
+
+  // 收據進度
+  receiptProgress          String?                     // 收據進度
 
   // 付款資料
-  paymentConfirmedDate    DateTime  @map("payment_confirmed_date")
-  actualReceivedAmount    Decimal   @map("actual_received_amount") @db.Decimal(10, 2)
-  paymentMethod           PaymentMethod @map("payment_method")
-  paymentStatus           ReceiptPaymentStatus @default(PENDING) @map("payment_status")
-
-  // 交易資料
-  paymentTransactionNumber String?  @map("payment_transaction_number")
-  chequeNumber            String?   @map("cheque_number")
-  bankName                String?   @map("bank_name")
-
-  // 憑證
-  paymentProofImage       String?   @map("payment_proof_image")
+  paymentConfirmedDate     DateTime?                   // 付款確認日期
+  actualReceivedAmount     Decimal?  @db.Decimal(10, 2) // 實際收款金額
+  paymentMethod            PaymentMethod?              // 付款方式
+  paymentStatus            PaymentStatus @default(PENDING) // 付款狀態
+  paymentTransactionNumber String?                     // 交易編號/支票號碼
 
   // 備註
-  notes                   String?   @db.Text
+  receiptRemarks           String?   @db.Text
 
   // 系統欄位
-  createdAt               DateTime  @default(now()) @map("created_at")
-  updatedAt               DateTime  @updatedAt @map("updated_at")
-  deletedAt               DateTime? @map("deleted_at")
-  createdBy               String?   @map("created_by")
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+  deletedAt                DateTime?
 
-  // 關聯
-  school                  School    @relation(fields: [schoolId], references: [id])
-  invoice                 SchoolInvoice @relation(fields: [invoiceId], references: [id])
-
+  @@index([schoolId])
+  @@index([invoiceId])
+  @@index([paymentStatus])
+  @@index([receiptNumber])
   @@map("school_receipts")
 }
 
 enum PaymentMethod {
-  FPS                     // 轉數快
+  CASH                    // 現金
   CHEQUE                  // 支票
   BANK_TRANSFER           // 銀行轉帳
-  CASH                    // 現金
+  FPS                     // 轉數快
+  PAYME                   // PayMe
+  ALIPAY_HK               // 支付寶香港
+  WECHAT_PAY_HK           // 微信支付香港
+  CREDIT_CARD             // 信用卡
+  AUTOPAY                 // 自動轉帳
   OTHER                   // 其他
 }
 
-enum ReceiptPaymentStatus {
-  PENDING                 // 待確認
-  CONFIRMED               // 已確認
-  BOUNCED                 // 退票
+enum PaymentStatus {
+  PENDING                 // 待付款
+  PARTIAL                 // 部分付款
+  PAID                    // 已付款
+  REFUNDED                // 已退款
 }
 ```
 

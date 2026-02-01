@@ -40,7 +40,7 @@ const transactions = [
 
 export default function SaasInvoiceTable() {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+    <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3">
       <div className="px-6 py-4">
         <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
           Recent Invoices

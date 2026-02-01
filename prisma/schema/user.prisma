@@ -5,16 +5,34 @@
 model User {
   id String @id @default(cuid())
 
+  // 會員編號
+  memberNumber String? @unique // 會員編號 (e.g. M2024-001)
+
   // 基本資料
+  title       String? // 稱呼（先生/女士/小姐）
   phone       String  @unique // 電話號碼（註冊帳號）
   email       String? @unique
   nameChinese String? // 中文姓名
   nameEnglish String? // 英文姓名
+  nickname    String? // 暱稱
+  gender      Gender? // 性別
+
+  // 密碼（用於登入）
+  passwordHash String? // 加密後的密碼
+
+  // 身份證明
+  identityCardNumber String? // 身份證號碼
+
+  // 聯絡偏好
+  whatsappEnabled Boolean @default(false) // 是否啟用 WhatsApp
 
   // 角色
-  role UserRole @default(STUDENT) // STUDENT, TUTOR, ADMIN
+  role UserRole @default(USER) // USER, TUTOR, ADMIN, STAFF, STUDENT
 
   // 關聯
+  address        UserAddress? // 地址（一對一）
+  bankAccount    UserBankAccount? // 銀行帳戶（一對一）
+  children       UserChild[] // 學員資料（一對多）
   tutorProfile   TutorProfile? // 導師資料（一對一）
   tutorLessons   SchoolTutorLesson[] // 任教記錄
   sentQuotations SchoolQuotation[]   @relation("QuotationSentBy") // 發送的報價單
@@ -27,44 +45,85 @@ model User {
   @@map("users")
 }
 
-enum UserRole {
-  STUDENT
-  TUTOR
-  ADMIN
-  STAFF
+enum Gender {
+  MALE
+  FEMALE
 }
 
-/// 導師資料
-model TutorProfile {
+enum UserRole {
+  ADMIN
+  STAFF
+  TUTOR
+  PARENT
+  STUDENT
+  USER
+}
+
+// ============================================
+// 用戶地址 - UserAddressCard
+// ============================================
+
+model UserAddress {
   id String @id @default(cuid())
 
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // 導師資格
-  certifications Json? // 證書資料（JSON）
-  specialties    String[] // 專長（個人花式/速度跳/團體等）
+  region   String? // 地域（HK/KLN/NT）
+  district String? // 十八區（中西區、觀塘區等）
+  address  String? @db.Text // 詳細地址
 
-  // 薪資設定
-  defaultSalaryMode   SalaryCalculationMode @default(PER_LESSON) // 預設薪資計算方式
-  defaultPerLessonFee Decimal?              @db.Decimal(10, 2) // 預設每堂薪資
-  defaultHourlyRate   Decimal?              @db.Decimal(10, 2) // 預設時薪
-  monthlyFixedSalary  Decimal?              @db.Decimal(10, 2) // 固定月薪
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  // 狀態
-  isActive   Boolean   @default(true)
-  approvedAt DateTime? // 審核通過日期
-  approvedBy String? // 審核人員 ID
+  @@map("user_addresses")
+}
 
-  // 備註
-  remarks String? @db.Text
+// ============================================
+// 用戶銀行帳戶 - UserBankCard
+// ============================================
 
-  // 系統欄位
+model UserBankAccount {
+  id String @id @default(cuid())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  bankName          String? // 所屬銀行
+  accountNumber     String? // 戶口號碼
+  accountHolderName String? // 戶口持有人姓名
+  fpsId             String? // 轉數快 ID
+  fpsEnabled        Boolean @default(false) // 轉數快是否啟用
+  notes             String? @db.Text // 備註
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_bank_accounts")
+}
+
+// ============================================
+// 學員資料 - UserChildrenCard
+// ============================================
+
+model UserChild {
+  id String @id @default(cuid())
+
+  parentId String
+  parent   User   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+
+  memberNumber String? @unique // 會員編號
+  nameChinese  String // 中文名（必填）
+  nameEnglish  String? // 英文名
+  birthYear    Int? // 出生年份
+  school       String? // 就讀學校
+  gender       Gender? // 性別
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  @@index([userId])
-  @@index([isActive])
-  @@map("tutor_profiles")
+  @@index([parentId])
+  @@map("user_children")
 }
+

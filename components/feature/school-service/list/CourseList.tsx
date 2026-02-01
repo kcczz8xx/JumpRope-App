@@ -45,9 +45,12 @@ export function CourseList({ courses }: CourseListProps) {
       sortable: true,
       render: (course) => (
         <div>
-          <div className="font-medium text-gray-800 dark:text-white">
+          <Link
+            href={`/dashboard/school/detailed/${course.school.id}`}
+            className="font-medium text-gray-800 hover:text-brand-500 dark:text-white dark:hover:text-brand-400 transition-colors"
+          >
             {course.courseName}
-          </div>
+          </Link>
           <div className="text-xs text-gray-500 dark:text-gray-400">
             {course.academicYear}
           </div>
@@ -130,7 +133,7 @@ export function CourseList({ courses }: CourseListProps) {
           dropdownContent={
             <>
               <Link
-                href={`/dashboard/school/courses/${course.id}`}
+                href={`/dashboard/school/detailed/${course.school.id}`}
                 className="flex w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
               >
                 查看詳情
@@ -194,9 +197,11 @@ export function CourseList({ courses }: CourseListProps) {
       ]}
       searchable
       searchPlaceholder="搜尋課程或學校..."
+      searchKeys={["courseName", "school.schoolName", "academicYear", "courseType"]}
       selectable
       pagination
       pageSize={10}
+      showPageSizeSelector
       emptyMessage="暫無課程"
       emptyAction={{
         label: "新增第一個課程",

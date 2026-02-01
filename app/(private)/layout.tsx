@@ -1,5 +1,5 @@
 import { Outfit } from "next/font/google";
-import type { Metadata, Viewport } from "next";
+import type { Viewport } from "next";
 import "./globals.css";
 import "swiper/swiper-bundle.css";
 import "simplebar-react/dist/simplebar.min.css";
@@ -9,6 +9,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { TenantProvider } from "@/context/TenantContext";
 import { PermissionProvider } from "@/context/PermissionContext";
 import { TenantThemeProvider } from "@/components/tailadmin/layout/TenantThemeProvider";
+import SessionProvider from "@/context/SessionProvider";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -47,17 +48,19 @@ export default function RootLayout({
         />
       </head>
       <body className={`${outfit.className} dark:bg-gray-900`}>
-        <AuthProvider>
-          <TenantProvider>
-            <PermissionProvider>
-              <ThemeProvider>
-                <TenantThemeProvider>
-                  <SidebarProvider>{children}</SidebarProvider>
-                </TenantThemeProvider>
-              </ThemeProvider>
-            </PermissionProvider>
-          </TenantProvider>
-        </AuthProvider>
+        <SessionProvider>
+          <AuthProvider>
+            <TenantProvider>
+              <PermissionProvider>
+                <ThemeProvider>
+                  <TenantThemeProvider>
+                    <SidebarProvider>{children}</SidebarProvider>
+                  </TenantThemeProvider>
+                </ThemeProvider>
+              </PermissionProvider>
+            </TenantProvider>
+          </AuthProvider>
+        </SessionProvider>
       </body>
     </html>
   );

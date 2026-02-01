@@ -1,185 +1,341 @@
 "use client";
-import Checkbox from "@/components/tailadmin/form/input/Checkbox";
-import Input from "@/components/tailadmin/form/input/InputField";
-import Label from "@/components/tailadmin/form/Label";
-import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "@/icons";
-import Link from "next/link";
+
 import React, { useState } from "react";
+import { isValidPhoneNumber } from "libphonenumber-js";
+import Link from "next/link";
+import { ChevronLeftIcon } from "@/icons";
+import { SignUpStep, SignUpFormData } from "./signup/types";
+import SignUpFormStep from "./signup/SignUpFormStep";
+import SignUpOtpStep from "./signup/SignUpOtpStep";
+import SignUpEmailFallback from "./signup/SignUpEmailFallback";
 
 export default function SignUpForm() {
-  const [showPassword, setShowPassword] = useState(false);
-  const [isChecked, setIsChecked] = useState(false);
+  const [step, setStep] = useState<SignUpStep>("form");
+  const [formData, setFormData] = useState<SignUpFormData>({
+    phone: "",
+    password: "",
+    confirmPassword: "",
+    email: "",
+    nickname: "",
+    title: "",
+  });
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [otpAttempts, setOtpAttempts] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [countdown, setCountdown] = useState(0);
+
+  const handleFormChange = (field: keyof SignUpFormData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const validateForm = (): boolean => {
+    if (!formData.title) {
+      setError("請選擇稱呼");
+      return false;
+    }
+    if (!formData.nickname) {
+      setError("請輸入暱稱");
+      return false;
+    }
+    if (!formData.phone) {
+      setError("請輸入電話號碼");
+      return false;
+    }
+    if (!isValidPhoneNumber(formData.phone)) {
+      setError("請輸入有效的電話號碼格式");
+      return false;
+    }
+    if (!formData.email) {
+      setError("請輸入電郵地址");
+      return false;
+    }
+    if (!formData.password) {
+      setError("請輸入密碼");
+      return false;
+    }
+    if (formData.password.length < 8) {
+      setError("密碼至少需要 8 個字元");
+      return false;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setError("兩次輸入的密碼不一致");
+      return false;
+    }
+    return true;
+  };
+
+  const startCountdown = () => {
+    setCountdown(60);
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleSendOtp = async () => {
+    setError("");
+    if (!validateForm()) return;
+
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/auth/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: formData.phone, purpose: "register" }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "發送驗證碼失敗");
+        return;
+      }
+
+      setStep("otp");
+      startCountdown();
+    } catch {
+      setError("發送驗證碼失敗，請稍後再試");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOtpChange = (value: string, index: number) => {
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    if (value && index < 5) {
+      const nextInput = document.getElementById(`otp-${index + 1}`);
+      nextInput?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      const prevInput = document.getElementById(`otp-${index - 1}`);
+      prevInput?.focus();
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    setError("");
+    const otpCode = otp.join("");
+
+    if (otpCode.length !== 6) {
+      setError("請輸入完整的 6 位驗證碼");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const verifyResponse = await fetch("/api/auth/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: formData.phone,
+          code: otpCode,
+          purpose: "register",
+        }),
+      });
+
+      const verifyData = await verifyResponse.json();
+
+      if (!verifyResponse.ok) {
+        const newAttempts = otpAttempts + 1;
+        setOtpAttempts(newAttempts);
+
+        if (newAttempts >= 3) {
+          setStep("email-fallback");
+          setError("驗證碼錯誤次數過多，請使用電郵驗證");
+        } else {
+          setError(
+            verifyData.error || `驗證碼錯誤，還有 ${3 - newAttempts} 次機會`
+          );
+        }
+        return;
+      }
+
+      const registerResponse = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: formData.phone,
+          password: formData.password,
+          email: formData.email,
+          nickname: formData.nickname,
+          title: formData.title,
+        }),
+      });
+
+      const registerData = await registerResponse.json();
+
+      if (!registerResponse.ok) {
+        setError(registerData.error || "註冊失敗");
+        return;
+      }
+
+      window.location.href = "/signin";
+    } catch {
+      setError("驗證失敗，請稍後再試");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEmailVerification = async () => {
+    setError("");
+
+    if (!formData.email) {
+      setError("請輸入電郵地址");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // TODO: 調用發送電郵驗證 API
+      console.log("Sending email verification to:", formData.email);
+      setError("");
+      alert("驗證連結已發送到您的電郵，請查收");
+    } catch {
+      setError("發送驗證郵件失敗，請稍後再試");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (countdown > 0) return;
+
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/auth/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: formData.phone, purpose: "register" }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.error || "重新發送失敗");
+        return;
+      }
+
+      startCountdown();
+      setOtp(["", "", "", "", "", ""]);
+    } catch {
+      setError("重新發送失敗，請稍後再試");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getStepTitle = () => {
+    switch (step) {
+      case "form":
+        return "註冊帳戶";
+      case "otp":
+        return "驗證電話號碼";
+      case "email-fallback":
+        return "電郵驗證";
+    }
+  };
+
+  const getStepDescription = () => {
+    switch (step) {
+      case "form":
+        return "輸入您的資料以建立帳戶";
+      case "otp":
+        return `驗證碼已發送至 ${formData.phone}，請在下方輸入`;
+      case "email-fallback":
+        return "電話驗證失敗次數過多，請使用電郵完成驗證";
+    }
+  };
+
   return (
     <div className="flex flex-col flex-1 lg:w-1/2 w-full overflow-y-auto no-scrollbar">
       <div className="w-full max-w-md sm:pt-10 mx-auto mb-5">
         <Link
-          href="/"
+          href={step === "form" ? "/" : "#"}
+          onClick={(e) => {
+            if (step !== "form") {
+              e.preventDefault();
+              setStep("form");
+              setError("");
+            }
+          }}
           className="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
         >
           <ChevronLeftIcon />
-          返回主頁
+          {step === "form" ? "返回主頁" : "返回上一步"}
         </Link>
       </div>
+
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
         <div>
           <div className="mb-5 sm:mb-8">
             <h1 className="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md">
-              Sign Up
+              {getStepTitle()}
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Enter your email and password to sign up!
+              {getStepDescription()}
             </p>
           </div>
+
+          {error && (
+            <div className="mb-4 rounded-lg bg-error-50 p-3 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400">
+              {error}
+            </div>
+          )}
+
           <div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5">
-              <button className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10">
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M18.7511 10.1944C18.7511 9.47495 18.6915 8.94995 18.5626 8.40552H10.1797V11.6527H15.1003C15.0011 12.4597 14.4654 13.675 13.2749 14.4916L13.2582 14.6003L15.9087 16.6126L16.0924 16.6305C17.7788 15.1041 18.7511 12.8583 18.7511 10.1944Z"
-                    fill="#4285F4"
-                  />
-                  <path
-                    d="M10.1788 18.75C12.5895 18.75 14.6133 17.9722 16.0915 16.6305L13.274 14.4916C12.5201 15.0068 11.5081 15.3666 10.1788 15.3666C7.81773 15.3666 5.81379 13.8402 5.09944 11.7305L4.99473 11.7392L2.23868 13.8295L2.20264 13.9277C3.67087 16.786 6.68674 18.75 10.1788 18.75Z"
-                    fill="#34A853"
-                  />
-                  <path
-                    d="M5.10014 11.7305C4.91165 11.186 4.80257 10.6027 4.80257 9.99992C4.80257 9.3971 4.91165 8.81379 5.09022 8.26935L5.08523 8.1534L2.29464 6.02954L2.20333 6.0721C1.5982 7.25823 1.25098 8.5902 1.25098 9.99992C1.25098 11.4096 1.5982 12.7415 2.20333 13.9277L5.10014 11.7305Z"
-                    fill="#FBBC05"
-                  />
-                  <path
-                    d="M10.1789 4.63331C11.8554 4.63331 12.9864 5.34303 13.6312 5.93612L16.1511 3.525C14.6035 2.11528 12.5895 1.25 10.1789 1.25C6.68676 1.25 3.67088 3.21387 2.20264 6.07218L5.08953 8.26943C5.81381 6.15972 7.81776 4.63331 10.1789 4.63331Z"
-                    fill="#EB4335"
-                  />
-                </svg>
-                Sign up with Google
-              </button>
-              <button className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10">
-                <svg
-                  width="21"
-                  className="fill-current"
-                  height="20"
-                  viewBox="0 0 21 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M15.6705 1.875H18.4272L12.4047 8.75833L19.4897 18.125H13.9422L9.59717 12.4442L4.62554 18.125H1.86721L8.30887 10.7625L1.51221 1.875H7.20054L11.128 7.0675L15.6705 1.875ZM14.703 16.475H16.2305L6.37054 3.43833H4.73137L14.703 16.475Z" />
-                </svg>
-                Sign up with X
-              </button>
-            </div>
-            <div className="relative py-3 sm:py-5">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200 dark:border-gray-800"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="p-2 text-gray-400 bg-white dark:bg-gray-900 sm:px-5 sm:py-2">
-                  Or
-                </span>
-              </div>
-            </div>
-            <form>
-              <div className="space-y-5">
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                  {/* <!-- First Name --> */}
-                  <div className="sm:col-span-1">
-                    <Label>
-                      First Name<span className="text-error-500">*</span>
-                    </Label>
-                    <Input
-                      type="text"
-                      id="fname"
-                      name="fname"
-                      placeholder="Enter your first name"
-                    />
-                  </div>
-                  {/* <!-- Last Name --> */}
-                  <div className="sm:col-span-1">
-                    <Label>
-                      Last Name<span className="text-error-500">*</span>
-                    </Label>
-                    <Input
-                      type="text"
-                      id="lname"
-                      name="lname"
-                      placeholder="Enter your last name"
-                    />
-                  </div>
-                </div>
-                {/* <!-- Email --> */}
-                <div>
-                  <Label>
-                    Email<span className="text-error-500">*</span>
-                  </Label>
-                  <Input
-                    type="email"
-                    id="email"
-                    name="email"
-                    placeholder="Enter your email"
-                  />
-                </div>
-                {/* <!-- Password --> */}
-                <div>
-                  <Label>
-                    Password<span className="text-error-500">*</span>
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      placeholder="Enter your password"
-                      type={showPassword ? "text" : "password"}
-                    />
-                    <span
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
-                    >
-                      {showPassword ? (
-                        <EyeIcon className="fill-gray-500 dark:fill-gray-400" />
-                      ) : (
-                        <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400" />
-                      )}
-                    </span>
-                  </div>
-                </div>
-                {/* <!-- Checkbox --> */}
-                <div className="flex items-center gap-3">
-                  <Checkbox
-                    className="w-5 h-5"
-                    checked={isChecked}
-                    onChange={setIsChecked}
-                  />
-                  <p className="inline-block font-normal text-gray-500 dark:text-gray-400">
-                    By creating an account means you agree to the{" "}
-                    <span className="text-gray-800 dark:text-white/90">
-                      Terms and Conditions,
-                    </span>{" "}
-                    and our{" "}
-                    <span className="text-gray-800 dark:text-white">
-                      Privacy Policy
-                    </span>
-                  </p>
-                </div>
-                {/* <!-- Button --> */}
-                <div>
-                  <button className="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg bg-brand-500 shadow-theme-xs hover:bg-brand-600">
-                    Sign Up
-                  </button>
-                </div>
-              </div>
-            </form>
+            {step === "form" && (
+              <SignUpFormStep
+                formData={formData}
+                onFormChange={handleFormChange}
+                onSubmit={handleSendOtp}
+                isLoading={isLoading}
+              />
+            )}
+
+            {step === "otp" && (
+              <SignUpOtpStep
+                otp={otp}
+                onOtpChange={handleOtpChange}
+                onOtpKeyDown={handleOtpKeyDown}
+                onVerify={handleVerifyOtp}
+                onResend={handleResendOtp}
+                isLoading={isLoading}
+                countdown={countdown}
+              />
+            )}
+
+            {step === "email-fallback" && (
+              <SignUpEmailFallback
+                formData={formData}
+                onFormChange={handleFormChange}
+                onSubmit={handleEmailVerification}
+                isLoading={isLoading}
+              />
+            )}
 
             <div className="mt-5">
               <p className="text-sm font-normal text-center text-gray-700 dark:text-gray-400 sm:text-start">
-                Already have an account?
+                已有帳戶？{" "}
                 <Link
                   href="/signin"
                   className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
                 >
-                  Sign In
+                  立即登入
                 </Link>
               </p>
             </div>
@@ -189,3 +345,6 @@ export default function SignUpForm() {
     </div>
   );
 }
+
+export { SignUpFormStep, SignUpOtpStep, SignUpEmailFallback };
+export type { SignUpStep, SignUpFormData } from "./signup/types";

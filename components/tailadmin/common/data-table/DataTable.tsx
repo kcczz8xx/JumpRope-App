@@ -1,12 +1,57 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { DataTableProps, SortState } from "./types";
 import { DataTableHeader } from "./DataTableHeader";
 import { DataTableToolbar } from "./DataTableToolbar";
 import { DataTablePagination } from "./DataTablePagination";
 import Button from "@/components/tailadmin/ui/button/Button";
 import Link from "next/link";
+
+const getNestedValue = (obj: any, path: string): any => {
+  return path.includes(".")
+    ? path.split(".").reduce((o, k) => o?.[k], obj)
+    : obj[path];
+};
+
+const SortIcon = ({ sortKey, currentSort }: { sortKey: string; currentSort: SortState | null }) => (
+  <span className="flex flex-col gap-0.5">
+    <svg
+      className={
+        currentSort?.key === sortKey && currentSort.asc
+          ? "text-gray-500 dark:text-gray-400"
+          : "text-gray-300 dark:text-gray-400/50"
+      }
+      width="8"
+      height="5"
+      viewBox="0 0 8 5"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M4.40962 0.585167C4.21057 0.300808 3.78943 0.300807 3.59038 0.585166L1.05071 4.21327C0.81874 4.54466 1.05582 5 1.46033 5H6.53967C6.94418 5 7.18126 4.54466 6.94929 4.21327L4.40962 0.585167Z"
+        fill="currentColor"
+      />
+    </svg>
+    <svg
+      className={
+        currentSort?.key === sortKey && !currentSort.asc
+          ? "text-gray-500 dark:text-gray-400"
+          : "text-gray-300 dark:text-gray-400/50"
+      }
+      width="8"
+      height="5"
+      viewBox="0 0 8 5"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M4.40962 4.41483C4.21057 4.69919 3.78943 4.69919 3.59038 4.41483L1.05071 0.786732C0.81874 0.455343 1.05582 0 1.46033 0H6.53967C6.94418 0 7.18126 0.455342 6.94929 0.786731L4.40962 4.41483Z"
+        fill="currentColor"
+      />
+    </svg>
+  </span>
+);
 
 export function DataTable<T = any>({
   title,
@@ -17,17 +62,21 @@ export function DataTable<T = any>({
   filters,
   searchable = false,
   searchPlaceholder = "Search...",
+  searchKeys,
   selectable = false,
   onSelectionChange,
   getRowId = (row: any) => row.id,
   pagination = true,
-  pageSize = 10,
+  pageSize: initialPageSize = 10,
+  pageSizeOptions = [10, 20, 50, 100],
+  showPageSizeSelector = false,
   emptyMessage = "No data available",
   emptyAction,
 }: DataTableProps<T>) {
   const [selected, setSelected] = useState<string[]>([]);
   const [sort, setSort] = useState<SortState | null>(null);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(initialPageSize);
   const [searchValue, setSearchValue] = useState("");
   const [filterValues, setFilterValues] = useState<Record<string, string>>({});
 
@@ -35,11 +84,13 @@ export function DataTable<T = any>({
     let result = [...data];
 
     if (searchValue && searchable) {
+      const keysToSearch = searchKeys || columns.map((col) => col.key);
+      const lowerSearch = searchValue.toLowerCase();
       result = result.filter((row: any) => {
-        return columns.some((col) => {
-          const value = row[col.key];
+        return keysToSearch.some((key) => {
+          const value = getNestedValue(row, key);
           if (value == null) return false;
-          return String(value).toLowerCase().includes(searchValue.toLowerCase());
+          return String(value).toLowerCase().includes(lowerSearch);
         });
       });
     }
@@ -48,24 +99,34 @@ export function DataTable<T = any>({
       filters.forEach((filter) => {
         const filterValue = filterValues[filter.key];
         if (filterValue) {
+          const lowerFilter = filterValue.toLowerCase();
           result = result.filter((row: any) => {
-            const value = row[filter.key];
+            const value = getNestedValue(row, filter.key);
             if (value == null) return false;
-            return String(value).toLowerCase().includes(filterValue.toLowerCase());
+            return String(value).toLowerCase().includes(lowerFilter);
           });
         }
       });
     }
 
     return result;
-  }, [data, searchValue, filterValues, columns, filters, searchable]);
+  }, [data, searchValue, filterValues, columns, filters, searchable, searchKeys]);
+
+  // 當搜尋或篩選改變時重置頁碼
+  React.useEffect(() => {
+    setPage(1);
+  }, [searchValue, filterValues]);
 
   const sortedData = useMemo(() => {
     if (!sort) return filteredData;
 
     return [...filteredData].sort((a: any, b: any) => {
-      let valA = a[sort.key];
-      let valB = b[sort.key];
+      let valA = getNestedValue(a, sort.key);
+      let valB = getNestedValue(b, sort.key);
+
+      if (valA == null && valB == null) return 0;
+      if (valA == null) return sort.asc ? 1 : -1;
+      if (valB == null) return sort.asc ? -1 : 1;
 
       if (typeof valA === "string" && typeof valB === "string") {
         valA = valA.toLowerCase();
@@ -106,9 +167,13 @@ export function DataTable<T = any>({
     onSelectionChange?.(newSelected);
   };
 
+  const isAllSelected = useMemo(() => {
+    const ids = paginatedData.map((row) => getRowId(row));
+    return ids.length > 0 && ids.every((id) => selected.includes(id));
+  }, [paginatedData, selected, getRowId]);
+
   const toggleAll = () => {
     const ids = paginatedData.map((row) => getRowId(row));
-    const isAllSelected = ids.length > 0 && ids.every((id) => selected.includes(id));
     const newSelected = isAllSelected
       ? selected.filter((id) => !ids.includes(id))
       : [...new Set([...selected, ...ids])];
@@ -116,53 +181,14 @@ export function DataTable<T = any>({
     onSelectionChange?.(newSelected);
   };
 
-  const isAllSelected = () => {
-    const ids = paginatedData.map((row) => getRowId(row));
-    return ids.length > 0 && ids.every((id) => selected.includes(id));
-  };
-
   const handleFilterChange = (key: string, value: string) => {
     setFilterValues((prev) => ({ ...prev, [key]: value }));
   };
 
-  const SortIcon = ({ columnKey }: { columnKey: string }) => (
-    <span className="flex flex-col gap-0.5">
-      <svg
-        className={
-          sort?.key === columnKey && sort.asc
-            ? "text-gray-500 dark:text-gray-400"
-            : "text-gray-300 dark:text-gray-400/50"
-        }
-        width="8"
-        height="5"
-        viewBox="0 0 8 5"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M4.40962 0.585167C4.21057 0.300808 3.78943 0.300807 3.59038 0.585166L1.05071 4.21327C0.81874 4.54466 1.05582 5 1.46033 5H6.53967C6.94418 5 7.18126 4.54466 6.94929 4.21327L4.40962 0.585167Z"
-          fill="currentColor"
-        />
-      </svg>
-      <svg
-        className={
-          sort?.key === columnKey && !sort.asc
-            ? "text-gray-500 dark:text-gray-400"
-            : "text-gray-300 dark:text-gray-400/50"
-        }
-        width="8"
-        height="5"
-        viewBox="0 0 8 5"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M4.40962 4.41483C4.21057 4.69919 3.78943 4.69919 3.59038 4.41483L1.05071 0.786732C0.81874 0.455343 1.05582 0 1.46033 0H6.53967C6.94418 0 7.18126 0.455342 6.94929 0.786731L4.40962 4.41483Z"
-          fill="currentColor"
-        />
-      </svg>
-    </span>
-  );
+  const handlePageSizeChange = (newSize: number) => {
+    setPageSize(newSize);
+    setPage(1);
+  };
 
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
@@ -205,16 +231,16 @@ export function DataTable<T = any>({
                         type="checkbox"
                         className="sr-only"
                         onChange={toggleAll}
-                        checked={isAllSelected()}
+                        checked={isAllSelected}
                       />
                       <span
                         className={`flex h-4 w-4 items-center justify-center rounded-sm border-[1.25px] ${
-                          isAllSelected()
+                          isAllSelected
                             ? "border-brand-500 bg-brand-500"
                             : "bg-transparent border-gray-300 dark:border-gray-700"
                         }`}
                       >
-                        <span className={isAllSelected() ? "" : "opacity-0"}>
+                        <span className={isAllSelected ? "" : "opacity-0"}>
                           <svg
                             width="12"
                             height="12"
@@ -248,7 +274,7 @@ export function DataTable<T = any>({
                       <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
                         {column.label}
                       </p>
-                      {column.sortable && <SortIcon columnKey={column.key} />}
+                      {column.sortable && <SortIcon sortKey={column.key} currentSort={sort} />}
                     </div>
                   </th>
                 ))}
@@ -323,6 +349,9 @@ export function DataTable<T = any>({
           startItem={startItem}
           endItem={endItem}
           onPageChange={setPage}
+          pageSize={showPageSizeSelector ? pageSize : undefined}
+          pageSizeOptions={pageSizeOptions}
+          onPageSizeChange={showPageSizeSelector ? handlePageSizeChange : undefined}
         />
       )}
     </div>

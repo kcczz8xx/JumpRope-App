@@ -324,7 +324,7 @@ export const CourseCards: React.FC<CourseCardsProps> = ({ courses, selectedYear 
                       {course.description && (
                         <div className="mt-4 border-t border-gray-200 pt-4">
                           <p className="text-theme-xs font-medium text-gray-500 dark:text-gray-400 mb-1">課程描述</p>
-                          <p className="text-theme-sm text-gray-700 dark:text-gray-300">
+                          <p className="text-theme-sm text-gray-800 dark:text-gray-300">
                             {course.description}
                           </p>
                         </div>

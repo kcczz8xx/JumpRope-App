@@ -4,7 +4,7 @@ import { useTenant } from '@/context/TenantContext';
 
 export const useTenantTheme = () => {
   const { tenant } = useTenant();
-  
+
   const getThemeConfig = () => {
     const defaultTheme = {
       primary: 'bg-primary',

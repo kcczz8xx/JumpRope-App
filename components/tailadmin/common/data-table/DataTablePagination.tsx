@@ -7,6 +7,9 @@ interface DataTablePaginationProps {
   startItem: number;
   endItem: number;
   onPageChange: (page: number) => void;
+  pageSize?: number;
+  pageSizeOptions?: number[];
+  onPageSizeChange?: (size: number) => void;
 }
 
 export const DataTablePagination: React.FC<DataTablePaginationProps> = ({
@@ -16,6 +19,9 @@ export const DataTablePagination: React.FC<DataTablePaginationProps> = ({
   startItem,
   endItem,
   onPageChange,
+  pageSize,
+  pageSizeOptions = [10, 20, 50, 100],
+  onPageSizeChange,
 }) => {
   const prevPage = () => {
     if (page > 1) onPageChange(page - 1);
@@ -27,14 +33,31 @@ export const DataTablePagination: React.FC<DataTablePaginationProps> = ({
 
   return (
     <div className="flex items-center flex-col sm:flex-row justify-between border-t border-gray-200 px-5 py-4 dark:border-gray-800">
-      <div className="pb-3 sm:pb-0">
-        <span className="block text-sm font-medium text-gray-500 dark:text-gray-400">
-          Showing{" "}
+      <div className="flex items-center gap-4 pb-3 sm:pb-0">
+        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+          顯示{" "}
           <span className="text-gray-800 dark:text-white/90">{startItem}</span>{" "}
-          to <span className="text-gray-800 dark:text-white/90">{endItem}</span>{" "}
-          of{" "}
-          <span className="text-gray-800 dark:text-white/90">{totalItems}</span>
+          至 <span className="text-gray-800 dark:text-white/90">{endItem}</span>{" "}
+          共{" "}
+          <span className="text-gray-800 dark:text-white/90">{totalItems}</span>{" "}筆
         </span>
+        {onPageSizeChange && pageSize && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500 dark:text-gray-400">每頁</span>
+            <select
+              value={pageSize}
+              onChange={(e) => onPageSizeChange(Number(e.target.value))}
+              className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+            >
+              {pageSizeOptions.map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+            <span className="text-sm text-gray-500 dark:text-gray-400">筆</span>
+          </div>
+        )}
       </div>
       <div className="flex w-full items-center justify-between gap-2 rounded-lg bg-gray-50 p-4 sm:w-auto sm:justify-normal sm:rounded-none sm:bg-transparent sm:p-0 dark:bg-gray-900 dark:sm:bg-transparent">
         <button

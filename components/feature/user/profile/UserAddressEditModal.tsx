@@ -1,0 +1,137 @@
+"use client";
+import React, { useState, useEffect, useMemo } from "react";
+import { Modal } from "@/components/tailadmin/ui/modal";
+import Label from "@/components/tailadmin/form/Label";
+import Select from "@/components/tailadmin/form/select/Select";
+import TextArea from "@/components/tailadmin/form/input/TextArea";
+import Button from "@/components/tailadmin/ui/button/Button";
+import {
+  HK_REGIONS,
+  getRegionByDistrict,
+} from "@/lib/constants/hk-address-data";
+
+export interface UserAddressFormData {
+  region?: string;
+  district: string;
+  address: string;
+}
+
+interface UserAddressEditModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: UserAddressFormData) => void;
+  initialData?: Partial<UserAddressFormData>;
+  isLoading?: boolean;
+}
+
+export default function UserAddressEditModal({
+  isOpen,
+  onClose,
+  onSave,
+  initialData = {},
+  isLoading = false,
+}: UserAddressEditModalProps) {
+  const [region, setRegion] = useState<string>("");
+  const [district, setDistrict] = useState<string>("");
+  const [address, setAddress] = useState<string>("");
+
+  useEffect(() => {
+    if (isOpen) {
+      const initDistrict = initialData.district || "";
+      const initRegion =
+        initialData.region || getRegionByDistrict(initDistrict);
+
+      setRegion(initRegion);
+      setDistrict(initDistrict);
+      setAddress(initialData.address || "");
+    }
+  }, [isOpen, initialData]);
+
+  const handleRegionChange = (newRegion: string) => {
+    setRegion(newRegion);
+    setDistrict("");
+  };
+
+  const districtOptions = useMemo(() => {
+    const selectedRegionData = HK_REGIONS.find((r) => r.value === region);
+    return selectedRegionData ? selectedRegionData.districts : [];
+  }, [region]);
+
+  const regionOptions = HK_REGIONS.map((r) => ({
+    value: r.value,
+    label: r.label,
+  }));
+
+  const handleSave = () => {
+    onSave({
+      region,
+      district,
+      address,
+    });
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      className="max-w-[500px] p-5 lg:p-8"
+    >
+      <div>
+        <h4 className="mb-6 text-lg font-semibold text-gray-800 dark:text-white/90">
+          編輯地址
+        </h4>
+
+        <div className="space-y-5">
+          <div>
+            <Label>地域</Label>
+            <Select
+              options={regionOptions}
+              placeholder="請選擇地域（香港島/九龍/新界）"
+              defaultValue={region}
+              onChange={handleRegionChange}
+            />
+          </div>
+
+          <div>
+            <Label>地區</Label>
+            <Select
+              options={districtOptions}
+              placeholder={region ? "請選擇分區" : "請先選擇地域"}
+              defaultValue={district}
+              onChange={setDistrict}
+            />
+          </div>
+
+          <div>
+            <Label>詳細地址</Label>
+            <TextArea
+              placeholder="請輸入屋苑、大廈名稱、座數及室號"
+              value={address}
+              onChange={setAddress}
+              rows={3}
+            />
+            <p className="mt-1 text-xs text-gray-400">無需重複填寫地區</p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end w-full gap-3 mt-6">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onClose}
+            disabled={isLoading}
+          >
+            取消
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={isLoading || !district || !address}
+          >
+            {isLoading ? "儲存中..." : "儲存"}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}

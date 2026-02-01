@@ -3,6 +3,7 @@
 import { useSidebar } from "@/context/SidebarContext";
 import AppHeader from "@/layout/private/AppHeader";
 import AppSidebar from "@/layout/private/AppSidebar";
+import AppFooter from "@/layout/private/AppFooter";
 import Backdrop from "@/layout/private/Backdrop";
 import React from "react";
 import { usePathname } from "next/navigation";
@@ -17,10 +18,14 @@ export default function AdminLayout({
 
   // Performance monitoring
   const startTime = performance.now();
-  console.log(`⚡ Performance: Layout render started at ${startTime.toFixed(2)}ms`);
+  console.log(
+    `⚡ Performance: Layout render started at ${startTime.toFixed(2)}ms`
+  );
 
   // Responsive design testing log
-  console.log(`📱 Responsive: isExpanded=${isExpanded}, isHovered=${isHovered}, isMobileOpen=${isMobileOpen}, pathname=${pathname}`);
+  console.log(
+    `📱 Responsive: isExpanded=${isExpanded}, isHovered=${isHovered}, isMobileOpen=${isMobileOpen}, pathname=${pathname}`
+  );
 
   // Route-specific styles for the main content container
   const getRouteSpecificStyles = () => {
@@ -34,7 +39,7 @@ export default function AdminLayout({
       case "/video-generator":
         return "";
       default:
-        return "p-4 mx-auto max-w-(--breakpoint-2xl) md:p-6";
+        return "p-4 mx-auto w-full max-w-(--breakpoint-2xl) md:p-6";
     }
   };
 
@@ -49,7 +54,11 @@ export default function AdminLayout({
 
   // Performance monitoring - layout render complete
   const endTime = performance.now();
-  console.log(`⚡ Performance: Layout render completed in ${(endTime - startTime).toFixed(2)}ms`);
+  console.log(
+    `⚡ Performance: Layout render completed in ${(endTime - startTime).toFixed(
+      2
+    )}ms`
+  );
 
   return (
     <div className="min-h-screen xl:flex">
@@ -58,12 +67,15 @@ export default function AdminLayout({
       <Backdrop />
       {/* Main Content Area */}
       <div
-        className={`flex-1 transition-all  duration-300 ease-in-out ${mainContentMargin}`}
+        className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out ${mainContentMargin}`}
       >
         {/* Header */}
         <AppHeader />
         {/* Page Content */}
-        <div className={getRouteSpecificStyles()}>{children}</div>
+        <div className={`grow ${getRouteSpecificStyles()}`}>{children}</div>
+
+        {/* Footer */}
+        <AppFooter />
       </div>
     </div>
   );

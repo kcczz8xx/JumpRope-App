@@ -34,11 +34,14 @@ export interface DataTableProps<T = any> {
     filters?: DataTableFilter[];
     searchable?: boolean;
     searchPlaceholder?: string;
+    searchKeys?: string[];
     selectable?: boolean;
     onSelectionChange?: (selectedIds: string[]) => void;
     getRowId?: (row: T) => string;
     pagination?: boolean;
     pageSize?: number;
+    pageSizeOptions?: number[];
+    showPageSizeSelector?: boolean;
     emptyMessage?: string;
     emptyAction?: {
         label: string;

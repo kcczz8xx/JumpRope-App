@@ -1,0 +1,272 @@
+import {
+    LessonType,
+    LessonStatus,
+    LessonWithDetails,
+} from "@/components/feature/school-service/types/lesson";
+
+const WEEKDAY_NAMES = ["", "一", "二", "三", "四", "五", "六", "日"];
+
+export function getWeekdayName(weekday: number): string {
+    return WEEKDAY_NAMES[weekday] || "";
+}
+
+export const lessonsListData: LessonWithDetails[] = [
+    {
+        id: "lesson_001",
+        lessonDate: new Date("2025-01-27"),
+        startTime: "14:00",
+        endTime: "15:30",
+        weekday: 1,
+        lessonType: LessonType.REGULAR,
+        lessonStatus: LessonStatus.COMPLETED,
+        studentCount: 22,
+        requiredTutors: 2,
+        assignedTutors: 2,
+        course: {
+            id: "course_001",
+            courseName: "跳繩恆常班（上學期）",
+            courseType: "恆常班",
+        },
+        school: {
+            id: "school_hk_primary_1",
+            schoolName: "香港小學",
+        },
+    },
+    {
+        id: "lesson_002",
+        lessonDate: new Date("2025-01-28"),
+        startTime: "15:00",
+        endTime: "16:30",
+        weekday: 2,
+        lessonType: LessonType.REGULAR,
+        lessonStatus: LessonStatus.COMPLETED,
+        studentCount: 18,
+        requiredTutors: 3,
+        assignedTutors: 3,
+        course: {
+            id: "course_003",
+            courseName: "花式跳繩進階班",
+            courseType: "恆常班",
+        },
+        school: {
+            id: "school_kowloon_sec_1",
+            schoolName: "九龍中學",
+        },
+    },
+    {
+        id: "lesson_003",
+        lessonDate: new Date("2025-01-29"),
+        startTime: "14:30",
+        endTime: "16:00",
+        weekday: 3,
+        lessonType: LessonType.REGULAR,
+        lessonStatus: LessonStatus.SCHEDULED,
+        studentCount: null,
+        requiredTutors: 3,
+        assignedTutors: 2,
+        course: {
+            id: "course_004",
+            courseName: "花式跳繩興趣班",
+            courseType: "興趣班",
+        },
+        school: {
+            id: "school_004",
+            schoolName: "沙田公立學校",
+        },
+    },
+    {
+        id: "lesson_004",
+        lessonDate: new Date("2025-01-30"),
+        startTime: "09:00",
+        endTime: "10:30",
+        weekday: 4,
+        lessonType: LessonType.REGULAR,
+        lessonStatus: LessonStatus.SCHEDULED,
+        studentCount: null,
+        requiredTutors: 2,
+        assignedTutors: 1,
+        course: {
+            id: "course_006",
+            courseName: "跳繩比賽培訓班",
+            courseType: "校隊班",
+        },
+        school: {
+            id: "school_007",
+            schoolName: "拔萃男書院",
+        },
+    },
+    {
+        id: "lesson_005",
+        lessonDate: new Date("2025-01-31"),
+        startTime: "14:00",
+        endTime: "15:30",
+        weekday: 5,
+        lessonType: LessonType.REGULAR,
+        lessonStatus: LessonStatus.SCHEDULED,
+        studentCount: null,
+        requiredTutors: 1,
+        assignedTutors: 1,
+        course: {
+            id: "course_008",
+            courseName: "課後跳繩興趣班",
+            courseType: "課後班",
+        },
+        school: {
+            id: "school_009",
+            schoolName: "聖若瑟小學",
+        },
+    },
+    {
+        id: "lesson_006",
+        lessonDate: new Date("2025-02-03"),
+        startTime: "14:00",
+        endTime: "15:30",
+        weekday: 1,
+        lessonType: LessonType.REGULAR,
+        lessonStatus: LessonStatus.SCHEDULED,
+        studentCount: null,
+        requiredTutors: 2,
+        assignedTutors: 0,
+        course: {
+            id: "course_001",
+            courseName: "跳繩恆常班（上學期）",
+            courseType: "恆常班",
+        },
+        school: {
+            id: "school_hk_primary_1",
+            schoolName: "香港小學",
+        },
+    },
+    {
+        id: "lesson_007",
+        lessonDate: new Date("2025-02-04"),
+        startTime: "15:00",
+        endTime: "16:30",
+        weekday: 2,
+        lessonType: LessonType.MAKEUP,
+        lessonStatus: LessonStatus.SCHEDULED,
+        studentCount: null,
+        requiredTutors: 3,
+        assignedTutors: 2,
+        course: {
+            id: "course_003",
+            courseName: "花式跳繩進階班",
+            courseType: "恆常班",
+        },
+        school: {
+            id: "school_kowloon_sec_1",
+            schoolName: "九龍中學",
+        },
+    },
+    {
+        id: "lesson_008",
+        lessonDate: new Date("2025-01-20"),
+        startTime: "14:00",
+        endTime: "15:30",
+        weekday: 1,
+        lessonType: LessonType.REGULAR,
+        lessonStatus: LessonStatus.COMPLETED,
+        studentCount: 20,
+        requiredTutors: 2,
+        assignedTutors: 2,
+        course: {
+            id: "course_001",
+            courseName: "跳繩恆常班（上學期）",
+            courseType: "恆常班",
+        },
+        school: {
+            id: "school_hk_primary_1",
+            schoolName: "香港小學",
+        },
+    },
+    {
+        id: "lesson_009",
+        lessonDate: new Date("2025-01-21"),
+        startTime: "15:00",
+        endTime: "16:30",
+        weekday: 2,
+        lessonType: LessonType.REGULAR,
+        lessonStatus: LessonStatus.CANCELLED,
+        studentCount: null,
+        requiredTutors: 3,
+        assignedTutors: 0,
+        course: {
+            id: "course_003",
+            courseName: "花式跳繩進階班",
+            courseType: "恆常班",
+        },
+        school: {
+            id: "school_kowloon_sec_1",
+            schoolName: "九龍中學",
+        },
+    },
+    {
+        id: "lesson_010",
+        lessonDate: new Date("2025-01-22"),
+        startTime: "14:30",
+        endTime: "16:00",
+        weekday: 3,
+        lessonType: LessonType.EXTRA_PRACTICE,
+        lessonStatus: LessonStatus.COMPLETED,
+        studentCount: 15,
+        requiredTutors: 2,
+        assignedTutors: 2,
+        course: {
+            id: "course_006",
+            courseName: "跳繩比賽培訓班",
+            courseType: "校隊班",
+        },
+        school: {
+            id: "school_007",
+            schoolName: "拔萃男書院",
+        },
+    },
+    {
+        id: "lesson_011",
+        lessonDate: new Date("2025-02-05"),
+        startTime: "14:30",
+        endTime: "16:00",
+        weekday: 3,
+        lessonType: LessonType.REGULAR,
+        lessonStatus: LessonStatus.SCHEDULED,
+        studentCount: null,
+        requiredTutors: 3,
+        assignedTutors: 1,
+        course: {
+            id: "course_004",
+            courseName: "花式跳繩興趣班",
+            courseType: "興趣班",
+        },
+        school: {
+            id: "school_004",
+            schoolName: "沙田公立學校",
+        },
+    },
+    {
+        id: "lesson_012",
+        lessonDate: new Date("2025-02-06"),
+        startTime: "09:00",
+        endTime: "10:30",
+        weekday: 4,
+        lessonType: LessonType.REGULAR,
+        lessonStatus: LessonStatus.SCHEDULED,
+        studentCount: null,
+        requiredTutors: 2,
+        assignedTutors: 2,
+        course: {
+            id: "course_006",
+            courseName: "跳繩比賽培訓班",
+            courseType: "校隊班",
+        },
+        school: {
+            id: "school_007",
+            schoolName: "拔萃男書院",
+        },
+    },
+];
+
+export function getLessonsList(): LessonWithDetails[] {
+    return lessonsListData.sort(
+        (a, b) => b.lessonDate.getTime() - a.lessonDate.getTime()
+    );
+}
