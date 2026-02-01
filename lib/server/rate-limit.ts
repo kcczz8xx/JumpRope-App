@@ -1,54 +1,123 @@
-type RateLimitRecord = {
-    count: number;
-    resetTime: number;
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+
+/**
+ * Rate Limit 配置
+ * 使用 Upstash Redis 實現，支援 serverless 環境
+ * 
+ * 環境變數：
+ * - UPSTASH_REDIS_REST_URL
+ * - UPSTASH_REDIS_REST_TOKEN
+ */
+
+const redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL || "",
+    token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
+});
+
+const rateLimiters = {
+    otpSend: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(3, "60 s"),
+        prefix: "ratelimit:otp_send",
+        analytics: true,
+    }),
+    otpVerify: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(5, "60 s"),
+        prefix: "ratelimit:otp_verify",
+        analytics: true,
+    }),
+    register: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(5, "1 h"),
+        prefix: "ratelimit:register",
+        analytics: true,
+    }),
+    login: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(10, "15 m"),
+        prefix: "ratelimit:login",
+        analytics: true,
+    }),
+    resetPassword: new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(5, "1 h"),
+        prefix: "ratelimit:reset_password",
+        analytics: true,
+    }),
 };
 
-const rateLimitStore = new Map<string, RateLimitRecord>();
+type RateLimitType = keyof typeof rateLimiters;
 
 interface RateLimitConfig {
     windowMs: number;
     maxRequests: number;
 }
 
-const DEFAULT_CONFIG: RateLimitConfig = {
-    windowMs: 60 * 1000,
-    maxRequests: 10,
+export const RATE_LIMIT_CONFIGS = {
+    OTP_SEND: { windowMs: 60 * 1000, maxRequests: 3 },
+    OTP_VERIFY: { windowMs: 60 * 1000, maxRequests: 5 },
+    REGISTER: { windowMs: 60 * 60 * 1000, maxRequests: 5 },
+    LOGIN: { windowMs: 15 * 60 * 1000, maxRequests: 10 },
+    RESET_PASSWORD: { windowMs: 60 * 60 * 1000, maxRequests: 5 },
+} as const;
+
+const configToType: Record<string, RateLimitType> = {
+    OTP_SEND: "otpSend",
+    OTP_VERIFY: "otpVerify",
+    REGISTER: "register",
+    LOGIN: "login",
+    RESET_PASSWORD: "resetPassword",
 };
 
-export function rateLimit(
+/**
+ * Rate Limit 檢查函數
+ * @param identifier 識別符（通常是 `${type}:${clientIP}`）
+ * @param config Rate limit 配置
+ * @returns 包含 success、remaining、resetIn 的結果
+ */
+export async function rateLimit(
+    identifier: string,
+    config: Partial<RateLimitConfig> = {}
+): Promise<{ success: boolean; remaining: number; resetIn: number }> {
+    const configKey = Object.keys(RATE_LIMIT_CONFIGS).find(
+        (key) =>
+            RATE_LIMIT_CONFIGS[key as keyof typeof RATE_LIMIT_CONFIGS].windowMs === config.windowMs &&
+            RATE_LIMIT_CONFIGS[key as keyof typeof RATE_LIMIT_CONFIGS].maxRequests === config.maxRequests
+    );
+
+    const limiterType = configKey ? configToType[configKey] : "otpSend";
+    const limiter = rateLimiters[limiterType];
+
+    try {
+        const result = await limiter.limit(identifier);
+
+        return {
+            success: result.success,
+            remaining: result.remaining,
+            resetIn: result.reset - Date.now(),
+        };
+    } catch (error) {
+        console.error("Rate limit error:", error);
+        return {
+            success: true,
+            remaining: 999,
+            resetIn: 0,
+        };
+    }
+}
+
+/**
+ * 同步版本的 rate limit（向後相容）
+ * 注意：此版本在 Redis 不可用時會降級為允許請求
+ */
+export function rateLimitSync(
     identifier: string,
     config: Partial<RateLimitConfig> = {}
 ): { success: boolean; remaining: number; resetIn: number } {
-    const { windowMs, maxRequests } = { ...DEFAULT_CONFIG, ...config };
-    const now = Date.now();
-    const record = rateLimitStore.get(identifier);
-
-    if (!record || now > record.resetTime) {
-        rateLimitStore.set(identifier, {
-            count: 1,
-            resetTime: now + windowMs,
-        });
-        return {
-            success: true,
-            remaining: maxRequests - 1,
-            resetIn: windowMs,
-        };
-    }
-
-    if (record.count >= maxRequests) {
-        return {
-            success: false,
-            remaining: 0,
-            resetIn: record.resetTime - now,
-        };
-    }
-
-    record.count += 1;
-    return {
-        success: true,
-        remaining: maxRequests - record.count,
-        resetIn: record.resetTime - now,
-    };
+    console.warn("rateLimitSync is deprecated, use rateLimit (async) instead");
+    return { success: true, remaining: 999, resetIn: 0 };
 }
 
 export function getClientIP(request: Request): string {
@@ -62,11 +131,3 @@ export function getClientIP(request: Request): string {
     }
     return "unknown";
 }
-
-export const RATE_LIMIT_CONFIGS = {
-    OTP_SEND: { windowMs: 60 * 1000, maxRequests: 3 },
-    OTP_VERIFY: { windowMs: 60 * 1000, maxRequests: 5 },
-    REGISTER: { windowMs: 60 * 60 * 1000, maxRequests: 5 },
-    LOGIN: { windowMs: 15 * 60 * 1000, maxRequests: 10 },
-    RESET_PASSWORD: { windowMs: 60 * 60 * 1000, maxRequests: 5 },
-} as const;

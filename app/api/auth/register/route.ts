@@ -15,7 +15,7 @@ interface RegisterRequest {
 export async function POST(request: NextRequest) {
     try {
         const clientIP = getClientIP(request);
-        const rateLimitResult = rateLimit(
+        const rateLimitResult = await rateLimit(
             `register:${clientIP}`,
             RATE_LIMIT_CONFIGS.REGISTER
         );
@@ -41,6 +41,23 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(
                 { error: "密碼至少需要 8 個字元" },
                 { status: 400 }
+            );
+        }
+
+        const verifiedOtp = await prisma.otp.findFirst({
+            where: {
+                phone,
+                purpose: "REGISTER",
+                verified: true,
+                expiresAt: { gte: new Date(Date.now() - 30 * 60 * 1000) },
+            },
+            orderBy: { createdAt: "desc" },
+        });
+
+        if (!verifiedOtp) {
+            return NextResponse.json(
+                { error: "請先完成電話號碼驗證" },
+                { status: 403 }
             );
         }
 

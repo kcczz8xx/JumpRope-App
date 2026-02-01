@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { prisma } from "@/lib/db";
 import { rateLimit, getClientIP, RATE_LIMIT_CONFIGS } from "@/lib/server";
+
+function hashToken(token: string): string {
+    return crypto.createHash("sha256").update(token).digest("hex");
+}
 
 interface ResetPasswordRequest {
     phone: string;
@@ -12,7 +17,7 @@ interface ResetPasswordRequest {
 export async function POST(request: NextRequest) {
     try {
         const clientIP = getClientIP(request);
-        const rateLimitResult = rateLimit(
+        const rateLimitResult = await rateLimit(
             `reset_password:${clientIP}`,
             RATE_LIMIT_CONFIGS.RESET_PASSWORD
         );
@@ -41,10 +46,11 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        const tokenHash = hashToken(resetToken);
         const tokenRecord = await prisma.passwordResetToken.findFirst({
             where: {
                 phone,
-                token: resetToken,
+                token: tokenHash,
                 used: false,
             },
         });
@@ -86,8 +92,6 @@ export async function POST(request: NextRequest) {
                 data: { used: true },
             }),
         ]);
-
-        console.log(`[Reset Password] Password reset successful for ${phone}`);
 
         return NextResponse.json(
             { message: "密碼重設成功" },

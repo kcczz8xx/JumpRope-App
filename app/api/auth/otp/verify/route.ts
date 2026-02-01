@@ -18,7 +18,7 @@ function mapPurpose(purpose: "register" | "reset-password" | "update-contact"): 
 export async function POST(request: NextRequest) {
     try {
         const clientIP = getClientIP(request);
-        const rateLimitResult = rateLimit(
+        const rateLimitResult = await rateLimit(
             `otp_verify:${clientIP}`,
             RATE_LIMIT_CONFIGS.OTP_VERIFY
         );
@@ -95,8 +95,6 @@ export async function POST(request: NextRequest) {
             where: { id: otp.id },
             data: { verified: true },
         });
-
-        console.log(`[OTP] Verified OTP for ${phone}, purpose: ${purpose}`);
 
         return NextResponse.json(
             { message: "驗證成功", verified: true },

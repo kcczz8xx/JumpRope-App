@@ -63,8 +63,6 @@ export async function POST(request: NextRequest) {
             data: { passwordHash: newPasswordHash },
         });
 
-        console.log(`[Change Password] Password changed for user ${userId}`);
-
         return NextResponse.json({ message: "密碼修改成功" }, { status: 200 });
     } catch (error) {
         console.error("Change password error:", error);

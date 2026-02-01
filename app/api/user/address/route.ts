@@ -72,8 +72,6 @@ export async function PUT(request: NextRequest) {
             },
         });
 
-        console.log(`[Update Address] User ${userId} updated address`);
-
         return NextResponse.json(
             { message: "地址更新成功", address: updatedAddress },
             { status: 200 }
@@ -110,8 +108,6 @@ export async function DELETE() {
         await prisma.userAddress.delete({
             where: { userId },
         });
-
-        console.log(`[Delete Address] User ${userId} deleted address`);
 
         return NextResponse.json({ message: "地址已刪除" }, { status: 200 });
     } catch (error) {

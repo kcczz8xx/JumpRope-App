@@ -94,21 +94,25 @@ export async function PATCH(request: NextRequest) {
         }
 
         if (phone !== undefined) {
-            if (phone) {
-                const existingUser = await prisma.user.findFirst({
-                    where: {
-                        phone,
-                        id: { not: userId },
-                    },
-                });
-                if (existingUser) {
-                    return NextResponse.json(
-                        { error: "此電話號碼已被使用" },
-                        { status: 409 }
-                    );
-                }
+            if (!phone) {
+                return NextResponse.json(
+                    { error: "電話號碼不能為空" },
+                    { status: 400 }
+                );
             }
-            updateData.phone = phone || null;
+            const existingUser = await prisma.user.findFirst({
+                where: {
+                    phone,
+                    id: { not: userId },
+                },
+            });
+            if (existingUser) {
+                return NextResponse.json(
+                    { error: "此電話號碼已被使用" },
+                    { status: 409 }
+                );
+            }
+            updateData.phone = phone;
         }
 
         if (whatsappEnabled !== undefined) {
@@ -133,8 +137,6 @@ export async function PATCH(request: NextRequest) {
                 whatsappEnabled: true,
             },
         });
-
-        console.log(`[Update Profile] User ${userId} updated profile`);
 
         return NextResponse.json(
             { message: "資料更新成功", user: updatedUser },

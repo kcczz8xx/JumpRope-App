@@ -84,7 +84,6 @@ export function useFormSubmit<TData, TResult = unknown>({
       errorMessage,
       showSuccessToast,
       showErrorToast,
-      isSubmitting,
     ]
   );
 

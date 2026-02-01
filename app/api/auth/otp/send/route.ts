@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { prisma } from "@/lib/db";
 import { OtpPurpose } from "@prisma/client";
 import { rateLimit, getClientIP, RATE_LIMIT_CONFIGS } from "@/lib/server";
@@ -10,7 +11,7 @@ interface SendOtpRequest {
 }
 
 function generateOtpCode(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    return crypto.randomInt(100000, 999999).toString();
 }
 
 function mapPurpose(purpose: "register" | "reset-password" | "update-contact"): OtpPurpose {
@@ -22,7 +23,7 @@ function mapPurpose(purpose: "register" | "reset-password" | "update-contact"): 
 export async function POST(request: NextRequest) {
     try {
         const clientIP = getClientIP(request);
-        const rateLimitResult = rateLimit(
+        const rateLimitResult = await rateLimit(
             `otp_send:${clientIP}`,
             RATE_LIMIT_CONFIGS.OTP_SEND
         );
@@ -119,8 +120,6 @@ export async function POST(request: NextRequest) {
                 expiresAt,
             },
         });
-
-        console.log(`[OTP] Created OTP for ${phone}, purpose: ${purpose}`);
 
         return NextResponse.json(
             { message: "驗證碼已發送", phone },

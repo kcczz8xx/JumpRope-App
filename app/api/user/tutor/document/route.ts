@@ -198,10 +198,6 @@ export async function POST(request: NextRequest) {
             },
         });
 
-        console.log(
-            `[Create Tutor Document] User ${userId} created ${documentType} document`
-        );
-
         return NextResponse.json(
             { message: "文件上傳成功", document },
             { status: 201 }
@@ -321,10 +317,6 @@ export async function PUT(request: NextRequest) {
             },
         });
 
-        console.log(
-            `[Update Tutor Document] User ${userId} updated document ${documentId}`
-        );
-
         return NextResponse.json(
             { message: "文件更新成功", document: updatedDocument },
             { status: 200 }
@@ -391,10 +383,6 @@ export async function DELETE(request: NextRequest) {
         await prisma.tutorDocument.delete({
             where: { id: documentId },
         });
-
-        console.log(
-            `[Delete Tutor Document] User ${userId} deleted document ${documentId}`
-        );
 
         return NextResponse.json(
             { message: "文件已刪除" },

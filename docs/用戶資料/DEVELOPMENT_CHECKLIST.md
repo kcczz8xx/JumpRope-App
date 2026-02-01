@@ -497,7 +497,75 @@
 
 ---
 
-## 📝 注意事項
+## � Code Review 發現的問題（2026-02-02）
+
+> 以下問題在代碼審查中發現，需優先處理。
+
+### 🔴 嚴重問題
+
+- [x] **1. 註冊 API 未驗證 OTP 狀態**（安全漏洞）✅ 已修復
+
+  - 文件：`app/api/auth/register/route.ts`
+  - 問題：註冊端點未檢查 OTP 是否已驗證通過，可繞過 OTP 驗證直接註冊
+  - 修復：新增已驗證 OTP 記錄檢查
+
+- [x] **2. Rate Limit 內存洩漏** ✅ 已修復
+
+  - 文件：`lib/server/rate-limit.ts`
+  - 問題：使用內存 `Map` 存儲，serverless 環境下 cold start 會重置；過期記錄不會被清理
+  - 修復：改用 Upstash Redis 實現，需設定環境變數 `UPSTASH_REDIS_REST_URL` 和 `UPSTASH_REDIS_REST_TOKEN`
+
+- [x] **3. 會員編號生成併發競爭條件** ✅ 已修復
+
+  - 文件：`lib/services/member-number.ts`
+  - 問題：高併發註冊時可能產生重複會員編號
+  - 修復：新增重試機制與樂觀鎖定策略
+
+- [x] **4. Reset Token 明文存儲** ✅ 已修復
+  - 文件：`app/api/auth/reset-password/verify/route.ts`, `reset/route.ts`
+  - 問題：Reset token 以明文存儲，資料庫洩漏時攻擊者可直接使用
+  - 修復：存儲 token 的 SHA256 hash 值
+
+### 🟠 中等問題
+
+- [ ] **5. Email OTP 發送邏輯缺失**
+
+  - 文件：`app/api/auth/otp/send/route.ts`
+  - 問題：OTP 只處理 phone，但前端 `UserInfoEditModal` 有 `otp-email` 步驟
+  - 修復：新增 email OTP 發送邏輯，或調整前端流程
+
+- [x] **6. `useFormSubmit` 依賴問題** ✅ 已修復
+
+  - 文件：`hooks/useFormSubmit.ts`
+  - 問題：`isSubmitting` 不應放在 `useCallback` 依賴陣列中
+  - 修復：移除 `isSubmitting` 依賴
+
+- [x] **7. Profile API 允許設置空值 Phone** ✅ 已修復
+  - 文件：`app/api/user/profile/route.ts`
+  - 問題：允許將 phone 設為 null，但 phone 是登入憑證
+  - 修復：新增 phone 非空驗證
+
+### 🟡 輕微問題
+
+- [x] **8. Console.log 遺留** ✅ 已修復
+
+  - 多處 API 路由存在調試用 `console.log`
+  - 修復：已移除所有 API 路由中的調試用 console.log
+
+- [x] **9. OTP 使用非安全隨機數** ✅ 已修復
+
+  - 文件：`app/api/auth/otp/send/route.ts`, `reset-password/send/route.ts`
+  - 問題：`Math.random()` 不是加密安全的
+  - 修復：改用 `crypto.randomInt(100000, 999999)`
+
+- [x] **10. birthYear 解析缺乏驗證** ✅ 已修復
+  - 文件：`app/api/user/children/route.ts`
+  - 問題：`parseInt("abc", 10)` 會返回 `NaN`
+  - 修復：新增數字驗證與年份範圍檢查 (1900 ~ 當前年份)
+
+---
+
+## �� 注意事項
 
 1. **逐步推進**：不要一次做太多，每個 Phase 確認無誤才進入下一個
 2. **測試先行**：每個功能完成後立即測試，不要累積到最後

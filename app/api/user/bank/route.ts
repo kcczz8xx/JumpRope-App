@@ -88,8 +88,6 @@ export async function PUT(request: NextRequest) {
             },
         });
 
-        console.log(`[Update Bank] User ${userId} updated bank account`);
-
         return NextResponse.json(
             { message: "收款資料更新成功", bankAccount: updatedBankAccount },
             { status: 200 }
@@ -129,8 +127,6 @@ export async function DELETE() {
         await prisma.userBankAccount.delete({
             where: { userId },
         });
-
-        console.log(`[Delete Bank] User ${userId} deleted bank account`);
 
         return NextResponse.json({ message: "收款資料已刪除" }, { status: 200 });
     } catch (error) {

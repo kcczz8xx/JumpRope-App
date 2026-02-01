@@ -3,6 +3,10 @@ import { prisma } from "@/lib/db";
 import crypto from "crypto";
 import { rateLimit, getClientIP, RATE_LIMIT_CONFIGS } from "@/lib/server";
 
+function hashToken(token: string): string {
+    return crypto.createHash("sha256").update(token).digest("hex");
+}
+
 interface VerifyResetCodeRequest {
     phone: string;
     code: string;
@@ -11,7 +15,7 @@ interface VerifyResetCodeRequest {
 export async function POST(request: NextRequest) {
     try {
         const clientIP = getClientIP(request);
-        const rateLimitResult = rateLimit(
+        const rateLimitResult = await rateLimit(
             `reset_verify:${clientIP}`,
             RATE_LIMIT_CONFIGS.OTP_VERIFY
         );
@@ -92,17 +96,16 @@ export async function POST(request: NextRequest) {
         });
 
         const resetToken = crypto.randomBytes(32).toString("hex");
+        const tokenHash = hashToken(resetToken);
         const tokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
         await prisma.passwordResetToken.create({
             data: {
                 phone,
-                token: resetToken,
+                token: tokenHash,
                 expiresAt: tokenExpiresAt,
             },
         });
-
-        console.log(`[Reset Password] Verified OTP and created reset token for ${phone}`);
 
         return NextResponse.json(
             { message: "驗證成功", verified: true, resetToken },

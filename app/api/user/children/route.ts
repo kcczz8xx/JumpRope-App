@@ -65,12 +65,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let birthYear: number | null = null;
+    if (body.birthYear) {
+      const parsed = parseInt(body.birthYear, 10);
+      if (isNaN(parsed) || parsed < 1900 || parsed > new Date().getFullYear()) {
+        return NextResponse.json(
+          { error: "請輸入有效的出生年份" },
+          { status: 400 }
+        );
+      }
+      birthYear = parsed;
+    }
+
     const child = await prisma.userChild.create({
       data: {
         parentId: userId,
         nameChinese: body.nameChinese,
         nameEnglish: body.nameEnglish || null,
-        birthYear: body.birthYear ? parseInt(body.birthYear, 10) : null,
+        birthYear,
         school: body.school || null,
         gender: body.gender || null,
       },
@@ -131,12 +143,24 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "學員不存在" }, { status: 404 });
     }
 
+    let birthYear: number | null = null;
+    if (body.birthYear) {
+      const parsed = parseInt(body.birthYear, 10);
+      if (isNaN(parsed) || parsed < 1900 || parsed > new Date().getFullYear()) {
+        return NextResponse.json(
+          { error: "請輸入有效的出生年份" },
+          { status: 400 }
+        );
+      }
+      birthYear = parsed;
+    }
+
     const child = await prisma.userChild.update({
       where: { id: body.id },
       data: {
         nameChinese: body.nameChinese,
         nameEnglish: body.nameEnglish || null,
-        birthYear: body.birthYear ? parseInt(body.birthYear, 10) : null,
+        birthYear,
         school: body.school || null,
         gender: body.gender || null,
       },

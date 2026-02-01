@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { prisma } from "@/lib/db";
 import { rateLimit, getClientIP, RATE_LIMIT_CONFIGS } from "@/lib/server";
 
@@ -8,13 +9,13 @@ interface SendResetCodeRequest {
 }
 
 function generateOtpCode(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    return crypto.randomInt(100000, 999999).toString();
 }
 
 export async function POST(request: NextRequest) {
     try {
         const clientIP = getClientIP(request);
-        const rateLimitResult = rateLimit(
+        const rateLimitResult = await rateLimit(
             `reset_send:${clientIP}`,
             RATE_LIMIT_CONFIGS.RESET_PASSWORD
         );
@@ -68,9 +69,8 @@ export async function POST(request: NextRequest) {
                 },
             });
 
-            console.log(`[Reset Password] Created OTP for phone: ${phone}`);
         } else if (email) {
-            console.log(`[Reset Password] Sending reset link to email: ${email}`);
+            // TODO: 實作 email 重設連結發送
         }
 
         return NextResponse.json(
