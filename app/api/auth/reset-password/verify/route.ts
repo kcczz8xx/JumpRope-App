@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import crypto from "crypto";
-import { rateLimit, getClientIP, RATE_LIMIT_CONFIGS } from "@/lib/rate-limit";
+import { rateLimit, getClientIP, RATE_LIMIT_CONFIGS } from "@/lib/server";
 
 interface VerifyResetCodeRequest {
     phone: string;

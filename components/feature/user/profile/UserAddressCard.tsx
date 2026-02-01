@@ -1,7 +1,7 @@
 "use client";
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React from "react";
 import { useModal } from "@/hooks/useModal";
+import { useUpdateAddress, useDeleteAddress } from "@/hooks/useUserProfile";
 import UserAddressEditModal, {
   UserAddressFormData,
 } from "./UserAddressEditModal";
@@ -21,56 +21,22 @@ export default function UserAddressCard({
   district = "",
   address = "",
 }: UserAddressCardProps) {
-  const router = useRouter();
   const displayRegion =
     region || (district ? getRegionLabel(getRegionByDistrict(district)) : "");
   const { isOpen, openModal, closeModal } = useModal();
-  const [isLoading, setIsLoading] = useState(false);
+  const { isSubmitting: isSaving, submit: saveAddress } =
+    useUpdateAddress(closeModal);
+  const { isSubmitting: isDeleting, submit: deleteAddress } =
+    useDeleteAddress(closeModal);
+
+  const isLoading = isSaving || isDeleting;
 
   const handleSave = async (data: UserAddressFormData) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/user/address", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "更新失敗");
-      }
-
-      closeModal();
-      router.refresh();
-    } catch (error) {
-      console.error("Update address error:", error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
+    await saveAddress(data);
   };
 
   const handleDelete = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/user/address", {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "刪除失敗");
-      }
-
-      closeModal();
-      router.refresh();
-    } catch (error) {
-      console.error("Delete address error:", error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
+    await deleteAddress();
   };
 
   const hasData = displayRegion || district || address;

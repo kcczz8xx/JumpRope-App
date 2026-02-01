@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { Gender, UserRole, DocumentType, DocumentStatus } from "@prisma/client";
 
 function maskIdentityCard(idCard: string): string {

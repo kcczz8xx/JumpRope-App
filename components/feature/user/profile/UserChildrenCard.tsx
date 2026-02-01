@@ -1,141 +1,69 @@
 "use client";
 import React, { useState } from "react";
 import { useModal } from "@/hooks/useModal";
+import { useUserChildren, useUpdateChild } from "@/hooks/useUserProfile";
 import UserChildEditModal, { UserChildFormData } from "./UserChildEditModal";
 
 interface ChildInfo {
   id: string;
-  memberNumber?: string;
+  memberNumber?: string | null;
   nameChinese: string;
-  nameEnglish?: string;
-  birthYear?: number;
-  school?: string;
-  gender?: "男" | "女";
+  nameEnglish?: string | null;
+  birthYear?: number | null;
+  school?: string | null;
+  gender?: "MALE" | "FEMALE" | null;
 }
 
 interface UserChildrenCardProps {
-  children: ChildInfo[];
-  onSave?: (data: UserChildFormData) => void;
-  onDelete?: (id: string) => void;
+  initialChildren?: ChildInfo[];
 }
 
 export default function UserChildrenCard({
-  children = [],
-  onSave,
-  onDelete,
+  initialChildren,
 }: UserChildrenCardProps) {
   const { isOpen, openModal, closeModal } = useModal();
-  const [isLoading, setIsLoading] = useState(false);
   const [editingChild, setEditingChild] = useState<ChildInfo | null>(null);
-  const [mode, setMode] = useState<"create" | "edit">("create");
 
-  const genderToEnum = (g?: string): "MALE" | "FEMALE" | "" => {
-    if (g === "男") return "MALE";
-    if (g === "女") return "FEMALE";
-    return "";
-  };
+  const { children: swrChildren } = useUserChildren();
+  const { isSubmitting: isUpdating, submit: updateChild } =
+    useUpdateChild(closeModal);
 
-  const handleAdd = () => {
-    setEditingChild(null);
-    setMode("create");
-    openModal();
+  const children = swrChildren.length > 0 ? swrChildren : initialChildren ?? [];
+  const isLoading = isUpdating;
+
+  const genderToDisplay = (
+    g?: "MALE" | "FEMALE" | null
+  ): "男" | "女" | undefined => {
+    if (g === "MALE") return "男";
+    if (g === "FEMALE") return "女";
+    return undefined;
   };
 
   const handleEdit = (child: ChildInfo) => {
     setEditingChild(child);
-    setMode("edit");
     openModal();
   };
 
   const handleSave = async (data: UserChildFormData) => {
-    setIsLoading(true);
-    try {
-      if (onSave) {
-        await onSave(data);
-      }
-      closeModal();
-    } finally {
-      setIsLoading(false);
-    }
+    await updateChild(data);
   };
-
-  const handleDelete = async (id: string) => {
-    setIsLoading(true);
-    try {
-      if (onDelete) {
-        await onDelete(id);
-      }
-      closeModal();
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const AddButton = () => (
-    <button
-      onClick={handleAdd}
-      className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-500 hover:text-brand-600 dark:text-brand-400 dark:hover:text-brand-300"
-    >
-      <svg
-        className="w-4 h-4"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M12 4v16m8-8H4"
-        />
-      </svg>
-      新增學員
-    </button>
-  );
 
   if (children.length === 0) {
     return (
       <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-            學員資料
-          </h4>
-          <AddButton />
-        </div>
+        <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">
+          學員資料
+        </h4>
         <p className="text-sm text-gray-500 dark:text-gray-400">暫無學員資料</p>
-
-        <UserChildEditModal
-          isOpen={isOpen}
-          onClose={closeModal}
-          onSave={handleSave}
-          onDelete={handleDelete}
-          isLoading={isLoading}
-          mode={mode}
-          initialData={
-            editingChild
-              ? {
-                  id: editingChild.id,
-                  nameChinese: editingChild.nameChinese,
-                  nameEnglish: editingChild.nameEnglish || "",
-                  birthYear: editingChild.birthYear?.toString() || "",
-                  school: editingChild.school || "",
-                  gender: genderToEnum(editingChild.gender),
-                }
-              : undefined
-          }
-        />
       </div>
     );
   }
 
   return (
     <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
-      <div className="flex items-center justify-between mb-3 lg:mb-6">
-        <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-          學員資料
-        </h4>
-        <AddButton />
-      </div>
+      <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90 mb-3 lg:mb-6">
+        學員資料
+      </h4>
 
       <div className="space-y-4">
         {children.map((child) => (
@@ -188,7 +116,7 @@ export default function UserChildrenCard({
                     性別
                   </p>
                   <p className="text-sm text-gray-700 dark:text-gray-200">
-                    {child.gender}
+                    {genderToDisplay(child.gender)}
                   </p>
                 </div>
               )}
@@ -223,9 +151,7 @@ export default function UserChildrenCard({
         isOpen={isOpen}
         onClose={closeModal}
         onSave={handleSave}
-        onDelete={handleDelete}
         isLoading={isLoading}
-        mode={mode}
         initialData={
           editingChild
             ? {
@@ -234,7 +160,7 @@ export default function UserChildrenCard({
                 nameEnglish: editingChild.nameEnglish || "",
                 birthYear: editingChild.birthYear?.toString() || "",
                 school: editingChild.school || "",
-                gender: genderToEnum(editingChild.gender),
+                gender: editingChild.gender || "",
               }
             : undefined
         }

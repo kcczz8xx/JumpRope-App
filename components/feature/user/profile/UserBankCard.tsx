@@ -1,7 +1,7 @@
 "use client";
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React from "react";
 import { useModal } from "@/hooks/useModal";
+import { useUpdateBank, useDeleteBank } from "@/hooks/useUserProfile";
 import UserBankEditModal, { UserBankFormData } from "./UserBankEditModal";
 
 interface UserBankCardProps {
@@ -21,54 +21,20 @@ export default function UserBankCard({
   fpsEnabled = false,
   notes = "",
 }: UserBankCardProps) {
-  const router = useRouter();
   const { isOpen, openModal, closeModal } = useModal();
-  const [isLoading, setIsLoading] = useState(false);
+  const { isSubmitting: isSaving, submit: saveBank } =
+    useUpdateBank(closeModal);
+  const { isSubmitting: isDeleting, submit: deleteBank } =
+    useDeleteBank(closeModal);
+
+  const isLoading = isSaving || isDeleting;
 
   const handleSave = async (data: UserBankFormData) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/user/bank", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "更新失敗");
-      }
-
-      closeModal();
-      router.refresh();
-    } catch (error) {
-      console.error("Update bank error:", error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
+    await saveBank(data);
   };
 
   const handleDelete = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/user/bank", {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "刪除失敗");
-      }
-
-      closeModal();
-      router.refresh();
-    } catch (error) {
-      console.error("Delete bank error:", error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
+    await deleteBank();
   };
 
   const hasData = bankName || accountNumber || accountHolderName || fpsId;

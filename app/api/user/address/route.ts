@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import {
+    checkPermission,
+    unauthorizedResponse,
+    forbiddenResponse,
+} from "@/lib/rbac/check-permission";
 
 interface UpdateAddressRequest {
     region?: string;
@@ -10,14 +14,16 @@ interface UpdateAddressRequest {
 
 export async function GET() {
     try {
-        const session = await auth();
+        const authResult = await checkPermission("USER_PROFILE_READ_OWN");
 
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "請先登入" }, { status: 401 });
+        if (!authResult.authorized) {
+            return authResult.status === 401
+                ? unauthorizedResponse(authResult.error)
+                : forbiddenResponse(authResult.error);
         }
 
         const userAddress = await prisma.userAddress.findUnique({
-            where: { userId: session.user.id },
+            where: { userId: authResult.userId },
         });
 
         return NextResponse.json({ address: userAddress }, { status: 200 });
@@ -32,12 +38,15 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
     try {
-        const session = await auth();
+        const authResult = await checkPermission("USER_PROFILE_UPDATE_OWN");
 
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "請先登入" }, { status: 401 });
+        if (!authResult.authorized) {
+            return authResult.status === 401
+                ? unauthorizedResponse(authResult.error)
+                : forbiddenResponse(authResult.error);
         }
 
+        const userId = authResult.userId!;
         const body: UpdateAddressRequest = await request.json();
         const { region, district, address } = body;
 
@@ -49,21 +58,21 @@ export async function PUT(request: NextRequest) {
         }
 
         const updatedAddress = await prisma.userAddress.upsert({
-            where: { userId: session.user.id },
+            where: { userId },
             update: {
                 region: region || null,
                 district,
                 address,
             },
             create: {
-                userId: session.user.id,
+                userId,
                 region: region || null,
                 district,
                 address,
             },
         });
 
-        console.log(`[Update Address] User ${session.user.id} updated address`);
+        console.log(`[Update Address] User ${userId} updated address`);
 
         return NextResponse.json(
             { message: "地址更新成功", address: updatedAddress },
@@ -80,14 +89,18 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE() {
     try {
-        const session = await auth();
+        const authResult = await checkPermission("USER_PROFILE_UPDATE_OWN");
 
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "請先登入" }, { status: 401 });
+        if (!authResult.authorized) {
+            return authResult.status === 401
+                ? unauthorizedResponse(authResult.error)
+                : forbiddenResponse(authResult.error);
         }
 
+        const userId = authResult.userId!;
+
         const existingAddress = await prisma.userAddress.findUnique({
-            where: { userId: session.user.id },
+            where: { userId },
         });
 
         if (!existingAddress) {
@@ -95,10 +108,10 @@ export async function DELETE() {
         }
 
         await prisma.userAddress.delete({
-            where: { userId: session.user.id },
+            where: { userId },
         });
 
-        console.log(`[Delete Address] User ${session.user.id} deleted address`);
+        console.log(`[Delete Address] User ${userId} deleted address`);
 
         return NextResponse.json({ message: "地址已刪除" }, { status: 200 });
     } catch (error) {

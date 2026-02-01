@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
-import { rateLimit, getClientIP, RATE_LIMIT_CONFIGS } from "@/lib/rate-limit";
-import { generateMemberNumber } from "@/lib/member-number";
+import { prisma } from "@/lib/db";
+import { rateLimit, getClientIP, RATE_LIMIT_CONFIGS } from "@/lib/server";
+import { generateMemberNumber } from "@/lib/services";
 
 interface RegisterRequest {
     phone: string;

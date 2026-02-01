@@ -299,7 +299,7 @@ enum DocumentType {
 - [x] UserChildEditModal 新增/編輯/刪除功能
 - [x] 整合 Modal 到 Card 組件
 - [x] API Route 已實作（取代 Server Actions）
-- [ ] 整合 API 到 Modal 組件
+- [ ] 整合 SWR Hooks 到 Modal 組件
 
 ### Phase 3: 導師文件管理
 
@@ -308,10 +308,24 @@ enum DocumentType {
 - [ ] 文件狀態自動更新（過期提醒）
 - [ ] 新增證書 Modal
 
-### Phase 4: 權限控制
+### Phase 4: 權限控制 ✅
 
-- [ ] 根據用戶角色顯示/隱藏組件
-- [ ] 導師專屬區塊權限判斷
+- [x] RBAC 權限模組（`lib/rbac/`）
+- [x] `usePermission` Hook
+- [x] `PermissionGate` 組件
+- [x] Middleware 路由保護
+- [ ] 整合權限檢查到 UI 組件
+
+### Phase 5: API 整合層 ✅
+
+- [x] API Client Wrapper（`lib/api-client.ts`）
+- [x] Toast 通知系統（sonner）
+- [x] Zod 驗證 Schema（`lib/validations/`）
+- [x] SWR Provider 與配置
+- [x] `useFormSubmit` 防重複提交 Hook
+- [x] `useUserProfile` 系列 SWR Hooks
+
+> 📖 詳細文檔請參閱 [API_INTEGRATION.md](./API_INTEGRATION.md)
 
 ---
 
@@ -432,11 +446,31 @@ prisma/schema/
 └── tutor.prisma                   # 導師相關 Schema
 
 lib/
+├── api-client.ts                  # API Client Wrapper
+├── toast.ts                       # Toast 通知工具
+├── swr-config.ts                  # SWR 全局配置
 ├── auth/
 │   ├── options.ts                 # NextAuth 設定
 │   └── index.ts                   # Auth 導出
+├── rbac/                          # RBAC 權限模組
+│   ├── index.ts
+│   ├── types.ts                   # UserRole 類型
+│   ├── permissions.ts             # 權限常數
+│   └── check-permission.ts        # Server-side 權限檢查
+├── validations/                   # Zod 驗證 Schema
+│   ├── index.ts
+│   ├── user.ts
+│   └── tutor-document.ts
 └── constants/
     └── hk-address-data.ts         # 香港十八區資料常數
+
+hooks/
+├── useFormSubmit.ts               # 表單提交 Hook
+├── usePermission.ts               # Client-side 權限 Hook
+└── useUserProfile.ts              # SWR-based 用戶資料 Hooks
+
+context/
+└── SWRProvider.tsx                # SWR 全局 Provider
 
 components/auth/
 ├── SignInForm.tsx                 # 登入表單

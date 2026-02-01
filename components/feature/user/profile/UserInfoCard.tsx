@@ -1,7 +1,8 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
 import { useModal } from "@/hooks/useModal";
 import { parsePhoneNumber } from "libphonenumber-js";
+import { useUpdateProfile } from "@/hooks/useUserProfile";
 import UserInfoEditModal, { UserInfoFormData } from "./UserInfoEditModal";
 
 const formatPhoneNumber = (phone: string | null | undefined) => {
@@ -11,7 +12,7 @@ const formatPhoneNumber = (phone: string | null | undefined) => {
     if (phoneNumber) {
       return phoneNumber.formatInternational();
     }
-  } catch (error) {
+  } catch {
     // 如果解析失敗，返回原始值
   }
   return phone;
@@ -31,53 +32,22 @@ interface UserInfoCardProps {
 }
 
 export default function UserInfoCard({
-  nickname: initialNickname = "",
+  nickname = "",
   title = "",
   nameChinese = "",
   nameEnglish = "",
   identityCardNumber = "",
   gender = "",
-  email: initialEmail = "",
-  phone: initialPhone = "",
-  whatsappEnabled: initialWhatsappEnabled = false,
+  email = "",
+  phone = "",
+  whatsappEnabled = false,
   memberNumber = "",
 }: UserInfoCardProps) {
   const { isOpen, openModal, closeModal } = useModal();
-  const [isLoading, setIsLoading] = useState(false);
-  const [nickname, setNickname] = useState(initialNickname);
-  const [email, setEmail] = useState(initialEmail);
-  const [phone, setPhone] = useState(initialPhone);
-  const [whatsappEnabled, setWhatsappEnabled] = useState(
-    initialWhatsappEnabled
-  );
+  const { isSubmitting, submit } = useUpdateProfile(closeModal);
 
   const handleSave = async (data: Partial<UserInfoFormData>) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/user/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "更新失敗");
-      }
-
-      if (data.nickname !== undefined) setNickname(data.nickname);
-      if (data.email !== undefined) setEmail(data.email);
-      if (data.phone !== undefined) setPhone(data.phone);
-      if (data.whatsappEnabled !== undefined)
-        setWhatsappEnabled(data.whatsappEnabled);
-
-      closeModal();
-    } catch (error) {
-      console.error("Update profile error:", error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
+    await submit(data);
   };
 
   const genderToEnum = (g: string): "MALE" | "FEMALE" | "" => {
@@ -250,7 +220,7 @@ export default function UserInfoCard({
         isOpen={isOpen}
         onClose={closeModal}
         onSave={handleSave}
-        isLoading={isLoading}
+        isLoading={isSubmitting}
         initialData={{
           nickname,
           title,

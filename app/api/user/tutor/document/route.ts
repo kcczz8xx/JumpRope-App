@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 import { DocumentType, DocumentStatus } from "@prisma/client";
 import { put, del } from "@vercel/blob";
+import {
+    checkPermission,
+    unauthorizedResponse,
+    forbiddenResponse,
+} from "@/lib/rbac/check-permission";
+import { hasPermission } from "@/lib/rbac/permissions";
 
 // ============================================
 // Types
@@ -51,17 +56,31 @@ function sanitizeFileName(fileName: string): string {
 
 export async function GET(request: NextRequest) {
     try {
-        const session = await auth();
+        const authResult = await checkPermission("TUTOR_DOCUMENT_READ_OWN");
 
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "請先登入" }, { status: 401 });
+        if (!authResult.authorized) {
+            if (hasPermission(authResult.role, "TUTOR_DOCUMENT_READ_ANY")) {
+                // STAFF/ADMIN 可讀取任何人的文件，需要在請求中指定 userId
+            } else {
+                return authResult.status === 401
+                    ? unauthorizedResponse(authResult.error)
+                    : forbiddenResponse(authResult.error);
+            }
         }
+
+        const userId = authResult.userId!;
 
         const { searchParams } = new URL(request.url);
         const documentType = searchParams.get("type") as DocumentType | null;
+        const targetUserId = searchParams.get("userId");
+
+        // STAFF/ADMIN 可查詢其他用戶的文件
+        const queryUserId = hasPermission(authResult.role, "TUTOR_DOCUMENT_READ_ANY") && targetUserId
+            ? targetUserId
+            : userId;
 
         const tutorProfile = await prisma.tutorProfile.findUnique({
-            where: { userId: session.user.id },
+            where: { userId: queryUserId },
             include: {
                 documents: documentType
                     ? { where: { documentType } }
@@ -92,11 +111,15 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const session = await auth();
+        const authResult = await checkPermission("TUTOR_DOCUMENT_CREATE");
 
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "請先登入" }, { status: 401 });
+        if (!authResult.authorized) {
+            return authResult.status === 401
+                ? unauthorizedResponse(authResult.error)
+                : forbiddenResponse(authResult.error);
         }
+
+        const userId = authResult.userId!;
 
         const formData = await request.formData();
 
@@ -139,20 +162,20 @@ export async function POST(request: NextRequest) {
         }
 
         let tutorProfile = await prisma.tutorProfile.findUnique({
-            where: { userId: session.user.id },
+            where: { userId },
         });
 
         if (!tutorProfile) {
             tutorProfile = await prisma.tutorProfile.create({
                 data: {
-                    userId: session.user.id,
+                    userId,
                 },
             });
         }
 
         const timestamp = Date.now();
         const sanitizedName = sanitizeFileName(file.name);
-        const blobPath = `tutor-documents/${session.user.id}/${documentType}/${timestamp}-${sanitizedName}`;
+        const blobPath = `tutor-documents/${userId}/${documentType}/${timestamp}-${sanitizedName}`;
 
         const blob = await put(blobPath, file, {
             access: "public",
@@ -176,7 +199,7 @@ export async function POST(request: NextRequest) {
         });
 
         console.log(
-            `[Create Tutor Document] User ${session.user.id} created ${documentType} document`
+            `[Create Tutor Document] User ${userId} created ${documentType} document`
         );
 
         return NextResponse.json(
@@ -198,11 +221,15 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
     try {
-        const session = await auth();
+        const authResult = await checkPermission("TUTOR_DOCUMENT_UPDATE_OWN");
 
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "請先登入" }, { status: 401 });
+        if (!authResult.authorized) {
+            return authResult.status === 401
+                ? unauthorizedResponse(authResult.error)
+                : forbiddenResponse(authResult.error);
         }
+
+        const userId = authResult.userId!;
 
         const formData = await request.formData();
 
@@ -227,7 +254,7 @@ export async function PUT(request: NextRequest) {
             where: {
                 id: documentId,
                 tutorProfile: {
-                    userId: session.user.id,
+                    userId,
                 },
             },
         });
@@ -266,7 +293,7 @@ export async function PUT(request: NextRequest) {
 
             const timestamp = Date.now();
             const sanitizedName = sanitizeFileName(file.name);
-            const blobPath = `tutor-documents/${session.user.id}/${existingDocument.documentType}/${timestamp}-${sanitizedName}`;
+            const blobPath = `tutor-documents/${userId}/${existingDocument.documentType}/${timestamp}-${sanitizedName}`;
 
             const blob = await put(blobPath, file, {
                 access: "public",
@@ -295,7 +322,7 @@ export async function PUT(request: NextRequest) {
         });
 
         console.log(
-            `[Update Tutor Document] User ${session.user.id} updated document ${documentId}`
+            `[Update Tutor Document] User ${userId} updated document ${documentId}`
         );
 
         return NextResponse.json(
@@ -317,11 +344,15 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
     try {
-        const session = await auth();
+        const authResult = await checkPermission("TUTOR_DOCUMENT_DELETE_OWN");
 
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "請先登入" }, { status: 401 });
+        if (!authResult.authorized) {
+            return authResult.status === 401
+                ? unauthorizedResponse(authResult.error)
+                : forbiddenResponse(authResult.error);
         }
+
+        const userId = authResult.userId!;
 
         const { searchParams } = new URL(request.url);
         const documentId = searchParams.get("id");
@@ -337,7 +368,7 @@ export async function DELETE(request: NextRequest) {
             where: {
                 id: documentId,
                 tutorProfile: {
-                    userId: session.user.id,
+                    userId,
                 },
             },
         });
@@ -362,7 +393,7 @@ export async function DELETE(request: NextRequest) {
         });
 
         console.log(
-            `[Delete Tutor Document] User ${session.user.id} deleted document ${documentId}`
+            `[Delete Tutor Document] User ${userId} deleted document ${documentId}`
         );
 
         return NextResponse.json(

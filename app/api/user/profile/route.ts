@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import {
+    checkPermission,
+    unauthorizedResponse,
+    forbiddenResponse,
+} from "@/lib/rbac/check-permission";
 
 interface UpdateProfileRequest {
     nickname?: string;
@@ -9,14 +13,59 @@ interface UpdateProfileRequest {
     whatsappEnabled?: boolean;
 }
 
-export async function PATCH(request: NextRequest) {
+export async function GET() {
     try {
-        const session = await auth();
+        const authResult = await checkPermission("USER_PROFILE_READ_OWN");
 
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "請先登入" }, { status: 401 });
+        if (!authResult.authorized) {
+            return authResult.status === 401
+                ? unauthorizedResponse(authResult.error)
+                : forbiddenResponse(authResult.error);
         }
 
+        const user = await prisma.user.findUnique({
+            where: { id: authResult.userId },
+            select: {
+                id: true,
+                memberNumber: true,
+                title: true,
+                phone: true,
+                email: true,
+                nameChinese: true,
+                nameEnglish: true,
+                nickname: true,
+                gender: true,
+                identityCardNumber: true,
+                whatsappEnabled: true,
+                role: true,
+            },
+        });
+
+        if (!user) {
+            return NextResponse.json({ error: "用戶不存在" }, { status: 404 });
+        }
+
+        return NextResponse.json({ user }, { status: 200 });
+    } catch (error) {
+        console.error("Get profile error:", error);
+        return NextResponse.json(
+            { error: "獲取資料失敗，請稍後再試" },
+            { status: 500 }
+        );
+    }
+}
+
+export async function PATCH(request: NextRequest) {
+    try {
+        const authResult = await checkPermission("USER_PROFILE_UPDATE_OWN");
+
+        if (!authResult.authorized) {
+            return authResult.status === 401
+                ? unauthorizedResponse(authResult.error)
+                : forbiddenResponse(authResult.error);
+        }
+
+        const userId = authResult.userId!;
         const body: UpdateProfileRequest = await request.json();
         const { nickname, email, phone, whatsappEnabled } = body;
 
@@ -31,7 +80,7 @@ export async function PATCH(request: NextRequest) {
                 const existingUser = await prisma.user.findFirst({
                     where: {
                         email,
-                        id: { not: session.user.id },
+                        id: { not: userId },
                     },
                 });
                 if (existingUser) {
@@ -49,7 +98,7 @@ export async function PATCH(request: NextRequest) {
                 const existingUser = await prisma.user.findFirst({
                     where: {
                         phone,
-                        id: { not: session.user.id },
+                        id: { not: userId },
                     },
                 });
                 if (existingUser) {
@@ -74,7 +123,7 @@ export async function PATCH(request: NextRequest) {
         }
 
         const updatedUser = await prisma.user.update({
-            where: { id: session.user.id },
+            where: { id: userId },
             data: updateData,
             select: {
                 id: true,
@@ -85,7 +134,7 @@ export async function PATCH(request: NextRequest) {
             },
         });
 
-        console.log(`[Update Profile] User ${session.user.id} updated profile`);
+        console.log(`[Update Profile] User ${userId} updated profile`);
 
         return NextResponse.json(
             { message: "資料更新成功", user: updatedUser },

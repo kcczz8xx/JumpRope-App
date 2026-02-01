@@ -1,6 +1,6 @@
 import PageBreadcrumb from "@/components/tailadmin/common/PageBreadCrumb";
 import { Metadata } from "next";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { SchoolInfoCards } from "@/components/feature/school-service/pages/detailed/SchoolInfoCards";
 import { CourseCards } from "@/components/feature/school-service/pages/detailed/CourseCards";
@@ -14,7 +14,9 @@ interface SchoolDetailPageProps {
   params: Promise<{ schoolId: string }>;
 }
 
-export default async function SchoolDetailPage({ params }: SchoolDetailPageProps) {
+export default async function SchoolDetailPage({
+  params,
+}: SchoolDetailPageProps) {
   const { schoolId } = await params;
 
   const school = await prisma.school.findUnique({
@@ -56,7 +58,10 @@ export default async function SchoolDetailPage({ params }: SchoolDetailPageProps
     .sort((a, b) => b.localeCompare(a))
     .map((year) => {
       const yearCourses = school.courses.filter((c) => c.academicYear === year);
-      const totalStudents = yearCourses.reduce((sum, c) => sum + (c.maxStudents || 0), 0);
+      const totalStudents = yearCourses.reduce(
+        (sum, c) => sum + (c.maxStudents || 0),
+        0
+      );
       const totalRevenue = school.invoices
         .filter((inv) => inv.status === "PAID")
         .reduce((sum, inv) => sum + Number(inv.invoiceAmount), 0);
@@ -82,12 +87,24 @@ export default async function SchoolDetailPage({ params }: SchoolDetailPageProps
 
     return {
       ...course,
-      studentPerLessonFee: course.studentPerLessonFee ? Number(course.studentPerLessonFee) : null,
-      studentHourlyFee: course.studentHourlyFee ? Number(course.studentHourlyFee) : null,
-      studentFullCourseFee: course.studentFullCourseFee ? Number(course.studentFullCourseFee) : null,
-      teamActivityFee: course.teamActivityFee ? Number(course.teamActivityFee) : null,
-      tutorPerLessonFee: course.tutorPerLessonFee ? Number(course.tutorPerLessonFee) : null,
-      tutorHourlyFee: course.tutorHourlyFee ? Number(course.tutorHourlyFee) : null,
+      studentPerLessonFee: course.studentPerLessonFee
+        ? Number(course.studentPerLessonFee)
+        : null,
+      studentHourlyFee: course.studentHourlyFee
+        ? Number(course.studentHourlyFee)
+        : null,
+      studentFullCourseFee: course.studentFullCourseFee
+        ? Number(course.studentFullCourseFee)
+        : null,
+      teamActivityFee: course.teamActivityFee
+        ? Number(course.teamActivityFee)
+        : null,
+      tutorPerLessonFee: course.tutorPerLessonFee
+        ? Number(course.tutorPerLessonFee)
+        : null,
+      tutorHourlyFee: course.tutorHourlyFee
+        ? Number(course.tutorHourlyFee)
+        : null,
       lessonStats,
     };
   });

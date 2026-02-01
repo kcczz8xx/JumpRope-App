@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import {
+    checkPermission,
+    unauthorizedResponse,
+    forbiddenResponse,
+} from "@/lib/rbac/check-permission";
 
 interface UpdateBankRequest {
     bankName: string;
@@ -13,14 +17,16 @@ interface UpdateBankRequest {
 
 export async function GET() {
     try {
-        const session = await auth();
+        const authResult = await checkPermission("USER_PROFILE_READ_OWN");
 
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "請先登入" }, { status: 401 });
+        if (!authResult.authorized) {
+            return authResult.status === 401
+                ? unauthorizedResponse(authResult.error)
+                : forbiddenResponse(authResult.error);
         }
 
         const bankAccount = await prisma.userBankAccount.findUnique({
-            where: { userId: session.user.id },
+            where: { userId: authResult.userId },
         });
 
         return NextResponse.json({ bankAccount }, { status: 200 });
@@ -35,12 +41,15 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
     try {
-        const session = await auth();
+        const authResult = await checkPermission("USER_PROFILE_UPDATE_OWN");
 
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "請先登入" }, { status: 401 });
+        if (!authResult.authorized) {
+            return authResult.status === 401
+                ? unauthorizedResponse(authResult.error)
+                : forbiddenResponse(authResult.error);
         }
 
+        const userId = authResult.userId!;
         const body: UpdateBankRequest = await request.json();
         const {
             bankName,
@@ -59,7 +68,7 @@ export async function PUT(request: NextRequest) {
         }
 
         const updatedBankAccount = await prisma.userBankAccount.upsert({
-            where: { userId: session.user.id },
+            where: { userId },
             update: {
                 bankName,
                 accountNumber,
@@ -69,7 +78,7 @@ export async function PUT(request: NextRequest) {
                 notes: notes || null,
             },
             create: {
-                userId: session.user.id,
+                userId,
                 bankName,
                 accountNumber,
                 accountHolderName,
@@ -79,7 +88,7 @@ export async function PUT(request: NextRequest) {
             },
         });
 
-        console.log(`[Update Bank] User ${session.user.id} updated bank account`);
+        console.log(`[Update Bank] User ${userId} updated bank account`);
 
         return NextResponse.json(
             { message: "收款資料更新成功", bankAccount: updatedBankAccount },
@@ -96,14 +105,18 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE() {
     try {
-        const session = await auth();
+        const authResult = await checkPermission("USER_PROFILE_UPDATE_OWN");
 
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "請先登入" }, { status: 401 });
+        if (!authResult.authorized) {
+            return authResult.status === 401
+                ? unauthorizedResponse(authResult.error)
+                : forbiddenResponse(authResult.error);
         }
 
+        const userId = authResult.userId!;
+
         const existingAccount = await prisma.userBankAccount.findUnique({
-            where: { userId: session.user.id },
+            where: { userId },
         });
 
         if (!existingAccount) {
@@ -114,10 +127,10 @@ export async function DELETE() {
         }
 
         await prisma.userBankAccount.delete({
-            where: { userId: session.user.id },
+            where: { userId },
         });
 
-        console.log(`[Delete Bank] User ${session.user.id} deleted bank account`);
+        console.log(`[Delete Bank] User ${userId} deleted bank account`);
 
         return NextResponse.json({ message: "收款資料已刪除" }, { status: 200 });
     } catch (error) {

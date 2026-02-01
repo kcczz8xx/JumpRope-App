@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import {
+    checkAuth,
+    unauthorizedResponse,
+} from "@/lib/rbac/check-permission";
 
 interface ChangePasswordRequest {
     currentPassword: string;
@@ -10,11 +13,13 @@ interface ChangePasswordRequest {
 
 export async function POST(request: NextRequest) {
     try {
-        const session = await auth();
+        const authResult = await checkAuth();
 
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "請先登入" }, { status: 401 });
+        if (!authResult.authorized) {
+            return unauthorizedResponse(authResult.error);
         }
+
+        const userId = authResult.userId!;
 
         const body: ChangePasswordRequest = await request.json();
         const { currentPassword, newPassword } = body;
@@ -34,7 +39,7 @@ export async function POST(request: NextRequest) {
         }
 
         const user = await prisma.user.findUnique({
-            where: { id: session.user.id },
+            where: { id: userId },
             select: { passwordHash: true },
         });
 
@@ -54,11 +59,11 @@ export async function POST(request: NextRequest) {
         const newPasswordHash = await bcrypt.hash(newPassword, 12);
 
         await prisma.user.update({
-            where: { id: session.user.id },
+            where: { id: userId },
             data: { passwordHash: newPasswordHash },
         });
 
-        console.log(`[Change Password] Password changed for user ${session.user.id}`);
+        console.log(`[Change Password] Password changed for user ${userId}`);
 
         return NextResponse.json({ message: "密碼修改成功" }, { status: 200 });
     } catch (error) {
