@@ -6,7 +6,7 @@ import MultiSelect from "@/components/tailadmin/form/select/MultiSelect";
 import Input from "@/components/tailadmin/form/input/InputField";
 import TextArea from "@/components/tailadmin/form/input/TextArea";
 import FormField from "../common/FormField";
-import FormCard from "../../../tailadmin/form/FormCard";
+import FormCard from "@/components/tailadmin/form/FormCard";
 import AmountInput from "../common/AmountInput";
 import {
   CourseItemData,

@@ -1,6 +1,6 @@
 import PageBreadcrumb from "@/components/tailadmin/common/PageBreadCrumb";
 import { Metadata } from "next";
-import { LessonList } from "@/components/feature/school-service/list/LessonList";
+import { LessonList } from "@/features/school-service/components/list/LessonList";
 import { getLessonsList } from "@/lib/mock-data/school-service/client";
 
 export const metadata: Metadata = {

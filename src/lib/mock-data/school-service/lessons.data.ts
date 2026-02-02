@@ -2,7 +2,7 @@ import {
     LessonType,
     LessonStatus,
     LessonWithDetails,
-} from "@/components/feature/school-service/types/lesson";
+} from "@/features/school-service/components/types/lesson";
 
 const WEEKDAY_NAMES = ["", "一", "二", "三", "四", "五", "六", "日"];
 

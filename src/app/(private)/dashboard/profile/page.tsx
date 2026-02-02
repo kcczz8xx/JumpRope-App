@@ -1,5 +1,5 @@
 import PageBreadcrumb from "@/components/tailadmin/common/PageBreadCrumb";
-import ProfilePageContent from "@/components/feature/user/profile/ProfilePageContent";
+import ProfilePageContent from "@/features/user/components/profile/ProfilePageContent";
 import { Metadata } from "next";
 import React from "react";
 import { auth } from "@/lib/auth";

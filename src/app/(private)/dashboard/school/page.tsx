@@ -1,8 +1,8 @@
 import PageBreadcrumb from "@/components/tailadmin/common/PageBreadCrumb";
 import { Metadata } from "next";
-import { MetricCards } from "../../../../components/feature/school-service/pages/overview/MetricCards";
-import { ActivityTimeline } from "../../../../components/feature/school-service/pages/overview/ActivityTimeline";
-import { QuickActions } from "../../../../components/feature/school-service/pages/overview/QuickActions";
+import { MetricCards } from "@/features/school-service/components/pages/overview/MetricCards";
+import { ActivityTimeline } from "@/features/school-service/components/pages/overview/ActivityTimeline";
+import { QuickActions } from "@/features/school-service/components/pages/overview/QuickActions";
 import { dashboardMockData } from "@/lib/mock-data/school-service";
 
 export const metadata: Metadata = {

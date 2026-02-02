@@ -3,7 +3,7 @@
 import React, { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/tailadmin/ui/button/Button";
-import StepIndicator from "../../../tailadmin/form/StepIndicator";
+import StepIndicator from "@/components/tailadmin/form/StepIndicator";
 import SchoolFormStep from "./SchoolFormStep";
 import CoursesFormStep from "./CoursesFormStep";
 import SummaryFormStep from "./SummaryFormStep";

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { formatNumber, parsePhoneNumber } from "libphonenumber-js";
-import FormCard from "../../../tailadmin/form/FormCard";
+import FormCard from "@/components/tailadmin/form/FormCard";
 import {
   NewCourseFormData,
   COURSE_TERM_LABELS,

@@ -1,4 +1,4 @@
-import OtpForm from "@/components/auth/OtpForm";
+import OtpForm from "@/features/auth/components/OtpForm";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import PageBreadcrumb from "@/components/tailadmin/common/PageBreadCrumb";
-import { NewCourseForm } from "@/components/feature/school-service/course";
+import { NewCourseForm } from "@/features/school-service/components/course";
 import { getSchoolsList } from "@/lib/mock-data/school-service/client";
 
 interface School {

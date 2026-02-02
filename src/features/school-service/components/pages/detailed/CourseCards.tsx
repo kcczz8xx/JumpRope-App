@@ -8,8 +8,8 @@ import ComponentCard from "@/components/tailadmin/common/ComponentCard";
 import { Modal } from "@/components/tailadmin/ui/modal";
 import Button from "@/components/tailadmin/ui/button/Button";
 import { useModal } from "@/hooks/useModal";
-import CoursesFormStep from "@/components/feature/school-service/course/CoursesFormStep";
-import { CourseItemData, getDefaultCourseItem } from "@/components/feature/school-service/types/course";
+import CoursesFormStep from "@/features/school-service/components/course/CoursesFormStep";
+import { CourseItemData, getDefaultCourseItem } from "@/features/school-service/components/types/course";
 
 interface LessonStats {
   total: number;

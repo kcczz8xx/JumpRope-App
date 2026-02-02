@@ -6,7 +6,7 @@ import TableDropdown from "@/components/tailadmin/common/TableDropdown";
 import {
   CourseStatus,
   COURSE_TERM_LABELS,
-} from "@/components/feature/school-service/types/course";
+} from "@/features/school-service/components/types/course";
 import { CourseWithSchool as Course } from "@/lib/mock-data/school-service/client";
 
 const STATUS_LABELS: Record<CourseStatus, string> = {

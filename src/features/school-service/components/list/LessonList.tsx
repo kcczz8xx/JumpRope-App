@@ -7,7 +7,7 @@ import {
   LessonWithDetails,
   LESSON_STATUS_LABELS,
   LESSON_STATUS_COLORS,
-} from "@/components/feature/school-service/types/lesson";
+} from "@/features/school-service/components/types/lesson";
 import { getWeekdayName } from "@/lib/mock-data/school-service/client";
 
 interface LessonListProps {
