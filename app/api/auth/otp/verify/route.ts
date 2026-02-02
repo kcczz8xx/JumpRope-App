@@ -40,6 +40,13 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        if (!purpose || !["register", "reset-password", "update-contact"].includes(purpose)) {
+            return NextResponse.json(
+                { error: "無效的驗證用途" },
+                { status: 400 }
+            );
+        }
+
         if (code.length !== 6) {
             return NextResponse.json(
                 { error: "驗證碼格式錯誤" },

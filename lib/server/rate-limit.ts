@@ -10,45 +10,54 @@ import { Redis } from "@upstash/redis";
  * - UPSTASH_REDIS_REST_TOKEN
  */
 
-const redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL || "",
-    token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
-});
+const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL;
+const UPSTASH_REDIS_REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 
-const rateLimiters = {
-    otpSend: new Ratelimit({
-        redis,
-        limiter: Ratelimit.slidingWindow(3, "60 s"),
-        prefix: "ratelimit:otp_send",
-        analytics: true,
-    }),
-    otpVerify: new Ratelimit({
-        redis,
-        limiter: Ratelimit.slidingWindow(5, "60 s"),
-        prefix: "ratelimit:otp_verify",
-        analytics: true,
-    }),
-    register: new Ratelimit({
-        redis,
-        limiter: Ratelimit.slidingWindow(5, "1 h"),
-        prefix: "ratelimit:register",
-        analytics: true,
-    }),
-    login: new Ratelimit({
-        redis,
-        limiter: Ratelimit.slidingWindow(10, "15 m"),
-        prefix: "ratelimit:login",
-        analytics: true,
-    }),
-    resetPassword: new Ratelimit({
-        redis,
-        limiter: Ratelimit.slidingWindow(5, "1 h"),
-        prefix: "ratelimit:reset_password",
-        analytics: true,
-    }),
-};
+const isRedisConfigured = !!(UPSTASH_REDIS_REST_URL && UPSTASH_REDIS_REST_TOKEN);
 
-type RateLimitType = keyof typeof rateLimiters;
+const redis = isRedisConfigured
+    ? new Redis({
+        url: UPSTASH_REDIS_REST_URL!,
+        token: UPSTASH_REDIS_REST_TOKEN!,
+    })
+    : null;
+
+const rateLimiters = redis
+    ? {
+        otpSend: new Ratelimit({
+            redis,
+            limiter: Ratelimit.slidingWindow(3, "60 s"),
+            prefix: "ratelimit:otp_send",
+            analytics: true,
+        }),
+        otpVerify: new Ratelimit({
+            redis,
+            limiter: Ratelimit.slidingWindow(5, "60 s"),
+            prefix: "ratelimit:otp_verify",
+            analytics: true,
+        }),
+        register: new Ratelimit({
+            redis,
+            limiter: Ratelimit.slidingWindow(5, "1 h"),
+            prefix: "ratelimit:register",
+            analytics: true,
+        }),
+        login: new Ratelimit({
+            redis,
+            limiter: Ratelimit.slidingWindow(10, "15 m"),
+            prefix: "ratelimit:login",
+            analytics: true,
+        }),
+        resetPassword: new Ratelimit({
+            redis,
+            limiter: Ratelimit.slidingWindow(5, "1 h"),
+            prefix: "ratelimit:reset_password",
+            analytics: true,
+        }),
+    }
+    : null;
+
+type RateLimitType = "otpSend" | "otpVerify" | "register" | "login" | "resetPassword";
 
 interface RateLimitConfig {
     windowMs: number;
@@ -81,6 +90,15 @@ export async function rateLimit(
     identifier: string,
     config: Partial<RateLimitConfig> = {}
 ): Promise<{ success: boolean; remaining: number; resetIn: number }> {
+    if (!rateLimiters) {
+        console.warn("Rate limit: Redis not configured, using fail-closed strategy");
+        return {
+            success: false,
+            remaining: 0,
+            resetIn: 60000,
+        };
+    }
+
     const configKey = Object.keys(RATE_LIMIT_CONFIGS).find(
         (key) =>
             RATE_LIMIT_CONFIGS[key as keyof typeof RATE_LIMIT_CONFIGS].windowMs === config.windowMs &&
@@ -101,9 +119,9 @@ export async function rateLimit(
     } catch (error) {
         console.error("Rate limit error:", error);
         return {
-            success: true,
-            remaining: 999,
-            resetIn: 0,
+            success: false,
+            remaining: 0,
+            resetIn: 60000,
         };
     }
 }

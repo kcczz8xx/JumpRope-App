@@ -70,13 +70,16 @@ export async function POST(request: NextRequest) {
             });
 
         } else if (email) {
-            // TODO: 實作 email 重設連結發送
+            return NextResponse.json(
+                { error: "電郵重設功能尚未開放，請使用電話號碼重設密碼" },
+                { status: 501 }
+            );
         }
 
         return NextResponse.json(
             {
-                message: phone ? "驗證碼已發送" : "重設連結已發送到您的電郵",
-                method: phone ? "phone" : "email",
+                message: "驗證碼已發送",
+                method: "phone",
             },
             { status: 200 }
         );

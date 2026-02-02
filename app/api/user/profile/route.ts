@@ -77,6 +77,30 @@ export async function PATCH(request: NextRequest) {
 
         if (email !== undefined) {
             if (email) {
+                const currentUser = await prisma.user.findUnique({
+                    where: { id: userId },
+                    select: { email: true, phone: true },
+                });
+
+                if (currentUser?.email !== email) {
+                    const verifiedOtp = await prisma.otp.findFirst({
+                        where: {
+                            phone: currentUser?.phone || "",
+                            purpose: "UPDATE_CONTACT",
+                            verified: true,
+                            expiresAt: { gte: new Date(Date.now() - 10 * 60 * 1000) },
+                        },
+                        orderBy: { createdAt: "desc" },
+                    });
+
+                    if (!verifiedOtp) {
+                        return NextResponse.json(
+                            { error: "請先完成電郵地址驗證" },
+                            { status: 403 }
+                        );
+                    }
+                }
+
                 const existingUser = await prisma.user.findFirst({
                     where: {
                         email,
@@ -100,6 +124,31 @@ export async function PATCH(request: NextRequest) {
                     { status: 400 }
                 );
             }
+
+            const currentUser = await prisma.user.findUnique({
+                where: { id: userId },
+                select: { phone: true },
+            });
+
+            if (currentUser?.phone !== phone) {
+                const verifiedOtp = await prisma.otp.findFirst({
+                    where: {
+                        phone,
+                        purpose: "UPDATE_CONTACT",
+                        verified: true,
+                        expiresAt: { gte: new Date(Date.now() - 10 * 60 * 1000) },
+                    },
+                    orderBy: { createdAt: "desc" },
+                });
+
+                if (!verifiedOtp) {
+                    return NextResponse.json(
+                        { error: "請先完成新電話號碼驗證" },
+                        { status: 403 }
+                    );
+                }
+            }
+
             const existingUser = await prisma.user.findFirst({
                 where: {
                     phone,

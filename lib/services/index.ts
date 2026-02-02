@@ -7,5 +7,6 @@ export { getUserProfile, type UserProfile } from "./user";
 export {
   generateMemberNumber,
   generateChildMemberNumber,
+  createUserWithMemberNumber,
   MemberType,
 } from "./member-number";

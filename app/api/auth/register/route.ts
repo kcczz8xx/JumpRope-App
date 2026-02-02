@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { rateLimit, getClientIP, RATE_LIMIT_CONFIGS } from "@/lib/server";
-import { generateMemberNumber } from "@/lib/services";
+import { createUserWithMemberNumber } from "@/lib/services";
 
 interface RegisterRequest {
     phone: string;
@@ -84,19 +84,17 @@ export async function POST(request: NextRequest) {
 
         const passwordHash = await bcrypt.hash(password, 12);
 
-        // 自動生成有序會員編號
-        const memberNumber = await generateMemberNumber();
+        const { id, memberNumber } = await createUserWithMemberNumber({
+            phone,
+            email,
+            nickname,
+            title,
+            passwordHash,
+            role: "USER",
+        });
 
-        const user = await prisma.user.create({
-            data: {
-                phone,
-                email,
-                nickname,
-                title,
-                passwordHash,
-                memberNumber,
-                role: "USER",
-            },
+        const user = await prisma.user.findUnique({
+            where: { id },
             select: {
                 id: true,
                 phone: true,
@@ -106,6 +104,14 @@ export async function POST(request: NextRequest) {
                 memberNumber: true,
                 role: true,
                 createdAt: true,
+            },
+        });
+
+        await prisma.otp.deleteMany({
+            where: {
+                phone,
+                purpose: "REGISTER",
+                verified: true,
             },
         });
 
