@@ -15,7 +15,7 @@ export async function getSchools(): Promise<
   >
 > {
   const auth = await requireUser();
-  if (!auth.ok) return auth;
+  if (!auth.success) return auth;
 
   const schools = await prisma.school.findMany({
     where: {
@@ -75,7 +75,7 @@ export async function getSchoolById(
   }>
 > {
   const auth = await requireUser();
-  if (!auth.ok) return auth;
+  if (!auth.success) return auth;
 
   if (!id) {
     return failure("VALIDATION_ERROR", "缺少學校 ID");

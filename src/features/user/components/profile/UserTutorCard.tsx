@@ -144,7 +144,7 @@ export default function UserTutorCard({
       ? await updateTutorDocumentAction(formData)
       : await createTutorDocumentAction(formData);
 
-    if (!result.ok) {
+    if (!result.success) {
       throw new Error(result.error.message);
     }
 
@@ -156,7 +156,7 @@ export default function UserTutorCard({
   const handleDeleteDocument = async (documentId: string) => {
     const result = await deleteTutorDocumentAction(documentId);
 
-    if (!result.ok) {
+    if (!result.success) {
       throw new Error(result.error.message);
     }
 

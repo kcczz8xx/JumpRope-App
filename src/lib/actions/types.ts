@@ -1,6 +1,8 @@
 /**
  * Server Actions 統一回傳類型
  * 用於所有 Server Actions 的回傳格式
+ *
+ * 注意：已從 { ok: true/false } 統一為 { success: true/false }
  */
 
 export type ActionErrorCode =
@@ -13,18 +15,18 @@ export type ActionErrorCode =
   | "INTERNAL_ERROR";
 
 export type ActionResult<T> =
-  | { ok: true; data: T }
+  | { success: true; data: T }
   | {
-      ok: false;
-      error: {
-        code: ActionErrorCode;
-        message: string;
-        fieldErrors?: Record<string, string[]>;
-      };
+    success: false;
+    error: {
+      code: ActionErrorCode;
+      message: string;
+      fieldErrors?: Record<string, string[]>;
     };
+  };
 
 export function success<T>(data: T): ActionResult<T> {
-  return { ok: true, data };
+  return { success: true, data };
 }
 
 export function failure(
@@ -32,5 +34,5 @@ export function failure(
   message: string,
   fieldErrors?: Record<string, string[]>
 ): ActionResult<never> {
-  return { ok: false, error: { code, message, fieldErrors } };
+  return { success: false, error: { code, message, fieldErrors } };
 }

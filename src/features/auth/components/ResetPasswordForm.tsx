@@ -44,7 +44,7 @@ export default function ResetPasswordForm() {
         method === "phone" ? { phone } : { email }
       );
 
-      if (!result.ok) {
+      if (!result.success) {
         setError(result.error.message);
         return;
       }
@@ -68,7 +68,7 @@ export default function ResetPasswordForm() {
     startTransition(async () => {
       const result = await resetPasswordVerifyAction({ phone, code: otpCode });
 
-      if (!result.ok) {
+      if (!result.success) {
         setError(result.error.message);
         return;
       }
@@ -82,7 +82,7 @@ export default function ResetPasswordForm() {
     startTransition(async () => {
       const result = await resetPasswordSendAction({ phone });
 
-      if (!result.ok) {
+      if (!result.success) {
         setError(result.error.message);
       }
     });
@@ -114,7 +114,7 @@ export default function ResetPasswordForm() {
         resetToken,
       });
 
-      if (!result.ok) {
+      if (!result.success) {
         setError(result.error.message);
         return;
       }

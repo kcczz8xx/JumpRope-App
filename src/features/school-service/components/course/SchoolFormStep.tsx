@@ -96,7 +96,7 @@ export default function SchoolFormStep({
     startTransition(async () => {
       const result = await getSchoolById(selectedSchoolId);
 
-      if (!result.ok) {
+      if (!result.success) {
         console.error("Failed to load school data:", result.error.message);
         return;
       }

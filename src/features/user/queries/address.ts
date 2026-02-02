@@ -15,7 +15,7 @@ export async function getAddress(): Promise<
   } | null>
 > {
   const auth = await requireUser();
-  if (!auth.ok) return auth;
+  if (!auth.success) return auth;
 
   const address = await prisma.userAddress.findUnique({
     where: { userId: auth.data.id },

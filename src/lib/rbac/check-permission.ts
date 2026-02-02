@@ -55,11 +55,29 @@ export async function checkPermission(
   return authResult;
 }
 
+export type OwnershipResourceType =
+  | "profile"
+  | "child"
+  | "document"
+  | "address"
+  | "bank"
+  | "school"
+  | "course";
+
 export async function checkOwnership(
   userId: string,
-  resourceType: "profile" | "child" | "document" | "address" | "bank",
-  resourceId: string
+  resourceType: OwnershipResourceType,
+  resourceId: string,
+  userRole?: UserRole
 ): Promise<boolean> {
+  // ADMIN 和 STAFF 可存取所有 school/course 資源
+  if (
+    (resourceType === "school" || resourceType === "course") &&
+    (userRole === "ADMIN" || userRole === "STAFF")
+  ) {
+    return true;
+  }
+
   switch (resourceType) {
     case "profile":
     case "address":
@@ -82,6 +100,24 @@ export async function checkOwnership(
       return doc?.tutorProfile?.userId === userId;
     }
 
+    case "school": {
+      // TODO: 當 schema 加入 createdById 後，改為真正的所有權檢查
+      const school = await prisma.school.findUnique({
+        where: { id: resourceId },
+        select: { id: true },
+      });
+      return !!school;
+    }
+
+    case "course": {
+      // TODO: 當 schema 加入 createdById 後，改為真正的所有權檢查
+      const course = await prisma.schoolCourse.findUnique({
+        where: { id: resourceId },
+        select: { id: true },
+      });
+      return !!course;
+    }
+
     default:
       return false;
   }
@@ -89,7 +125,7 @@ export async function checkOwnership(
 
 export async function checkPermissionWithOwnership(
   permission: Permission,
-  resourceType: "profile" | "child" | "document" | "address" | "bank",
+  resourceType: OwnershipResourceType,
   resourceId: string
 ): Promise<AuthResult> {
   const authResult = await checkPermission(permission);
@@ -104,7 +140,8 @@ export async function checkPermissionWithOwnership(
   const isOwner = await checkOwnership(
     authResult.userId!,
     resourceType,
-    resourceId
+    resourceId,
+    authResult.role
   );
 
   if (!isOwner) {

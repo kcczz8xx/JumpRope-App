@@ -36,7 +36,7 @@ interface UseActionOptions {
 }
 
 function useServerAction<TInput, TResult>(
-  action: (input: TInput) => Promise<{ ok: boolean; data?: TResult; error?: { message: string } }>,
+  action: (input: TInput) => Promise<{ success: boolean; data?: TResult; error?: { message: string } }>,
   options: UseActionOptions = {}
 ) {
   const [isPending, startTransition] = useTransition();
@@ -47,7 +47,7 @@ function useServerAction<TInput, TResult>(
     setIsSubmitting(true);
     try {
       const result = await action(input);
-      if (result.ok) {
+      if (result.success) {
         if (options.successMessage) {
           toast.success(options.successMessage);
         }
@@ -62,7 +62,7 @@ function useServerAction<TInput, TResult>(
       }
     } catch (error) {
       toast.error("操作失敗，請稍後再試");
-      return { ok: false, error: { message: "操作失敗" } };
+      return { success: false, error: { message: "操作失敗" } };
     } finally {
       setIsSubmitting(false);
     }
@@ -103,7 +103,7 @@ export function useDeleteAddress(onSuccess?: () => void) {
     setIsSubmitting(true);
     try {
       const result = await deleteAddressAction();
-      if (result.ok) {
+      if (result.success) {
         toast.success("地址已刪除");
         startTransition(() => {
           router.refresh();
@@ -116,7 +116,7 @@ export function useDeleteAddress(onSuccess?: () => void) {
       }
     } catch {
       toast.error("操作失敗，請稍後再試");
-      return { ok: false, error: { message: "操作失敗" } };
+      return { success: false, error: { message: "操作失敗" } };
     } finally {
       setIsSubmitting(false);
     }
@@ -147,7 +147,7 @@ export function useDeleteBank(onSuccess?: () => void) {
     setIsSubmitting(true);
     try {
       const result = await deleteBankAction();
-      if (result.ok) {
+      if (result.success) {
         toast.success("收款資料已刪除");
         startTransition(() => {
           router.refresh();
@@ -160,7 +160,7 @@ export function useDeleteBank(onSuccess?: () => void) {
       }
     } catch {
       toast.error("操作失敗，請稍後再試");
-      return { ok: false, error: { message: "操作失敗" } };
+      return { success: false, error: { message: "操作失敗" } };
     } finally {
       setIsSubmitting(false);
     }

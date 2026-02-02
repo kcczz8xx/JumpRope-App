@@ -18,7 +18,7 @@ export async function getBankAccount(): Promise<
   } | null>
 > {
   const auth = await requireUser();
-  if (!auth.ok) return auth;
+  if (!auth.success) return auth;
 
   const bankAccount = await prisma.userBankAccount.findUnique({
     where: { userId: auth.data.id },

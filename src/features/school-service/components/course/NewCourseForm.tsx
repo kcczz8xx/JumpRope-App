@@ -260,7 +260,7 @@ export default function NewCourseForm({
         })),
       });
 
-      if (!result.ok) {
+      if (!result.success) {
         throw new Error(result.error.message || "建立失敗");
       }
 

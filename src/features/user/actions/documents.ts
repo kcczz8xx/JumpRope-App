@@ -27,7 +27,7 @@ function sanitizeFileName(fileName: string): string {
 
 export async function createTutorDocumentAction(formData: FormData) {
   const auth = await requireUser();
-  if (!auth.ok) return auth;
+  if (!auth.success) return auth;
 
   const userId = auth.data.id;
 
@@ -96,7 +96,7 @@ export async function createTutorDocumentAction(formData: FormData) {
 
 export async function updateTutorDocumentAction(formData: FormData) {
   const auth = await requireUser();
-  if (!auth.ok) return auth;
+  if (!auth.success) return auth;
 
   const userId = auth.data.id;
 
@@ -178,7 +178,7 @@ export async function updateTutorDocumentAction(formData: FormData) {
 
 export async function deleteTutorDocumentAction(documentId: string) {
   const auth = await requireUser();
-  if (!auth.ok) return auth;
+  if (!auth.success) return auth;
 
   const userId = auth.data.id;
 

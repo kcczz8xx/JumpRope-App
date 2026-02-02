@@ -1,0 +1,56 @@
+// ============================================
+// 系統模組 - 審計日誌
+// ============================================
+
+/// 審計日誌 - 記錄所有重要操作
+model AuditLog {
+  id String @id @default(cuid())
+
+  // 請求追蹤
+  requestId String?
+
+  // 操作者
+  userId String?
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // 操作資訊
+  action     String // 操作類型（如 SCHOOL_CREATE, OTP_SEND）
+  resource   String // 資源類型（如 school, otp）
+  resourceId String? // 資源 ID
+
+  // 輸入與結果
+  input     String? @db.Text // JSON 格式的輸入（敏感資料已遮蔽）
+  result    String // "success" | "failure"
+  errorCode String? // 錯誤碼（如失敗）
+
+  // 額外資訊
+  metadata String? @db.Text // JSON 格式的額外資訊
+
+  // 客戶端資訊
+  ipAddress String?
+  userAgent String? @db.Text
+
+  // 系統欄位
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([resource])
+  @@index([resourceId])
+  @@index([result])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+/// 速率限制記錄
+model RateLimitLog {
+  id String @id @default(cuid())
+
+  key       String // 速率限制 key（如 otp:send:+85291234567）
+  createdAt DateTime @default(now())
+
+  @@index([key])
+  @@index([createdAt])
+  @@index([key, createdAt])
+  @@map("rate_limit_logs")
+}

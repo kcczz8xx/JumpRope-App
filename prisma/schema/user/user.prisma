@@ -36,6 +36,7 @@ model User {
   tutorProfile   TutorProfile? // 導師資料（一對一）
   tutorLessons   SchoolTutorLesson[] // 任教記錄
   sentQuotations SchoolQuotation[]   @relation("QuotationSentBy") // 發送的報價單
+  auditLogs      AuditLog[] // 審計日誌
 
   // 系統欄位
   createdAt DateTime  @default(now())

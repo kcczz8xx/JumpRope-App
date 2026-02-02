@@ -23,7 +23,7 @@ export async function getProfile(): Promise<
   }>
 > {
   const auth = await requireUser();
-  if (!auth.ok) return auth;
+  if (!auth.success) return auth;
 
   const user = await prisma.user.findUnique({
     where: { id: auth.data.id },

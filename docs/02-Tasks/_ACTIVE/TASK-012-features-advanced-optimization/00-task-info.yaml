@@ -1,0 +1,39 @@
+id: TASK-012
+title: Features 架構進階優化
+status: planning
+priority: medium
+created: 2025-02-03
+updated: 2025-02-03
+
+tags:
+  - architecture
+  - refactoring
+  - dx-improvement
+
+depends_on:
+  - TASK-011  # Features 架構標準化（已完成）
+
+context_files:
+  - src/features/STRUCTURE.md
+  - src/features/auth/actions/
+  - src/features/school-service/actions/
+  - src/lib/auth/
+
+estimated_effort: 48-60 hours
+phases:
+  - name: Phase 1 - 基礎設施
+    effort: 16h
+    items:
+      - 建立 _core 模組
+      - 建立 lib/patterns
+      - 更新 Prisma schema (AuditLog)
+  - name: Phase 2 - 遷移
+    effort: 24h
+    items:
+      - 遷移 auth 模組
+      - 遷移 school-service 模組
+  - name: Phase 3 - 文檔
+    effort: 8h
+    items:
+      - 更新 STRUCTURE.md
+      - 更新 create-feature script

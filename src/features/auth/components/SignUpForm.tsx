@@ -78,7 +78,7 @@ export default function SignUpForm() {
         purpose: "register",
       });
 
-      if (!result.ok) {
+      if (!result.success) {
         setError(result.error.message);
         return;
       }
@@ -125,7 +125,7 @@ export default function SignUpForm() {
         purpose: "register",
       });
 
-      if (!verifyResult.ok) {
+      if (!verifyResult.success) {
         const newAttempts = otpAttempts + 1;
         setOtpAttempts(newAttempts);
 
@@ -149,7 +149,7 @@ export default function SignUpForm() {
         title: formData.title,
       });
 
-      if (!registerResult.ok) {
+      if (!registerResult.success) {
         setError(registerResult.error.message);
         return;
       }
@@ -180,7 +180,7 @@ export default function SignUpForm() {
         purpose: "register",
       });
 
-      if (!result.ok) {
+      if (!result.success) {
         setError(result.error.message);
         return;
       }

@@ -2,18 +2,33 @@
 
 /**
  * School Service Actions - 批量建立
+ *
+ * 使用 createAction wrapper 自動處理：
+ * - Schema 驗證
+ * - 認證檢查
+ * - 審計日誌
+ * - 錯誤處理
  */
 
 import { prisma } from "@/lib/db";
 import type { CourseTerm, ChargingModel } from "@prisma/client";
-import { safeAction, success, requireUser } from "@/lib/actions";
-import { batchCreateWithSchoolSchema } from "../schemas/batch";
-
-export const batchCreateWithSchoolAction = safeAction(
+import { createAction, success, failure } from "@/lib/patterns";
+import {
   batchCreateWithSchoolSchema,
-  async (input) => {
-    const auth = await requireUser();
-    if (!auth.ok) return auth;
+  type BatchCreateWithSchoolInput,
+} from "../schemas/batch";
+
+/**
+ * 批量建立學校和課程
+ */
+export const batchCreateWithSchoolAction = createAction<
+  BatchCreateWithSchoolInput,
+  { message: string; schoolId: string; coursesCount: number }
+>(
+  async (input, ctx) => {
+    if (!ctx.session?.user) {
+      return failure("UNAUTHORIZED", "請先登入");
+    }
 
     const { school, contact, academicYear, courses } = input;
 
@@ -23,6 +38,7 @@ export const batchCreateWithSchoolAction = safeAction(
         ? new Date(school.partnershipStartDate)
         : null;
 
+      // 檢查是否有重複的學校
       if (school.schoolName && partnershipStart) {
         const existingSchool = await tx.school.findFirst({
           where: {
@@ -40,6 +56,7 @@ export const batchCreateWithSchoolAction = safeAction(
         }
       }
 
+      // 建立新學校
       if (!schoolId) {
         const newSchool = await tx.school.create({
           data: {
@@ -64,6 +81,7 @@ export const batchCreateWithSchoolAction = safeAction(
         schoolId = newSchool.id;
       }
 
+      // 建立或更新聯絡人
       const existingContact = await tx.schoolContact.findFirst({
         where: {
           schoolId: schoolId,
@@ -98,6 +116,7 @@ export const batchCreateWithSchoolAction = safeAction(
         });
       }
 
+      // 建立課程
       const createdCourses = [];
       for (const course of courses) {
         const createdCourse = await tx.schoolCourse.create({
@@ -133,7 +152,16 @@ export const batchCreateWithSchoolAction = safeAction(
 
     return success({
       message: `成功建立 ${result.coursesCount} 個課程`,
-      ...result,
+      schoolId: result.schoolId!,
+      coursesCount: result.coursesCount,
     });
+  },
+  {
+    schema: batchCreateWithSchoolSchema,
+    requireAuth: true,
+    audit: true,
+    auditAction: "BATCH_CREATE_SCHOOL_COURSES",
+    auditResource: "school",
+    auditResourceId: () => undefined,
   }
 );

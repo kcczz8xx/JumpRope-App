@@ -96,7 +96,7 @@ export default function UserInfoEditModal({
       purpose: "update-contact",
     });
 
-    if (!result.ok) {
+    if (!result.success) {
       setOtpError(result.error.message);
       return false;
     }
@@ -118,7 +118,7 @@ export default function UserInfoEditModal({
       purpose: "update-contact",
     });
 
-    if (!result.ok) {
+    if (!result.success) {
       setOtpError(result.error.message);
       otpRef.current?.clear();
       return false;

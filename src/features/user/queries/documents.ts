@@ -24,7 +24,7 @@ export async function getTutorDocuments(documentType?: string): Promise<
   >
 > {
   const auth = await requireUser();
-  if (!auth.ok) return auth;
+  if (!auth.success) return auth;
 
   const tutorProfile = await prisma.tutorProfile.findUnique({
     where: { userId: auth.data.id },

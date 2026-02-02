@@ -4,7 +4,7 @@ import { getSchools } from "@/features/school-service";
 
 export default async function NewCoursePage() {
   const result = await getSchools();
-  const schools = result.ok ? result.data : [];
+  const schools = result.success ? result.data : [];
 
   return (
     <>

@@ -33,7 +33,7 @@ export async function getCourses(params?: {
   >
 > {
   const auth = await requireUser();
-  if (!auth.ok) return auth;
+  if (!auth.success) return auth;
 
   const where: Record<string, unknown> = {
     deletedAt: null,
@@ -74,7 +74,7 @@ export async function getCourses(params?: {
 
 export async function getCourseById(id: string) {
   const auth = await requireUser();
-  if (!auth.ok) return auth;
+  if (!auth.success) return auth;
 
   if (!id) {
     return failure("VALIDATION_ERROR", "缺少課程 ID");

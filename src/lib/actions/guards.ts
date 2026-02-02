@@ -30,7 +30,7 @@ export async function requirePermission(
   permission: Permission
 ): Promise<ActionResult<AuthenticatedUser>> {
   const userResult = await requireUser();
-  if (!userResult.ok) return userResult;
+  if (!userResult.success) return userResult;
 
   if (!hasPermission(userResult.data.role, permission)) {
     return failure("FORBIDDEN", "權限不足");
@@ -43,7 +43,7 @@ export async function requireRole(
   ...allowedRoles: UserRole[]
 ): Promise<ActionResult<AuthenticatedUser>> {
   const userResult = await requireUser();
-  if (!userResult.ok) return userResult;
+  if (!userResult.success) return userResult;
 
   if (!allowedRoles.includes(userResult.data.role)) {
     return failure("FORBIDDEN", "權限不足");

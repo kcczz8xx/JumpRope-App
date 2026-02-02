@@ -20,7 +20,7 @@ export async function getChildren(): Promise<
   >
 > {
   const auth = await requireUser();
-  if (!auth.ok) return auth;
+  if (!auth.success) return auth;
 
   const children = await prisma.userChild.findMany({
     where: {

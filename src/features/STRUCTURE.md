@@ -31,13 +31,59 @@ features/[feature-name]/
 - 按「實體 + 操作」命名：`profile.ts`、`address.ts`、`children.ts`
 - 每個檔案 < **150 行**
 - 共用輔助函式放 `_helpers.ts`（`_` 前綴避免被 index 導出）
-- 統一回傳格式：
+- **使用 `createAction` wrapper**（推薦）
+
+#### createAction Wrapper（推薦）
 
 ```typescript
-type ActionResult<T = void> = 
-  | { success: true; data?: T }
-  | { success: false; error: string };
+"use server";
+
+import { createAction, success, failure } from "@/lib/patterns";
+import { someSchema, type SomeInput } from "../schemas/some";
+
+export const someAction = createAction<SomeInput, { message: string }>(
+  async (input, ctx) => {
+    // ctx.session 自動提供認證資訊
+    if (!ctx.session?.user) {
+      return failure("UNAUTHORIZED", "請先登入");
+    }
+
+    // 業務邏輯...
+
+    return success({ message: "操作成功" });
+  },
+  {
+    schema: someSchema, // 自動 Zod 驗證
+    requireAuth: true, // 自動認證檢查
+    audit: true, // 自動審計日誌
+    auditAction: "SOME_ACTION",
+    auditResource: "some",
+  }
+);
 ```
+
+#### ActionResult 類型
+
+```typescript
+type ActionResult<T = void> =
+  | { success: true; data: T }
+  | { success: false; error: { code: string; message: string } };
+```
+
+#### createAction 選項
+
+| 選項              | 類型                                  | 說明             |
+| :---------------- | :------------------------------------ | :--------------- |
+| `schema`          | `ZodSchema`                           | 輸入驗證 Schema  |
+| `requireAuth`     | `boolean`                             | 是否需要登入     |
+| `requiredRole`    | `UserRole \| UserRole[]`              | 要求特定角色     |
+| `ownershipCheck`  | `(input, userId) => Promise<boolean>` | 所有權檢查       |
+| `rateLimitKey`    | `string \| (input) => string`         | 速率限制 key     |
+| `rateLimitConfig` | `{ max, window }`                     | 速率限制配置     |
+| `audit`           | `boolean`                             | 是否記錄審計日誌 |
+| `auditAction`     | `string`                              | 審計動作名稱     |
+| `auditResource`   | `string`                              | 審計資源類型     |
+| `auditResourceId` | `(input) => string \| undefined`      | 資源 ID          |
 
 ### schemas/
 
@@ -71,10 +117,10 @@ export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 ```typescript
 /**
  * [Feature Name] Feature - Public API
- * 
+ *
  * ✅ 允許 import：Client Components、Server Components、頁面
  * ❌ 禁止 import：其他 features（用 Dependency Injection）
- * 
+ *
  * Server-only exports 請用：
  * import { ... } from '@/features/[name]/server'
  */
@@ -90,15 +136,9 @@ export {
 } from "./actions";
 
 // ===== Schemas & Types =====
-export {
-  updateProfileSchema,
-  updateAddressSchema,
-} from "./schemas";
+export { updateProfileSchema, updateAddressSchema } from "./schemas";
 
-export type {
-  UpdateProfileInput,
-  UpdateAddressInput,
-} from "./schemas";
+export type { UpdateProfileInput, UpdateAddressInput } from "./schemas";
 
 // ⚠️ 禁止導出 queries（應該放 server.ts）
 ```
@@ -115,11 +155,7 @@ export type {
 
 import "server-only";
 
-export {
-  getProfile,
-  getAddress,
-  getChildren,
-} from "./queries";
+export { getProfile, getAddress, getChildren } from "./queries";
 ```
 
 ## 子目錄 index.ts 範例
@@ -134,7 +170,11 @@ export {
 
 export { updateProfileAction } from "./profile";
 export { updateAddressAction, deleteAddressAction } from "./address";
-export { createChildAction, updateChildAction, deleteChildAction } from "./children";
+export {
+  createChildAction,
+  updateChildAction,
+  deleteChildAction,
+} from "./children";
 ```
 
 ### schemas/index.ts
@@ -176,7 +216,7 @@ import { getProfile } from "@/features/user/server";
 import { LoginForm } from "@/features/auth/components/LoginForm";
 
 // ❌ 錯誤：在 Client Component import server.ts
-"use client";
+("use client");
 import { getProfile } from "@/features/user/server"; // 會報錯
 
 // ✅ 功能內部可用相對路徑
@@ -197,6 +237,79 @@ app/ → features/ → lib/
 - 如需共用邏輯，提取到 `@/lib/`
 
 ## 遷移指南
+
+### 從 safeAction 遷移到 createAction
+
+#### Before（舊模式）
+
+```typescript
+"use server";
+
+import { safeAction, success, failure, requireUser } from "@/lib/actions";
+import { someSchema } from "../schemas/some";
+
+export const someAction = safeAction(someSchema, async (input) => {
+  const auth = await requireUser();
+  if (!auth.success) return auth;
+
+  // 業務邏輯...
+  return success({ message: "成功" });
+});
+```
+
+#### After（新模式）
+
+```typescript
+"use server";
+
+import { createAction, success, failure } from "@/lib/patterns";
+import { someSchema, type SomeInput } from "../schemas/some";
+
+export const someAction = createAction<SomeInput, { message: string }>(
+  async (input, ctx) => {
+    if (!ctx.session?.user) {
+      return failure("UNAUTHORIZED", "請先登入");
+    }
+
+    // 業務邏輯...
+    return success({ message: "成功" });
+  },
+  {
+    schema: someSchema,
+    requireAuth: true,
+    audit: true,
+    auditAction: "SOME_ACTION",
+    auditResource: "some",
+  }
+);
+```
+
+#### 遷移步驟
+
+1. **更新 import**
+
+   - `@/lib/actions` → `@/lib/patterns`
+   - 移除 `safeAction`, `requireUser`
+   - 加入 `createAction`
+
+2. **更新函式簽名**
+
+   - `safeAction(schema, handler)` → `createAction<Input, Output>(handler, options)`
+   - 定義明確的泛型類型
+
+3. **更新認證檢查**
+
+   - 移除 `requireUser()` 調用
+   - 使用 `ctx.session?.user` 檢查
+   - 或設定 `requireAuth: true`（自動檢查）
+
+4. **加入審計日誌**（可選）
+
+   - 設定 `audit: true`
+   - 定義 `auditAction` 和 `auditResource`
+
+5. **驗證 build**
+   - `pnpm build`
 
 ### 從扁平式遷移到分層式
 

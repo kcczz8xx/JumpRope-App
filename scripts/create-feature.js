@@ -40,13 +40,7 @@ if (fs.existsSync(featurePath)) {
 }
 
 // 建立目錄結構
-const dirs = [
-  "",
-  "actions",
-  "schemas",
-  "queries",
-  "components",
-];
+const dirs = ["", "actions", "schemas", "queries", "components"];
 
 dirs.forEach((dir) => {
   const dirPath = path.join(featurePath, dir);
@@ -106,6 +100,60 @@ const actionsIndexContent = `/**
 // export { someAction } from "./some-action";
 `;
 
+// 生成 actions/_template.ts（範例檔案）
+const actionsTemplateContent = `"use server";
+
+/**
+ * ${pascalCase} Actions - 範例模板
+ *
+ * 使用 createAction wrapper 自動處理：
+ * - Schema 驗證
+ * - 認證檢查
+ * - 審計日誌
+ * - 錯誤處理
+ *
+ * 使用完成後請刪除此範例檔案
+ */
+
+import { createAction, success, failure } from "@/lib/patterns";
+// import { someSchema, type SomeInput } from "../schemas/some";
+import { z } from "zod";
+
+// 臨時 schema（實際使用時請放到 schemas/ 目錄）
+const exampleSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1).max(100),
+});
+type ExampleInput = z.infer<typeof exampleSchema>;
+
+/**
+ * 範例 Action
+ */
+export const exampleAction = createAction<ExampleInput, { message: string }>(
+  async (input, ctx) => {
+    // ctx.session 自動提供認證資訊
+    if (!ctx.session?.user) {
+      return failure("UNAUTHORIZED", "請先登入");
+    }
+
+    const { id, name } = input;
+
+    // 你的業務邏輯...
+    console.log(\`Processing: \${id}, \${name}\`);
+
+    return success({ message: "操作成功" });
+  },
+  {
+    schema: exampleSchema,
+    requireAuth: true,
+    audit: true,
+    auditAction: "${featureName.toUpperCase().replace(/-/g, "_")}_ACTION",
+    auditResource: "${featureName}",
+    auditResourceId: (input) => input.id,
+  }
+);
+`;
+
 // 生成 schemas/index.ts
 const schemasIndexContent = `/**
  * ${pascalCase} Schemas - Index
@@ -127,16 +175,30 @@ const queriesIndexContent = `/**
 // 寫入檔案
 fs.writeFileSync(path.join(featurePath, "index.ts"), indexContent);
 fs.writeFileSync(path.join(featurePath, "server.ts"), serverContent);
-fs.writeFileSync(path.join(featurePath, "actions", "index.ts"), actionsIndexContent);
-fs.writeFileSync(path.join(featurePath, "schemas", "index.ts"), schemasIndexContent);
-fs.writeFileSync(path.join(featurePath, "queries", "index.ts"), queriesIndexContent);
+fs.writeFileSync(
+  path.join(featurePath, "actions", "index.ts"),
+  actionsIndexContent
+);
+fs.writeFileSync(
+  path.join(featurePath, "actions", "_template.ts"),
+  actionsTemplateContent
+);
+fs.writeFileSync(
+  path.join(featurePath, "schemas", "index.ts"),
+  schemasIndexContent
+);
+fs.writeFileSync(
+  path.join(featurePath, "queries", "index.ts"),
+  queriesIndexContent
+);
 
 console.log(`✅ Feature "${featureName}" 已建立！`);
 console.log("");
 console.log("📁 目錄結構：");
 console.log(`   src/features/${featureName}/`);
 console.log("   ├── actions/");
-console.log("   │   └── index.ts");
+console.log("   │   ├── index.ts");
+console.log("   │   └── _template.ts   ← createAction 範例");
 console.log("   ├── schemas/");
 console.log("   │   └── index.ts");
 console.log("   ├── queries/");
@@ -146,9 +208,10 @@ console.log("   ├── index.ts");
 console.log("   └── server.ts");
 console.log("");
 console.log("📖 下一步：");
-console.log("   1. 在 actions/ 建立你的 Server Actions");
+console.log("   1. 參考 actions/_template.ts 建立你的 Server Actions");
 console.log("   2. 在 schemas/ 建立對應的 Zod schemas");
 console.log("   3. 在 queries/ 建立資料查詢函式");
 console.log("   4. 更新各個 index.ts 導出");
+console.log("   5. 刪除 actions/_template.ts（完成後）");
 console.log("");
 console.log(`📚 參考規範：src/features/STRUCTURE.md`);
