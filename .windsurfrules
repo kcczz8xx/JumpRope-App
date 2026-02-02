@@ -268,3 +268,24 @@ PR 合併前需通過：
 | `Cannot find module '@/context'` | 改為 `@/lib/providers` |
 | Tailwind 樣式失效 | 檢查 `tsconfig.json` 的 `include` 是否涵蓋 `src/` |
 | Prisma 找不到 schema | 確認 `prisma/` 在根目錄 |
+
+# AI 工作流規範
+
+## Primary workflow
+1) Always locate the current task folder under:
+   docs/02-Tasks/_ACTIVE/
+2) Read (in order):
+   00-task-info.yaml -> 01-Requirements.md -> 02-Technical-Plan.md
+3) Only then inspect code files listed in `context_files`.
+
+## Task folder is the unit of work
+- Every conversation output MUST be written into:
+  docs/02-Tasks/_ACTIVE/<TASK...>/90-Chat-Log/
+- Do NOT scatter notes into other docs folders during an active task.
+- If a new global rule is discovered, write it in the task first; after completion, extract it to docs/03-Knowledge-Base/ or docs/01-Architecture/.
+
+## Post-conversation checklist (must do)
+- Add a chat log file for this conversation.
+- Update Implementation Progress with clear next steps.
+- Record decisions with rationale and alternatives.
+- Add discovered issues to Issues Log (or task, then extract).

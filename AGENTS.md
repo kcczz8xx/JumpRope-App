@@ -41,6 +41,14 @@ pnpm prisma:wipe            # Reset database (⚠️ destructive)
 jumprope-app/
 ├── prisma/              # Database schema & migrations
 ├── public/              # Static assets
+├── docs/                # Documentation system
+│   ├── 00-Context/      # Business & tech background
+│   ├── 01-Architecture/ # System design docs
+│   ├── 02-Tasks/        # Task management (_ACTIVE, _PAUSED, _ARCHIVE)
+│   ├── 03-Knowledge-Base/
+│   ├── 04-Reference/
+│   ├── 05-Issues-Log/
+│   └── 99-Meta/         # Doc system config
 └── src/
     ├── app/             # Next.js App Router
     │   ├── (public)/    # Public routes
@@ -59,6 +67,16 @@ jumprope-app/
     ├── lib/             # Core utilities
     └── hooks/           # Global hooks
 ```
+
+## Task-Based Workflow
+
+Before starting any work:
+
+1. Check `docs/02-Tasks/_ACTIVE/` for current task folder
+2. Read: `00-task-info.yaml` → `01-Requirements.md` → `02-Technical-Plan.md`
+3. After each conversation: update `03-Implementation-Progress.md`
+4. Record decisions in `04-Decisions.md`
+5. On completion: move task to `_ARCHIVE/YYYY-MM/`
 
 ## Code Style Guidelines
 
@@ -80,6 +98,7 @@ jumprope-app/
 3. **Validate all inputs** with Zod schemas
 4. **Use Server Components by default** — add `"use client"` only when needed
 5. **Place `_components/`** in route folders for route-specific components
+6. **Update task progress** after each conversation
 
 ### ❌ DON'T
 
@@ -88,14 +107,15 @@ jumprope-app/
 3. **Don't cross-import features**: Feature A should not import Feature B
 4. **Don't use `@/utils`** — use `@/lib/utils`
 5. **Don't use `@/context`** — use `@/lib/providers`
+6. **Don't scatter notes** — all docs go in current task folder first
 
 ## Path Migration Reference
 
-| Old Path | New Path |
-|:---------|:---------|
-| `@/utils` | `@/lib/utils` |
-| `@/layout` | `@/components/layout` |
-| `@/context` | `@/lib/providers` |
+| Old Path    | New Path              |
+| :---------- | :-------------------- |
+| `@/utils`   | `@/lib/utils`         |
+| `@/layout`  | `@/components/layout` |
+| `@/context` | `@/lib/providers`     |
 
 ## Security Considerations
 
