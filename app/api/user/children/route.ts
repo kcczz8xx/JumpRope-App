@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { generateChildMemberNumber } from "@/lib/services";
+import { createChildWithMemberNumber } from "@/lib/services";
 import {
   checkPermission,
   unauthorizedResponse,
@@ -78,27 +78,13 @@ export async function POST(request: NextRequest) {
       birthYear = parsed;
     }
 
-    const memberNumber = await generateChildMemberNumber();
-
-    const child = await prisma.userChild.create({
-      data: {
-        parentId: userId,
-        memberNumber,
-        nameChinese: body.nameChinese,
-        nameEnglish: body.nameEnglish || null,
-        birthYear,
-        school: body.school || null,
-        gender: body.gender || null,
-      },
-      select: {
-        id: true,
-        memberNumber: true,
-        nameChinese: true,
-        nameEnglish: true,
-        birthYear: true,
-        school: true,
-        gender: true,
-      },
+    const child = await createChildWithMemberNumber({
+      parentId: userId,
+      nameChinese: body.nameChinese,
+      nameEnglish: body.nameEnglish || null,
+      birthYear,
+      school: body.school || null,
+      gender: body.gender || null,
     });
 
     return NextResponse.json({ child }, { status: 201 });

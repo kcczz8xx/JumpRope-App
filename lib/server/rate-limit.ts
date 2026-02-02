@@ -127,15 +127,16 @@ export async function rateLimit(
 }
 
 /**
- * 同步版本的 rate limit（向後相容）
- * 注意：此版本在 Redis 不可用時會降級為允許請求
+ * 同步版本的 rate limit（已棄用）
+ * @deprecated 請使用 async 版本的 rateLimit()
+ * 注意：此函數使用 fail-closed 策略，始終返回失敗
  */
 export function rateLimitSync(
-    identifier: string,
-    config: Partial<RateLimitConfig> = {}
+    _identifier: string,
+    _config: Partial<RateLimitConfig> = {}
 ): { success: boolean; remaining: number; resetIn: number } {
-    console.warn("rateLimitSync is deprecated, use rateLimit (async) instead");
-    return { success: true, remaining: 999, resetIn: 0 };
+    console.error("rateLimitSync is deprecated and disabled. Use rateLimit (async) instead.");
+    return { success: false, remaining: 0, resetIn: 60000 };
 }
 
 export function getClientIP(request: Request): string {

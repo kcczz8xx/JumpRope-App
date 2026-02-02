@@ -82,7 +82,16 @@ export async function generateMemberNumber(
 export async function createUserWithMemberNumber(
     userData: Omit<Prisma.UserCreateInput, "memberNumber">,
     type: MemberType = MemberType.SELF_REGISTERED
-): Promise<{ id: string; memberNumber: string }> {
+): Promise<{
+    id: string;
+    phone: string;
+    email: string | null;
+    nickname: string | null;
+    title: string | null;
+    memberNumber: string;
+    role: string;
+    createdAt: Date;
+}> {
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         try {
             const memberNumber = await generateMemberNumber(type);
@@ -94,11 +103,20 @@ export async function createUserWithMemberNumber(
                 },
                 select: {
                     id: true,
+                    phone: true,
+                    email: true,
+                    nickname: true,
+                    title: true,
                     memberNumber: true,
+                    role: true,
+                    createdAt: true,
                 },
             });
 
-            return { id: user.id, memberNumber: user.memberNumber! };
+            return {
+                ...user,
+                memberNumber: user.memberNumber!,
+            };
         } catch (error) {
             if (
                 error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -162,4 +180,64 @@ export async function generateChildMemberNumber(): Promise<string> {
     }
 
     throw new Error("無法生成唯一學員編號，請稍後再試");
+}
+
+/**
+ * 在 transaction 內生成學員會員編號並創建學員
+ * 使用樂觀鎖定策略：如果發生衝突則重試
+ */
+export async function createChildWithMemberNumber(
+    childData: Omit<Prisma.UserChildCreateInput, "memberNumber" | "parent"> & { parentId: string }
+): Promise<{
+    id: string;
+    memberNumber: string;
+    nameChinese: string;
+    nameEnglish: string | null;
+    birthYear: number | null;
+    school: string | null;
+    gender: string | null;
+}> {
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+            const memberNumber = await generateChildMemberNumber();
+
+            const child = await prisma.userChild.create({
+                data: {
+                    parentId: childData.parentId,
+                    memberNumber,
+                    nameChinese: childData.nameChinese,
+                    nameEnglish: childData.nameEnglish ?? null,
+                    birthYear: childData.birthYear ?? null,
+                    school: childData.school ?? null,
+                    gender: childData.gender ?? null,
+                },
+                select: {
+                    id: true,
+                    memberNumber: true,
+                    nameChinese: true,
+                    nameEnglish: true,
+                    birthYear: true,
+                    school: true,
+                    gender: true,
+                },
+            });
+
+            return {
+                ...child,
+                memberNumber: child.memberNumber!,
+                gender: child.gender as string | null,
+            };
+        } catch (error) {
+            if (
+                error instanceof Prisma.PrismaClientKnownRequestError &&
+                error.code === "P2002"
+            ) {
+                await new Promise((resolve) => setTimeout(resolve, 100 * (attempt + 1)));
+                continue;
+            }
+            throw error;
+        }
+    }
+
+    throw new Error("無法創建學員，會員編號衝突，請稍後再試");
 }

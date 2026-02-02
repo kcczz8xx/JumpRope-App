@@ -1,21 +1,32 @@
 # Code Review 修復報告
 
 **日期**: 2026-02-02  
-**審查 Commit**: `511ae29` - "refactor: enhance security and fix validation issues in auth and user APIs"
+**審查 Commit**: `511ae29` → `f9731da` → 最新
 
 ---
 
 ## 修復摘要
 
-| 嚴重度 | 問題 | 狀態 |
-|--------|------|------|
-| 🔴 | Race Condition - 會員編號生成 | ✅ 已修復 |
-| 🔴 | Rate Limit Fail-Open | ✅ 已修復 |
-| 🔴 | OTP 驗證後重用風險 | ✅ 已修復 |
-| 🟡 | Children API 缺少 memberNumber | ✅ 已修復 |
-| 🟡 | Email 重設假成功訊息 | ✅ 已修復 |
-| 🟡 | OTP verify 缺少 purpose 驗證 | ✅ 已修復 |
-| 🟢 | Profile API 缺少 OTP 驗證 | ✅ 已修復 |
+### 第一輪修復（Commit `f9731da`）
+
+| 嚴重度 | 問題                           | 狀態      |
+| ------ | ------------------------------ | --------- |
+| 🔴     | Race Condition - 會員編號生成  | ✅ 已修復 |
+| 🔴     | Rate Limit Fail-Open           | ✅ 已修復 |
+| 🔴     | OTP 驗證後重用風險             | ✅ 已修復 |
+| 🟡     | Children API 缺少 memberNumber | ✅ 已修復 |
+| 🟡     | Email 重設假成功訊息           | ✅ 已修復 |
+| 🟡     | OTP verify 缺少 purpose 驗證   | ✅ 已修復 |
+| 🟢     | Profile API 缺少 OTP 驗證      | ✅ 已修復 |
+
+### 第二輪修復（最新）
+
+| 嚴重度 | 問題                         | 狀態      |
+| ------ | ---------------------------- | --------- |
+| 🟡     | rateLimitSync 仍為 fail-open | ✅ 已修復 |
+| 🟡     | Children API race condition  | ✅ 已修復 |
+| 🟢     | Register 多餘資料庫查詢      | ✅ 已優化 |
+| 🟢     | Profile OTP 驗證後未清除     | ✅ 已修復 |
 
 ---
 
@@ -28,6 +39,7 @@
 **修復檔案**: `app/api/auth/register/route.ts`
 
 **修復方式**:
+
 - 改用 `createUserWithMemberNumber()` 函數（內建 P2002 unique constraint 錯誤重試機制）
 - 導出該函數至 `lib/services/index.ts`
 
@@ -49,6 +61,7 @@ const { id, memberNumber } = await createUserWithMemberNumber({ ... });
 **修復檔案**: `lib/server/rate-limit.ts`
 
 **修復方式**:
+
 - 改為 fail-closed 策略（Redis 失敗時拒絕請求）
 - 環境變數未設定時給予明確警告
 - 空環境變數不再嘗試連接 Redis
@@ -78,15 +91,16 @@ catch (error) {
 **修復檔案**: `app/api/auth/register/route.ts`
 
 **修復方式**:
+
 - 註冊成功後立即刪除已驗證的 OTP 記錄
 
 ```typescript
 await prisma.otp.deleteMany({
-    where: {
-        phone,
-        purpose: "REGISTER",
-        verified: true,
-    },
+  where: {
+    phone,
+    purpose: "REGISTER",
+    verified: true,
+  },
 });
 ```
 
@@ -99,6 +113,7 @@ await prisma.otp.deleteMany({
 **修復檔案**: `app/api/user/children/route.ts`
 
 **修復方式**:
+
 - 建立學員前調用 `generateChildMemberNumber()`
 
 ```typescript
@@ -122,6 +137,7 @@ const child = await prisma.userChild.create({
 **修復檔案**: `app/api/auth/reset-password/send/route.ts`
 
 **修復方式**:
+
 - 未實作功能返回 HTTP 501 錯誤
 
 ```typescript
@@ -142,14 +158,15 @@ const child = await prisma.userChild.create({
 **修復檔案**: `app/api/auth/otp/verify/route.ts`
 
 **修復方式**:
+
 - 加入 `purpose` 參數的白名單驗證
 
 ```typescript
-if (!purpose || !["register", "reset-password", "update-contact"].includes(purpose)) {
-    return NextResponse.json(
-        { error: "無效的驗證用途" },
-        { status: 400 }
-    );
+if (
+  !purpose ||
+  !["register", "reset-password", "update-contact"].includes(purpose)
+) {
+  return NextResponse.json({ error: "無效的驗證用途" }, { status: 400 });
 }
 ```
 
@@ -162,25 +179,26 @@ if (!purpose || !["register", "reset-password", "update-contact"].includes(purpo
 **修復檔案**: `app/api/user/profile/route.ts`
 
 **修復方式**:
+
 - 更新電話或電郵前必須檢查已驗證的 OTP（10 分鐘內有效）
 
 ```typescript
 if (currentUser?.phone !== phone) {
-    const verifiedOtp = await prisma.otp.findFirst({
-        where: {
-            phone,
-            purpose: "UPDATE_CONTACT",
-            verified: true,
-            expiresAt: { gte: new Date(Date.now() - 10 * 60 * 1000) },
-        },
-    });
+  const verifiedOtp = await prisma.otp.findFirst({
+    where: {
+      phone,
+      purpose: "UPDATE_CONTACT",
+      verified: true,
+      expiresAt: { gte: new Date(Date.now() - 10 * 60 * 1000) },
+    },
+  });
 
-    if (!verifiedOtp) {
-        return NextResponse.json(
-            { error: "請先完成新電話號碼驗證" },
-            { status: 403 }
-        );
-    }
+  if (!verifiedOtp) {
+    return NextResponse.json(
+      { error: "請先完成新電話號碼驗證" },
+      { status: 403 }
+    );
+  }
 }
 ```
 
@@ -188,15 +206,15 @@ if (currentUser?.phone !== phone) {
 
 ## 修改檔案清單
 
-| 檔案 | 變更類型 |
-|------|----------|
-| `app/api/auth/register/route.ts` | 修改 |
-| `app/api/auth/otp/verify/route.ts` | 修改 |
-| `app/api/auth/reset-password/send/route.ts` | 修改 |
-| `app/api/user/children/route.ts` | 修改 |
-| `app/api/user/profile/route.ts` | 修改 |
-| `lib/server/rate-limit.ts` | 修改 |
-| `lib/services/index.ts` | 修改 |
+| 檔案                                        | 變更類型 |
+| ------------------------------------------- | -------- |
+| `app/api/auth/register/route.ts`            | 修改     |
+| `app/api/auth/otp/verify/route.ts`          | 修改     |
+| `app/api/auth/reset-password/send/route.ts` | 修改     |
+| `app/api/user/children/route.ts`            | 修改     |
+| `app/api/user/profile/route.ts`             | 修改     |
+| `lib/server/rate-limit.ts`                  | 修改     |
+| `lib/services/index.ts`                     | 修改     |
 
 ---
 
@@ -207,3 +225,109 @@ if (currentUser?.phone !== phone) {
 2. **Email 重設**: 目前返回 501，待後續實作 email 發送功能。
 
 3. **OTP 有效期**: Profile 更新的 OTP 驗證窗口為 10 分鐘，與前端邏輯一致。
+
+---
+
+## 第二輪修復詳細內容
+
+### 8. rateLimitSync Fail-Open 🟡
+
+**問題**: 雖然 `rateLimit()` 已改為 fail-closed，但 `rateLimitSync` 仍然返回 `success: true`。
+
+**修復檔案**: `lib/server/rate-limit.ts`
+
+**修復方式**:
+
+- 將 `rateLimitSync` 改為 fail-closed，始終返回 `success: false`
+- 標記為 `@deprecated`，輸出 `console.error` 警告
+
+```typescript
+export function rateLimitSync(
+  _identifier: string,
+  _config: Partial<RateLimitConfig> = {}
+): { success: boolean; remaining: number; resetIn: number } {
+  console.error("rateLimitSync is deprecated and disabled.");
+  return { success: false, remaining: 0, resetIn: 60000 };
+}
+```
+
+---
+
+### 9. Children API Race Condition 🟡
+
+**問題**: `generateChildMemberNumber()` 與 `prisma.userChild.create()` 之間存在競爭條件。
+
+**修復檔案**:
+
+- `lib/services/member-number.ts`
+- `lib/services/index.ts`
+- `app/api/user/children/route.ts`
+
+**修復方式**:
+
+- 新增 `createChildWithMemberNumber()` 函數，包含 P2002 錯誤重試機制
+- 更新 Children API 使用新函數
+
+```typescript
+const child = await createChildWithMemberNumber({
+    parentId: userId,
+    nameChinese: body.nameChinese,
+    ...
+});
+```
+
+---
+
+### 10. Register 多餘資料庫查詢 🟢
+
+**問題**: `createUserWithMemberNumber()` 後又執行 `findUnique` 查詢。
+
+**修復檔案**:
+
+- `lib/services/member-number.ts`
+- `app/api/auth/register/route.ts`
+
+**修復方式**:
+
+- 擴展 `createUserWithMemberNumber()` 返回完整用戶資料
+- 移除 register route 中多餘的 `findUnique` 查詢
+
+---
+
+### 11. Profile OTP 驗證後未清除 🟢
+
+**問題**: Profile 更新成功後沒有刪除已使用的 OTP，允許 10 分鐘內重複使用。
+
+**修復檔案**: `app/api/user/profile/route.ts`
+
+**修復方式**:
+
+- 追蹤需要刪除的 OTP 電話號碼
+- 更新成功後刪除相關 OTP 記錄
+
+```typescript
+if (otpPhonesToDelete.length > 0) {
+  await prisma.otp.deleteMany({
+    where: {
+      phone: { in: otpPhonesToDelete },
+      purpose: "UPDATE_CONTACT",
+      verified: true,
+    },
+  });
+}
+```
+
+---
+
+## 完整修改檔案清單
+
+| 檔案                                        | 第一輪 | 第二輪 |
+| ------------------------------------------- | ------ | ------ |
+| `app/api/auth/register/route.ts`            | ✅     | ✅     |
+| `app/api/auth/otp/verify/route.ts`          | ✅     | -      |
+| `app/api/auth/reset-password/send/route.ts` | ✅     | -      |
+| `app/api/user/children/route.ts`            | ✅     | ✅     |
+| `app/api/user/profile/route.ts`             | ✅     | ✅     |
+| `lib/server/rate-limit.ts`                  | ✅     | ✅     |
+| `lib/services/index.ts`                     | ✅     | ✅     |
+| `lib/services/member-number.ts`             | -      | ✅     |

@@ -84,27 +84,13 @@ export async function POST(request: NextRequest) {
 
         const passwordHash = await bcrypt.hash(password, 12);
 
-        const { id, memberNumber } = await createUserWithMemberNumber({
+        const user = await createUserWithMemberNumber({
             phone,
             email,
             nickname,
             title,
             passwordHash,
             role: "USER",
-        });
-
-        const user = await prisma.user.findUnique({
-            where: { id },
-            select: {
-                id: true,
-                phone: true,
-                email: true,
-                nickname: true,
-                title: true,
-                memberNumber: true,
-                role: true,
-                createdAt: true,
-            },
         });
 
         await prisma.otp.deleteMany({

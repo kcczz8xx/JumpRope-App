@@ -8,5 +8,6 @@ export {
   generateMemberNumber,
   generateChildMemberNumber,
   createUserWithMemberNumber,
+  createChildWithMemberNumber,
   MemberType,
 } from "./member-number";

@@ -70,6 +70,7 @@ export async function PATCH(request: NextRequest) {
         const { nickname, email, phone, whatsappEnabled } = body;
 
         const updateData: Record<string, unknown> = {};
+        const otpPhonesToDelete: string[] = [];
 
         if (nickname !== undefined) {
             updateData.nickname = nickname;
@@ -98,6 +99,10 @@ export async function PATCH(request: NextRequest) {
                             { error: "請先完成電郵地址驗證" },
                             { status: 403 }
                         );
+                    }
+
+                    if (currentUser?.phone) {
+                        otpPhonesToDelete.push(currentUser.phone);
                     }
                 }
 
@@ -147,6 +152,8 @@ export async function PATCH(request: NextRequest) {
                         { status: 403 }
                     );
                 }
+
+                otpPhonesToDelete.push(phone);
             }
 
             const existingUser = await prisma.user.findFirst({
@@ -186,6 +193,16 @@ export async function PATCH(request: NextRequest) {
                 whatsappEnabled: true,
             },
         });
+
+        if (otpPhonesToDelete.length > 0) {
+            await prisma.otp.deleteMany({
+                where: {
+                    phone: { in: otpPhonesToDelete },
+                    purpose: "UPDATE_CONTACT",
+                    verified: true,
+                },
+            });
+        }
 
         return NextResponse.json(
             { message: "資料更新成功", user: updatedUser },
