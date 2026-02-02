@@ -204,24 +204,6 @@ if (currentUser?.phone !== phone) {
 
 ---
 
-## 修改檔案清單
-
-| 檔案                                        | 變更類型 |
-| ------------------------------------------- | -------- |
-| `app/api/auth/register/route.ts`            | 修改     |
-| `app/api/auth/otp/verify/route.ts`          | 修改     |
-| `app/api/auth/reset-password/send/route.ts` | 修改     |
-| `app/api/user/children/route.ts`            | 修改     |
-| `app/api/user/profile/route.ts`             | 修改     |
-| `lib/server/rate-limit.ts`                  | 修改     |
-| `lib/services/index.ts`                     | 修改     |
-
----
-
-## 注意事項
-
-1. **環境變數**: 確保生產環境已設定 `UPSTASH_REDIS_REST_URL` 和 `UPSTASH_REDIS_REST_TOKEN`，否則 Rate Limit 將拒絕所有請求。
-
 2. **Email 重設**: 目前返回 501，待後續實作 email 發送功能。
 
 3. **OTP 有效期**: Profile 更新的 OTP 驗證窗口為 10 分鐘，與前端邏輯一致。
@@ -321,13 +303,116 @@ if (otpPhonesToDelete.length > 0) {
 
 ## 完整修改檔案清單
 
-| 檔案                                        | 第一輪 | 第二輪 |
-| ------------------------------------------- | ------ | ------ |
-| `app/api/auth/register/route.ts`            | ✅     | ✅     |
-| `app/api/auth/otp/verify/route.ts`          | ✅     | -      |
-| `app/api/auth/reset-password/send/route.ts` | ✅     | -      |
-| `app/api/user/children/route.ts`            | ✅     | ✅     |
-| `app/api/user/profile/route.ts`             | ✅     | ✅     |
-| `lib/server/rate-limit.ts`                  | ✅     | ✅     |
-| `lib/services/index.ts`                     | ✅     | ✅     |
-| `lib/services/member-number.ts`             | -      | ✅     |
+| 檔案                                        | 第一輪 | 第二輪 | 第三輪    |
+| ------------------------------------------- | ------ | ------ | --------- |
+| `app/api/auth/register/route.ts`            | ✅     | ✅     | ✅        |
+| `app/api/auth/otp/verify/route.ts`          | ✅     | -      | -         |
+| `app/api/auth/reset-password/send/route.ts` | ✅     | -      | -         |
+| `app/api/user/children/route.ts`            | ✅     | ✅     | ✅        |
+| `app/api/user/profile/route.ts`             | ✅     | ✅     | ✅        |
+| `lib/server/rate-limit.ts`                  | ✅     | ✅     | ✅        |
+| `lib/services/index.ts`                     | ✅     | ✅     | -         |
+| `lib/services/member-number.ts`             | -      | ✅     | -         |
+| `lib/constants/otp.ts`                      | -      | -      | ✅ (新增) |
+
+---
+
+## 第三輪修復詳細內容
+
+### 12. Profile API 重複查詢優化 🟢
+
+**問題**: 同時更新 email 和 phone 時會執行兩次 `findUnique` 查詢。
+
+**修復檔案**: `app/api/user/profile/route.ts`
+
+**修復方式**:
+
+- 在 PATCH 開始時一次性查詢當前用戶資料
+- 使用 `needsContactCheck` 條件判斷是否需要查詢
+
+```typescript
+const needsContactCheck = (email !== undefined && email) || phone !== undefined;
+const currentUser = needsContactCheck
+  ? await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, phone: true },
+    })
+  : null;
+```
+
+---
+
+### 13. OTP 驗證窗口統一 🟢
+
+**問題**: OTP 驗證窗口時間不一致（30 分鐘 vs 10 分鐘）。
+
+**修復方式**:
+
+- 新增 `lib/constants/otp.ts` 統一定義 OTP 相關常量
+- 更新 register 和 profile API 使用常量
+
+```typescript
+export const OTP_CONFIG = {
+  EXPIRY_MS: 10 * 60 * 1000,
+  REGISTER_VERIFY_WINDOW_MS: 30 * 60 * 1000,
+  UPDATE_CONTACT_VERIFY_WINDOW_MS: 10 * 60 * 1000,
+  CODE_LENGTH: 6,
+  MAX_ATTEMPTS: 5,
+} as const;
+```
+
+---
+
+### 14. Children API Rate Limit 🟢
+
+**問題**: POST 創建學員沒有速率限制，可能被濫用。
+
+**修復檔案**:
+
+- `lib/server/rate-limit.ts`
+- `app/api/user/children/route.ts`
+
+**修復方式**:
+
+- 新增 `CHILD_CREATE` 速率限制配置（每小時 10 次）
+- 在 POST 函數加入速率限制檢查
+
+---
+
+### 15. getClientIP Fallback 改進 🟢
+
+**問題**: 無法獲取 IP 時返回 "unknown"，多個用戶共享同一個 rate limit bucket。
+
+**修復檔案**: `lib/server/rate-limit.ts`
+
+**修復方式**:
+
+- 支持更多代理頭（`cf-connecting-ip`、`true-client-ip`）
+- 使用唯一隨機識別符作為 fallback
+
+```typescript
+return `fallback_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+```
+
+---
+
+## 總結
+
+| 輪次     | 嚴重  | 中等  | 建議  | 總計   |
+| -------- | ----- | ----- | ----- | ------ |
+| 第一輪   | 3     | 3     | 1     | 7      |
+| 第二輪   | 0     | 2     | 2     | 4      |
+| 第三輪   | 0     | 0     | 4     | 4      |
+| **總計** | **3** | **5** | **7** | **15** |
+
+所有 **15 項問題** 已全部修復。
+
+---
+
+## 注意事項
+
+1. **環境變數**: 確保生產環境已設定 `UPSTASH_REDIS_REST_URL` 和 `UPSTASH_REDIS_REST_TOKEN`。
+
+2. **Email 重設**: 目前返回 501，待後續實作 email 發送功能。
+
+3. **OTP 有效期**: 現已統一定義於 `lib/constants/otp.ts`。

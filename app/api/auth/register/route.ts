@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { rateLimit, getClientIP, RATE_LIMIT_CONFIGS } from "@/lib/server";
 import { createUserWithMemberNumber } from "@/lib/services";
+import { OTP_CONFIG } from "@/lib/constants/otp";
 
 interface RegisterRequest {
     phone: string;
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
                 phone,
                 purpose: "REGISTER",
                 verified: true,
-                expiresAt: { gte: new Date(Date.now() - 30 * 60 * 1000) },
+                expiresAt: { gte: new Date(Date.now() - OTP_CONFIG.REGISTER_VERIFY_WINDOW_MS) },
             },
             orderBy: { createdAt: "desc" },
         });

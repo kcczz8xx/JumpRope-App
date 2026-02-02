@@ -5,6 +5,7 @@ import {
     unauthorizedResponse,
     forbiddenResponse,
 } from "@/lib/rbac/check-permission";
+import { OTP_CONFIG } from "@/lib/constants/otp";
 
 interface UpdateProfileRequest {
     nickname?: string;
@@ -72,24 +73,27 @@ export async function PATCH(request: NextRequest) {
         const updateData: Record<string, unknown> = {};
         const otpPhonesToDelete: string[] = [];
 
+        const needsContactCheck = (email !== undefined && email) || (phone !== undefined);
+        const currentUser = needsContactCheck
+            ? await prisma.user.findUnique({
+                where: { id: userId },
+                select: { email: true, phone: true },
+            })
+            : null;
+
         if (nickname !== undefined) {
             updateData.nickname = nickname;
         }
 
         if (email !== undefined) {
             if (email) {
-                const currentUser = await prisma.user.findUnique({
-                    where: { id: userId },
-                    select: { email: true, phone: true },
-                });
-
                 if (currentUser?.email !== email) {
                     const verifiedOtp = await prisma.otp.findFirst({
                         where: {
                             phone: currentUser?.phone || "",
                             purpose: "UPDATE_CONTACT",
                             verified: true,
-                            expiresAt: { gte: new Date(Date.now() - 10 * 60 * 1000) },
+                            expiresAt: { gte: new Date(Date.now() - OTP_CONFIG.UPDATE_CONTACT_VERIFY_WINDOW_MS) },
                         },
                         orderBy: { createdAt: "desc" },
                     });
@@ -130,18 +134,13 @@ export async function PATCH(request: NextRequest) {
                 );
             }
 
-            const currentUser = await prisma.user.findUnique({
-                where: { id: userId },
-                select: { phone: true },
-            });
-
             if (currentUser?.phone !== phone) {
                 const verifiedOtp = await prisma.otp.findFirst({
                     where: {
                         phone,
                         purpose: "UPDATE_CONTACT",
                         verified: true,
-                        expiresAt: { gte: new Date(Date.now() - 10 * 60 * 1000) },
+                        expiresAt: { gte: new Date(Date.now() - OTP_CONFIG.UPDATE_CONTACT_VERIFY_WINDOW_MS) },
                     },
                     orderBy: { createdAt: "desc" },
                 });

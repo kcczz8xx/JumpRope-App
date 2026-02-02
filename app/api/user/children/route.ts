@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { createChildWithMemberNumber } from "@/lib/services";
+import { rateLimit, getClientIP, RATE_LIMIT_CONFIGS } from "@/lib/server";
 import {
   checkPermission,
   unauthorizedResponse,
@@ -48,6 +49,19 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const clientIP = getClientIP(request);
+    const rateLimitResult = await rateLimit(
+      `child_create:${clientIP}`,
+      RATE_LIMIT_CONFIGS.CHILD_CREATE
+    );
+
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: "請求過於頻繁，請稍後再試" },
+        { status: 429 }
+      );
+    }
+
     const authResult = await checkPermission("CHILD_CREATE");
 
     if (!authResult.authorized) {

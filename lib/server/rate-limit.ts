@@ -54,10 +54,16 @@ const rateLimiters = redis
             prefix: "ratelimit:reset_password",
             analytics: true,
         }),
+        childCreate: new Ratelimit({
+            redis,
+            limiter: Ratelimit.slidingWindow(10, "1 h"),
+            prefix: "ratelimit:child_create",
+            analytics: true,
+        }),
     }
     : null;
 
-type RateLimitType = "otpSend" | "otpVerify" | "register" | "login" | "resetPassword";
+type RateLimitType = "otpSend" | "otpVerify" | "register" | "login" | "resetPassword" | "childCreate";
 
 interface RateLimitConfig {
     windowMs: number;
@@ -70,6 +76,7 @@ export const RATE_LIMIT_CONFIGS = {
     REGISTER: { windowMs: 60 * 60 * 1000, maxRequests: 5 },
     LOGIN: { windowMs: 15 * 60 * 1000, maxRequests: 10 },
     RESET_PASSWORD: { windowMs: 60 * 60 * 1000, maxRequests: 5 },
+    CHILD_CREATE: { windowMs: 60 * 60 * 1000, maxRequests: 10 },
 } as const;
 
 const configToType: Record<string, RateLimitType> = {
@@ -78,6 +85,7 @@ const configToType: Record<string, RateLimitType> = {
     REGISTER: "register",
     LOGIN: "login",
     RESET_PASSWORD: "resetPassword",
+    CHILD_CREATE: "childCreate",
 };
 
 /**
@@ -148,5 +156,13 @@ export function getClientIP(request: Request): string {
     if (realIP) {
         return realIP;
     }
-    return "unknown";
+    const cfConnectingIP = request.headers.get("cf-connecting-ip");
+    if (cfConnectingIP) {
+        return cfConnectingIP;
+    }
+    const trueClientIP = request.headers.get("true-client-ip");
+    if (trueClientIP) {
+        return trueClientIP;
+    }
+    return `fallback_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
