@@ -20,3 +20,41 @@ export { CourseCards } from "./components/pages/detailed/CourseCards";
 export { MetricCards } from "./components/pages/overview/MetricCards";
 export { QuickActions } from "./components/pages/overview/QuickActions";
 export { ActivityTimeline } from "./components/pages/overview/ActivityTimeline";
+
+// Actions
+export {
+    createSchoolAction,
+    updateSchoolAction,
+    deleteSchoolAction,
+    createCourseAction,
+    deleteCourseAction,
+    batchCreateWithSchoolAction,
+} from "./actions";
+
+// Queries
+export {
+    getSchools,
+    getSchoolById,
+    getCourses,
+    getCourseById,
+} from "./queries";
+
+// Schemas
+export {
+    createSchoolSchema,
+    updateSchoolSchema,
+    schoolContactSchema,
+    createCourseSchema,
+    updateCourseSchema,
+    batchCreateWithSchoolSchema,
+} from "./schema";
+
+// Types
+export type {
+    CreateSchoolInput,
+    UpdateSchoolInput,
+    SchoolContactInput,
+    CreateCourseInput,
+    UpdateCourseInput,
+    BatchCreateWithSchoolInput,
+} from "./schema";

@@ -9,3 +9,36 @@ export { default as SignUpForm } from "./components/SignUpForm";
 export { default as OtpForm } from "./components/OtpForm";
 export { default as ResetPasswordForm } from "./components/ResetPasswordForm";
 export { PermissionGate } from "./components/PermissionGate";
+
+// Server Actions
+export {
+    sendOtpAction,
+    verifyOtpAction,
+    registerAction,
+    changePasswordAction,
+    resetPasswordSendAction,
+    resetPasswordVerifyAction,
+    resetPasswordAction,
+} from "./actions";
+
+// Schemas
+export {
+    sendOtpSchema,
+    verifyOtpSchema,
+    registerSchema,
+    changePasswordSchema,
+    resetPasswordSendSchema,
+    resetPasswordVerifySchema,
+    resetPasswordSchema,
+} from "./schema";
+
+// Types
+export type {
+    SendOtpInput,
+    VerifyOtpInput,
+    RegisterInput,
+    ChangePasswordInput,
+    ResetPasswordSendInput,
+    ResetPasswordVerifyInput,
+    ResetPasswordInput,
+} from "./schema";

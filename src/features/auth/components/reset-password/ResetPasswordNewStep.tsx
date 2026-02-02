@@ -7,7 +7,7 @@ import { EyeCloseIcon, EyeIcon } from "@/icons";
 interface ResetPasswordNewStepProps {
   isLoading: boolean;
   error: string;
-  onSubmit: (password: string, confirmPassword: string) => Promise<void>;
+  onSubmit: (password: string, confirmPassword: string) => void | Promise<void>;
 }
 
 const inputClassName =

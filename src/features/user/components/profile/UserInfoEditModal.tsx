@@ -1,10 +1,11 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useTransition } from "react";
 import { Modal } from "@/components/tailadmin/ui/modal";
 import Label from "@/components/tailadmin/form/Label";
 import Input from "@/components/tailadmin/form/input/InputField";
 import Switch from "@/components/tailadmin/form/switch/Switch";
 import PhoneInput from "@/components/tailadmin/form/group-input/PhoneInput";
+import { sendOtpAction, verifyOtpAction } from "@/features/auth";
 
 export interface UserInfoFormData {
   nickname: string;
@@ -49,7 +50,7 @@ export default function UserInfoEditModal({
   );
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [otpError, setOtpError] = useState("");
-  const [otpLoading, setOtpLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [countdown, setCountdown] = useState(0);
   const [pendingField, setPendingField] = useState<"email" | "phone" | null>(
     null
@@ -120,154 +121,138 @@ export default function UserInfoEditModal({
     inputsRef.current[filledIndex]?.focus();
   };
 
-  const sendOtp = async (field: "email" | "phone", value: string) => {
-    setOtpLoading(true);
+  const sendOtp = async (
+    field: "email" | "phone",
+    value: string
+  ): Promise<boolean> => {
     setOtpError("");
-    try {
-      const response = await fetch("/api/auth/otp/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone: field === "phone" ? value : originalPhone,
-          email: field === "email" ? value : undefined,
-          purpose: "update-contact",
-        }),
-      });
-      if (!response.ok) {
-        const data = await response.json();
-        setOtpError(data.error || "發送驗證碼失敗");
-        return false;
-      }
-      setCountdown(60);
-      return true;
-    } catch {
-      setOtpError("發送驗證碼失敗，請稍後再試");
+    const result = await sendOtpAction({
+      phone: field === "phone" ? value : originalPhone,
+      email: field === "email" ? value : undefined,
+      purpose: "update-contact",
+    });
+
+    if (!result.ok) {
+      setOtpError(result.error.message);
       return false;
-    } finally {
-      setOtpLoading(false);
     }
+    setCountdown(60);
+    return true;
   };
 
-  const verifyOtp = async () => {
+  const verifyOtp = async (): Promise<boolean> => {
     const otpCode = otp.join("");
     if (otpCode.length !== 6) {
       setOtpError("請輸入完整的 6 位驗證碼");
       return false;
     }
-    setOtpLoading(true);
     setOtpError("");
-    try {
-      const response = await fetch("/api/auth/otp/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone: pendingField === "phone" ? pendingValue : originalPhone,
-          code: otpCode,
-          purpose: "update-contact",
-        }),
-      });
-      if (!response.ok) {
-        const data = await response.json();
-        setOtpError(data.error || "驗證碼錯誤");
-        setOtp(["", "", "", "", "", ""]);
-        inputsRef.current[0]?.focus();
-        return false;
-      }
-      return true;
-    } catch {
-      setOtpError("驗證失敗，請稍後再試");
+
+    const result = await verifyOtpAction({
+      phone: pendingField === "phone" ? pendingValue : originalPhone,
+      code: otpCode,
+      purpose: "update-contact",
+    });
+
+    if (!result.ok) {
+      setOtpError(result.error.message);
+      setOtp(["", "", "", "", "", ""]);
+      inputsRef.current[0]?.focus();
       return false;
-    } finally {
-      setOtpLoading(false);
     }
+    return true;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     const emailChanged = email !== originalEmail;
     const phoneChanged = phone !== originalPhone;
 
-    // Step 1: 從表單提交，同時發送所有需要的 OTP
-    if (step === "form") {
-      // 同時發送兩者的 OTP（如果都有變更）
-      if (phoneChanged && emailChanged) {
-        setEmailNeedsVerify(true);
-        // 同時發送兩個 OTP
-        const [phoneSent, emailSent] = await Promise.all([
-          sendOtp("phone", phone),
-          sendOtp("email", email),
-        ]);
-        if (phoneSent && emailSent) {
+    startTransition(async () => {
+      // Step 1: 從表單提交，同時發送所有需要的 OTP
+      if (step === "form") {
+        // 同時發送兩者的 OTP（如果都有變更）
+        if (phoneChanged && emailChanged) {
+          setEmailNeedsVerify(true);
+          // 同時發送兩個 OTP
+          const [phoneSent, emailSent] = await Promise.all([
+            sendOtp("phone", phone),
+            sendOtp("email", email),
+          ]);
+          if (phoneSent && emailSent) {
+            setPendingField("phone");
+            setPendingValue(phone);
+            setStep("otp-phone");
+            setOtp(["", "", "", "", "", ""]);
+          }
+          return;
+        }
+
+        // 只有電話變更
+        if (phoneChanged) {
           setPendingField("phone");
           setPendingValue(phone);
-          setStep("otp-phone");
-          setOtp(["", "", "", "", "", ""]);
+          const sent = await sendOtp("phone", phone);
+          if (sent) {
+            setStep("otp-phone");
+            setOtp(["", "", "", "", "", ""]);
+          }
+          return;
         }
-        return;
+
+        // 只有電郵變更
+        if (emailChanged) {
+          setPendingField("email");
+          setPendingValue(email);
+          const sent = await sendOtp("email", email);
+          if (sent) {
+            setStep("otp-email");
+            setOtp(["", "", "", "", "", ""]);
+          }
+          return;
+        }
       }
 
-      // 只有電話變更
-      if (phoneChanged) {
-        setPendingField("phone");
-        setPendingValue(phone);
-        const sent = await sendOtp("phone", phone);
-        if (sent) {
-          setStep("otp-phone");
-          setOtp(["", "", "", "", "", ""]);
-        }
-        return;
-      }
+      // Step 2: 驗證電話 OTP
+      if (step === "otp-phone") {
+        const verified = await verifyOtp();
+        if (!verified) return;
+        setPhoneVerified(true);
 
-      // 只有電郵變更
-      if (emailChanged) {
-        setPendingField("email");
-        setPendingValue(email);
-        const sent = await sendOtp("email", email);
-        if (sent) {
+        // 如果 email 也需要驗證，進入 email OTP 步驟
+        if (emailNeedsVerify) {
+          setPendingField("email");
+          setPendingValue(email);
           setStep("otp-email");
           setOtp(["", "", "", "", "", ""]);
+          return;
         }
-        return;
       }
-    }
 
-    // Step 2: 驗證電話 OTP
-    if (step === "otp-phone") {
-      const verified = await verifyOtp();
-      if (!verified) return;
-      setPhoneVerified(true);
-
-      // 如果 email 也需要驗證，進入 email OTP 步驟
-      if (emailNeedsVerify) {
-        setPendingField("email");
-        setPendingValue(email);
-        setStep("otp-email");
-        setOtp(["", "", "", "", "", ""]);
-        return;
+      // Step 3: 驗證電郵 OTP
+      if (step === "otp-email") {
+        const verified = await verifyOtp();
+        if (!verified) return;
       }
-    }
 
-    // Step 3: 驗證電郵 OTP
-    if (step === "otp-email") {
-      const verified = await verifyOtp();
-      if (!verified) return;
-    }
-
-    // 所有驗證完成，提交資料
-    onSave({
-      nickname,
-      email,
-      phone,
-      whatsappEnabled,
+      // 所有驗證完成，提交資料
+      onSave({
+        nickname,
+        email,
+        phone,
+        whatsappEnabled,
+      });
     });
   };
 
-  const handleResendOtp = async () => {
+  const handleResendOtp = () => {
     if (countdown > 0 || !pendingField || !pendingValue) return;
-    await sendOtp(pendingField, pendingValue);
-    setOtp(["", "", "", "", "", ""]);
-    inputsRef.current[0]?.focus();
+    startTransition(async () => {
+      await sendOtp(pendingField, pendingValue);
+      setOtp(["", "", "", "", "", ""]);
+      inputsRef.current[0]?.focus();
+    });
   };
 
   const handleBackToForm = () => {
@@ -328,7 +313,7 @@ export default function UserInfoEditModal({
               if (el) inputsRef.current[index] = el;
             }}
             className="h-12 w-full rounded-lg border border-gray-300 bg-transparent text-center text-xl font-semibold text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
-            disabled={otpLoading}
+            disabled={isPending}
           />
         ))}
       </div>
@@ -342,7 +327,7 @@ export default function UserInfoEditModal({
             type="button"
             onClick={handleResendOtp}
             className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
-            disabled={otpLoading}
+            disabled={isPending}
           >
             重新發送
           </button>
@@ -353,17 +338,17 @@ export default function UserInfoEditModal({
         <button
           type="button"
           onClick={onClose}
-          disabled={otpLoading || isLoading}
+          disabled={isPending || isLoading}
           className="inline-flex items-center justify-center font-medium gap-2 rounded-lg transition px-4 py-3 text-sm bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/3 dark:hover:text-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
         >
           取消
         </button>
         <button
           type="submit"
-          disabled={otpLoading || isLoading}
+          disabled={isPending || isLoading}
           className="inline-flex items-center justify-center font-medium gap-2 rounded-lg transition px-4 py-3 text-sm bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {otpLoading ? "驗證中..." : "確認驗證"}
+          {isPending ? "驗證中..." : "確認驗證"}
         </button>
       </div>
     </div>
@@ -472,17 +457,17 @@ export default function UserInfoEditModal({
         <button
           type="button"
           onClick={onClose}
-          disabled={isLoading || otpLoading}
+          disabled={isLoading || isPending}
           className="inline-flex items-center justify-center font-medium gap-2 rounded-lg transition px-4 py-3 text-sm bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/3 dark:hover:text-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
         >
           取消
         </button>
         <button
           type="submit"
-          disabled={isLoading || otpLoading}
+          disabled={isLoading || isPending}
           className="inline-flex items-center justify-center font-medium gap-2 rounded-lg transition px-4 py-3 text-sm bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isLoading || otpLoading ? "處理中..." : "儲存"}
+          {isLoading || isPending ? "處理中..." : "儲存"}
         </button>
       </div>
     </div>

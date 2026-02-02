@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useTransition } from "react";
 import Link from "next/link";
 import { ChevronLeftIcon } from "@/icons";
 import { ResetMethod, ResetStep } from "./reset-password/types";
@@ -8,16 +8,22 @@ import ResetPasswordOtpStep from "./reset-password/ResetPasswordOtpStep";
 import ResetPasswordNewStep from "./reset-password/ResetPasswordNewStep";
 import ResetPasswordSuccessStep from "./reset-password/ResetPasswordSuccessStep";
 import { isValidPhoneNumber } from "libphonenumber-js";
+import {
+  resetPasswordSendAction,
+  resetPasswordVerifyAction,
+  resetPasswordAction,
+} from "../actions";
 
 export default function ResetPasswordForm() {
   const [method, setMethod] = useState<ResetMethod>("phone");
   const [step, setStep] = useState<ResetStep>("request");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [resetToken, setResetToken] = useState("");
+  const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
 
-  const handleSendCode = async (e: React.FormEvent) => {
+  const handleSendCode = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -32,35 +38,25 @@ export default function ResetPasswordForm() {
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/auth/reset-password/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(method === "phone" ? { phone } : { email }),
-      });
+    startTransition(async () => {
+      const result = await resetPasswordSendAction(
+        method === "phone" ? { phone } : { email }
+      );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || "發送失敗");
+      if (!result.ok) {
+        setError(result.error.message);
         return;
       }
 
       if (method === "phone") {
         setStep("otp");
       } else {
-        setError("");
         alert("重設密碼連結已發送到您的電郵，請查收");
       }
-    } catch {
-      setError("發送失敗，請稍後再試");
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
 
-  const handleVerifyOtp = async (otpCode: string) => {
+  const handleVerifyOtp = (otpCode: string) => {
     setError("");
 
     if (otpCode.length !== 6) {
@@ -68,50 +64,30 @@ export default function ResetPasswordForm() {
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/auth/reset-password/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, code: otpCode }),
-      });
+    startTransition(async () => {
+      const result = await resetPasswordVerifyAction({ phone, code: otpCode });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || "驗證失敗");
+      if (!result.ok) {
+        setError(result.error.message);
         return;
       }
 
+      setResetToken(result.data.resetToken);
       setStep("new-password");
-    } catch {
-      setError("驗證失敗，請稍後再試");
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
 
-  const handleResendOtp = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/auth/reset-password/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone }),
-      });
+  const handleResendOtp = () => {
+    startTransition(async () => {
+      const result = await resetPasswordSendAction({ phone });
 
-      if (!response.ok) {
-        const data = await response.json();
-        setError(data.error || "重新發送失敗");
+      if (!result.ok) {
+        setError(result.error.message);
       }
-    } catch {
-      setError("重新發送失敗，請稍後再試");
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
 
-  const handleResetPassword = async (
+  const handleResetPassword = (
     newPassword: string,
     confirmPassword: string
   ) => {
@@ -130,27 +106,20 @@ export default function ResetPasswordForm() {
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/auth/reset-password/reset", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, password: newPassword }),
+    startTransition(async () => {
+      const result = await resetPasswordAction({
+        phone,
+        password: newPassword,
+        resetToken,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || "重設密碼失敗");
+      if (!result.ok) {
+        setError(result.error.message);
         return;
       }
 
       setStep("success");
-    } catch {
-      setError("重設密碼失敗，請稍後再試");
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
 
   const getBackAction = () => {
@@ -235,7 +204,7 @@ export default function ResetPasswordForm() {
               method={method}
               phone={phone}
               email={email}
-              isLoading={isLoading}
+              isLoading={isPending}
               error={error}
               onMethodChange={setMethod}
               onPhoneChange={setPhone}
@@ -247,7 +216,7 @@ export default function ResetPasswordForm() {
           {step === "otp" && (
             <ResetPasswordOtpStep
               phone={phone}
-              isLoading={isLoading}
+              isLoading={isPending}
               error={error}
               onVerify={handleVerifyOtp}
               onResend={handleResendOtp}
@@ -256,7 +225,7 @@ export default function ResetPasswordForm() {
 
           {step === "new-password" && (
             <ResetPasswordNewStep
-              isLoading={isLoading}
+              isLoading={isPending}
               error={error}
               onSubmit={handleResetPassword}
             />

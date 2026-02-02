@@ -1,7 +1,12 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useModal } from "@/hooks/useModal";
+import {
+  createTutorDocumentAction,
+  updateTutorDocumentAction,
+  deleteTutorDocumentAction,
+} from "../../actions";
 import DocumentTable from "./tutor-documents/DocumentTable";
 import TutorDocumentEditModal from "./tutor-documents/TutorDocumentEditModal";
 import {
@@ -41,7 +46,7 @@ export default function UserTutorCard({
 }: UserTutorCardProps) {
   const router = useRouter();
   const [selectedTab, setSelectedTab] = useState<TabType>("required");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   // Modal states for each document type
   const identityModal = useModal();
@@ -104,81 +109,59 @@ export default function UserTutorCard({
     data: TutorDocumentFormData,
     file?: File
   ) => {
-    setIsLoading(true);
-    try {
-      const formData = new FormData();
+    const formData = new FormData();
 
-      if (editingDocument?.id) {
-        formData.append("documentId", editingDocument.id);
-      }
-
-      formData.append("documentType", data.documentType);
-      formData.append("name", data.name);
-
-      if (data.referenceNumber) {
-        formData.append("referenceNumber", data.referenceNumber);
-      }
-      if (data.certificateType) {
-        formData.append("certificateType", data.certificateType);
-      }
-      if (data.issuingBody) {
-        formData.append("issuingBody", data.issuingBody);
-      }
-      if (data.issueDate) {
-        formData.append("issueDate", data.issueDate);
-      }
-      if (data.expiryDate !== undefined) {
-        formData.append("expiryDate", data.expiryDate || "");
-      }
-      if (data.notes) {
-        formData.append("notes", data.notes);
-      }
-      if (file) {
-        formData.append("file", file);
-      }
-
-      const response = await fetch("/api/user/tutor/document", {
-        method: editingDocument?.id ? "PUT" : "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "操作失敗");
-      }
-
-      closeAllModals();
-      router.refresh();
-    } catch (error) {
-      console.error("Save document error:", error);
-      throw error;
-    } finally {
-      setIsLoading(false);
+    if (editingDocument?.id) {
+      formData.append("documentId", editingDocument.id);
     }
+
+    formData.append("documentType", data.documentType);
+    formData.append("name", data.name);
+
+    if (data.referenceNumber) {
+      formData.append("referenceNumber", data.referenceNumber);
+    }
+    if (data.certificateType) {
+      formData.append("certificateType", data.certificateType);
+    }
+    if (data.issuingBody) {
+      formData.append("issuingBody", data.issuingBody);
+    }
+    if (data.issueDate) {
+      formData.append("issueDate", data.issueDate);
+    }
+    if (data.expiryDate !== undefined) {
+      formData.append("expiryDate", data.expiryDate || "");
+    }
+    if (data.notes) {
+      formData.append("notes", data.notes);
+    }
+    if (file) {
+      formData.append("file", file);
+    }
+
+    const result = editingDocument?.id
+      ? await updateTutorDocumentAction(formData)
+      : await createTutorDocumentAction(formData);
+
+    if (!result.ok) {
+      throw new Error(result.error.message);
+    }
+
+    closeAllModals();
+    router.refresh();
   };
 
   // Delete document
   const handleDeleteDocument = async (documentId: string) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(
-        `/api/user/tutor/document?id=${documentId}`,
-        { method: "DELETE" }
-      );
+    const result = await deleteTutorDocumentAction(documentId);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "刪除失敗");
-      }
-
-      closeAllModals();
-      router.refresh();
-    } catch (error) {
-      console.error("Delete document error:", error);
-      throw error;
-    } finally {
-      setIsLoading(false);
+    if (!result.ok) {
+      throw new Error(result.error.message);
     }
+
+    closeAllModals();
+    router.refresh();
   };
 
   // Build required documents list
@@ -341,7 +324,7 @@ export default function UserTutorCard({
           existingDocumentUrl: identityDocument?.documentUrl,
           ...editingDocument?.data,
         }}
-        isLoading={isLoading}
+        isLoading={isPending}
         hasExistingData={!!identityDocument?.documentUrl}
       />
 
@@ -364,7 +347,7 @@ export default function UserTutorCard({
           existingDocumentUrl: sexualConvictionCheck?.documentUrl,
           ...editingDocument?.data,
         }}
-        isLoading={isLoading}
+        isLoading={isPending}
         hasExistingData={!!sexualConvictionCheck?.documentUrl}
       />
 
@@ -386,7 +369,7 @@ export default function UserTutorCard({
           existingDocumentUrl: bankDocument?.documentUrl,
           ...editingDocument?.data,
         }}
-        isLoading={isLoading}
+        isLoading={isPending}
         hasExistingData={!!bankDocument?.documentUrl}
       />
 
@@ -407,7 +390,7 @@ export default function UserTutorCard({
           existingDocumentUrl: addressProof?.documentUrl,
           ...editingDocument?.data,
         }}
-        isLoading={isLoading}
+        isLoading={isPending}
         hasExistingData={!!addressProof?.documentUrl}
       />
 
@@ -431,7 +414,7 @@ export default function UserTutorCard({
           existingDocumentUrl: firstAidCertificate?.documentUrl,
           ...editingDocument?.data,
         }}
-        isLoading={isLoading}
+        isLoading={isPending}
         hasExistingData={!!firstAidCertificate?.documentUrl}
       />
 
@@ -447,7 +430,7 @@ export default function UserTutorCard({
         }
         documentType="COACHING_CERTIFICATE"
         initialData={editingDocument?.data}
-        isLoading={isLoading}
+        isLoading={isPending}
         hasExistingData={!!editingDocument?.id}
       />
 
@@ -463,7 +446,7 @@ export default function UserTutorCard({
         }
         documentType="OTHER_CERTIFICATE"
         initialData={editingDocument?.data}
-        isLoading={isLoading}
+        isLoading={isPending}
         hasExistingData={!!editingDocument?.id}
       />
     </div>

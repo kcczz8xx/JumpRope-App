@@ -1,0 +1,26 @@
+task_id: TASK-0004
+title: "Demo: 文檔系統測試"
+status: ACTIVE
+priority: P2
+owner: "AI"
+created_at: "2026-02-02"
+focus: true
+
+context_files:
+  - "docs/99-Meta/rules.md"
+  - "AGENTS.md"
+
+decisions:
+  - "04-Decisions.md#2026-02-02-initial"
+
+acceptance_criteria:
+  - 驗證任務文件夾結構完整
+  - 測試 AGENTS.md 自動範圍功能
+  - 確認對話記錄流程正常
+
+next_steps:
+  - 建立所有必要文件
+  - 記錄對話到 90-Chat-Log/
+
+risks:
+  - 無

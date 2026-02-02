@@ -1,0 +1,47 @@
+id: TASK-0005
+title: Server Actions 遷移
+status: active
+priority: high
+created: 2026-02-02
+updated: 2026-02-02
+
+owner: AI Assistant
+tags:
+  - refactor
+  - server-actions
+  - api-routes
+
+summary: |
+  將現有 API Routes 遷移到 Server Actions，
+  建立統一的 Action 基礎設施，提升代碼可維護性。
+
+scope:
+  - 建立 lib/actions 基礎設施
+  - 遷移 auth 模組 (7 個 endpoints)
+  - 遷移 user 模組 (5 個 endpoints)
+  - 遷移 school-service 模組 (4 個 endpoints)
+
+dependencies:
+  - Next.js 15.5.11 (已滿足)
+  - React 19.1.1 (已滿足)
+  - Zod 4.3.6 (已滿足)
+
+estimated_hours: 8-13
+actual_hours: 0
+
+milestones:
+  - name: 階段一：Action 基礎設施
+    status: pending
+    estimated: 1-2h
+  - name: 階段二：Auth 模組遷移
+    status: pending
+    estimated: 2-3h
+  - name: 階段三：User 模組遷移
+    status: pending
+    estimated: 2-3h
+  - name: 階段四：School Service 遷移
+    status: pending
+    estimated: 2-3h
+  - name: 階段五：收尾清理
+    status: pending
+    estimated: 1-2h

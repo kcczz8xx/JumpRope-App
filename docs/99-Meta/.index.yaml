@@ -7,7 +7,7 @@ structure:
     files:
       - 01-Project-Overview.md
       - 02-Tech-Stack.md
-  
+
   01-Architecture:
     description: "系統架構文檔"
     files:
@@ -15,14 +15,14 @@ structure:
       - 01-Data-Models.md
       - 02-API-Routes.md
       - 03-Components-Structure.md
-  
+
   02-Tasks:
     description: "開發任務管理"
     subdirs:
       - _ACTIVE
       - _PAUSED
       - _ARCHIVE
-  
+
   03-Knowledge-Base:
     description: "知識庫"
     files:
@@ -32,14 +32,14 @@ structure:
       - Prisma-Neon-Comparison.md
       - Prisma-Setup-Guide.md
       - TypeScript-Standards.md
-  
+
   04-Reference:
     description: "快速參考"
     files:
       - API-Endpoint-Catalog.md
       - Command-Cheatsheet.md
       - File-Structure-Map.md
-  
+
   05-Issues-Log:
     description: "問題與解決方案"
     files:
@@ -47,20 +47,23 @@ structure:
       - Known-Issues.md
       - Performance-Issues.md
       - Resolved-Challenges.md
-  
+
   06-Deployment:
     description: "部署與運維"
     files: []
-  
+
   99-Meta:
     description: "系統元配置"
     files:
       - .index.yaml
       - doc-template-guide.md
+      - maintenance-log.md
       - naming-conventions.md
+      - rules.md
 
 archived_tasks:
   2026-02:
     - TASK-0001-refactor-project-structure
     - TASK-0002-school-service
     - TASK-0003-user-profile
+    - TASK-0004-docs-system-demo

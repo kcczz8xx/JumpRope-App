@@ -1,3 +1,9 @@
+/**
+ * @deprecated 此 API Route 已遷移至 Server Actions
+ * 請使用 `@/features/school-service` 中的 `batchCreateWithSchoolAction`
+ * 此文件保留作為參考，將在未來版本移除
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { CourseTerm, ChargingModel } from "@prisma/client";

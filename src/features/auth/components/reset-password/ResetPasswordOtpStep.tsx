@@ -7,8 +7,8 @@ interface ResetPasswordOtpStepProps {
   phone: string;
   isLoading: boolean;
   error: string;
-  onVerify: (otp: string) => Promise<void>;
-  onResend: () => Promise<void>;
+  onVerify: (otp: string) => void | Promise<void>;
+  onResend: () => void | Promise<void>;
 }
 
 export default function ResetPasswordOtpStep({

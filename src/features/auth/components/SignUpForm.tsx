@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useTransition } from "react";
 import { isValidPhoneNumber } from "libphonenumber-js";
 import Link from "next/link";
 import { ChevronLeftIcon } from "@/icons";
@@ -8,6 +8,7 @@ import { SignUpStep, SignUpFormData } from "./signup/types";
 import SignUpFormStep from "./signup/SignUpFormStep";
 import SignUpOtpStep from "./signup/SignUpOtpStep";
 import SignUpEmailFallback from "./signup/SignUpEmailFallback";
+import { sendOtpAction, verifyOtpAction, registerAction } from "../actions";
 
 export default function SignUpForm() {
   const [step, setStep] = useState<SignUpStep>("form");
@@ -21,7 +22,7 @@ export default function SignUpForm() {
   });
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [otpAttempts, setOtpAttempts] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
   const [countdown, setCountdown] = useState(0);
 
@@ -78,36 +79,25 @@ export default function SignUpForm() {
     }, 1000);
   };
 
-  const handleSendOtp = async () => {
+  const handleSendOtp = () => {
     setError("");
     if (!validateForm()) return;
 
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/auth/otp/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone: formData.phone,
-          email: formData.email,
-          purpose: "register",
-        }),
+    startTransition(async () => {
+      const result = await sendOtpAction({
+        phone: formData.phone,
+        email: formData.email,
+        purpose: "register",
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || "發送驗證碼失敗");
+      if (!result.ok) {
+        setError(result.error.message);
         return;
       }
 
       setStep("otp");
       startCountdown();
-    } catch {
-      setError("發送驗證碼失敗，請稍後再試");
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
 
   const handleOtpChange = (value: string, index: number) => {
@@ -131,7 +121,7 @@ export default function SignUpForm() {
     }
   };
 
-  const handleVerifyOtp = async () => {
+  const handleVerifyOtp = () => {
     setError("");
     const otpCode = otp.join("");
 
@@ -140,21 +130,14 @@ export default function SignUpForm() {
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const verifyResponse = await fetch("/api/auth/otp/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone: formData.phone,
-          code: otpCode,
-          purpose: "register",
-        }),
+    startTransition(async () => {
+      const verifyResult = await verifyOtpAction({
+        phone: formData.phone,
+        code: otpCode,
+        purpose: "register",
       });
 
-      const verifyData = await verifyResponse.json();
-
-      if (!verifyResponse.ok) {
+      if (!verifyResult.ok) {
         const newAttempts = otpAttempts + 1;
         setOtpAttempts(newAttempts);
 
@@ -163,40 +146,31 @@ export default function SignUpForm() {
           setError("驗證碼錯誤次數過多，請使用電郵驗證");
         } else {
           setError(
-            verifyData.error || `驗證碼錯誤，還有 ${3 - newAttempts} 次機會`
+            verifyResult.error.message ||
+              `驗證碼錯誤，還有 ${3 - newAttempts} 次機會`
           );
         }
         return;
       }
 
-      const registerResponse = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone: formData.phone,
-          password: formData.password,
-          email: formData.email,
-          nickname: formData.nickname,
-          title: formData.title,
-        }),
+      const registerResult = await registerAction({
+        phone: formData.phone,
+        password: formData.password,
+        email: formData.email,
+        nickname: formData.nickname,
+        title: formData.title,
       });
 
-      const registerData = await registerResponse.json();
-
-      if (!registerResponse.ok) {
-        setError(registerData.error || "註冊失敗");
+      if (!registerResult.ok) {
+        setError(registerResult.error.message);
         return;
       }
 
       window.location.href = "/signin";
-    } catch {
-      setError("驗證失敗，請稍後再試");
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
 
-  const handleEmailVerification = async () => {
+  const handleEmailVerification = () => {
     setError("");
 
     if (!formData.email) {
@@ -204,46 +178,28 @@ export default function SignUpForm() {
       return;
     }
 
-    setIsLoading(true);
-    try {
-      // TODO: 調用發送電郵驗證 API
-      setError("");
-      alert("驗證連結已發送到您的電郵，請查收");
-    } catch {
-      setError("發送驗證郵件失敗，請稍後再試");
-    } finally {
-      setIsLoading(false);
-    }
+    // TODO: 調用發送電郵驗證 API
+    alert("驗證連結已發送到您的電郵，請查收");
   };
 
-  const handleResendOtp = async () => {
+  const handleResendOtp = () => {
     if (countdown > 0) return;
 
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/auth/otp/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone: formData.phone,
-          email: formData.email,
-          purpose: "register",
-        }),
+    startTransition(async () => {
+      const result = await sendOtpAction({
+        phone: formData.phone,
+        email: formData.email,
+        purpose: "register",
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        setError(data.error || "重新發送失敗");
+      if (!result.ok) {
+        setError(result.error.message);
         return;
       }
 
       startCountdown();
       setOtp(["", "", "", "", "", ""]);
-    } catch {
-      setError("重新發送失敗，請稍後再試");
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
 
   const getStepTitle = () => {
@@ -310,7 +266,7 @@ export default function SignUpForm() {
                 formData={formData}
                 onFormChange={handleFormChange}
                 onSubmit={handleSendOtp}
-                isLoading={isLoading}
+                isLoading={isPending}
               />
             )}
 
@@ -321,7 +277,7 @@ export default function SignUpForm() {
                 onOtpKeyDown={handleOtpKeyDown}
                 onVerify={handleVerifyOtp}
                 onResend={handleResendOtp}
-                isLoading={isLoading}
+                isLoading={isPending}
                 countdown={countdown}
               />
             )}
@@ -331,7 +287,7 @@ export default function SignUpForm() {
                 formData={formData}
                 onFormChange={handleFormChange}
                 onSubmit={handleEmailVerification}
-                isLoading={isLoading}
+                isLoading={isPending}
               />
             )}
 
