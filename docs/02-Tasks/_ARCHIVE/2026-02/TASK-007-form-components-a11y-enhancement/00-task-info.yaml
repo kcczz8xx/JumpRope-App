@@ -1,0 +1,47 @@
+# Task: Form Components A11y 增強
+# Created: 2026-02-02
+# Status: Planning
+
+id: TASK-005
+title: Form Components Accessibility 與品質增強
+status: completed
+priority: high
+created: 2026-02-02
+estimated_hours: 3.5
+
+# 任務摘要
+summary: |
+  增強 shared/forms/ 組件的 Accessibility 支援、統一按鈕樣式、
+  改善錯誤提示視覺效果，並清理重複代碼。
+
+# 目標
+goals:
+  - 增加 a11y 支援（aria-label, aria-invalid 等）
+  - SubmitButton 統一使用 Tailadmin Button
+  - FormError 增加 Icon 與 role="alert"
+  - SubmitButton 增加 Loading Spinner
+  - SignUpForm 使用 useCountdown hook
+  - 可選：建立 FormField Wrapper
+
+# 相關文件
+context_files:
+  - src/components/shared/forms/PasswordField.tsx
+  - src/components/shared/forms/OtpInput.tsx
+  - src/components/shared/forms/SubmitButton.tsx
+  - src/components/shared/forms/FormError.tsx
+  - src/features/auth/components/SignUpForm.tsx
+
+# 關聯
+related_docs:
+  - docs/01-Architecture/00-System-Design.md
+  - docs/02-Tasks/_ARCHIVE/2026-02/TASK-004-component-architecture-refactor/
+
+# 驗收標準（簡版）
+acceptance:
+  - PasswordField 支援 aria-label, aria-invalid, aria-describedby
+  - OtpInput 支援 role="group", aria-label
+  - SubmitButton 有 Loading Spinner
+  - FormError 有 role="alert" 與 Icon
+  - SignUpForm 使用 useCountdown hook
+  - pnpm build 通過
+  - pnpm lint 通過

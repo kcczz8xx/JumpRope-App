@@ -1,0 +1,37 @@
+# Task: API Routes 遷移到 Server Actions
+# Created: 2026-02-02
+# Status: In Progress
+
+id: TASK-006
+title: useUserProfile Hooks 遷移到 Server Actions + 清理 API Routes
+status: completed
+priority: high
+created: 2026-02-02
+estimated_hours: 3
+
+# 任務摘要
+summary: |
+  將 src/hooks/useUserProfile.ts 中的 API Routes 調用
+  遷移到 Server Actions，然後刪除未使用的 API Routes。
+
+# 目標
+goals:
+  - 建立 User feature 的 Server Actions
+  - 重構 useUserProfile.ts 改用 Server Actions
+  - 刪除未使用的 API Routes
+  - 保留 [...nextauth] 路由
+
+# 相關文件
+context_files:
+  - src/hooks/useUserProfile.ts
+  - src/features/user/actions.ts
+  - src/app/api/user/
+  - src/app/api/auth/change-password/
+
+# 驗收標準
+acceptance:
+  - useUserProfile.ts 使用 Server Actions
+  - /api/user/* 目錄已刪除
+  - /api/auth/change-password 已刪除
+  - pnpm build 通過
+  - 現有功能正常運作

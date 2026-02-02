@@ -18,7 +18,7 @@ summary: |
 goals:
   - 建立 components/shared/ 資料夾結構
   - 提取 4 個共用表單組件
-  - 重構 SignInForm（222 行 → <150 行）
+  - 重構 SignInForm（222 行 → 124 行）✅ 超越目標
   - 統一表單錯誤處理與提交邏輯
 
 # 相關文件
@@ -36,6 +36,6 @@ related_docs:
 acceptance:
   - shared/ 資料夾結構建立完成
   - PasswordField、FormError、SubmitButton、LoginMethodToggle 可複用
-  - SignInForm 行數 < 150 行
+  - SignInForm 行數 124 行（超越 < 150 目標）
   - pnpm build 通過
   - pnpm lint 通過

@@ -1,0 +1,25 @@
+id: TASK-007
+title: Prisma Schema 模組化拆分
+status: in_progress
+priority: medium
+created: 2026-02-02
+updated: 2026-02-02
+
+description: |
+  將龐大的 school.prisma (607 行) 拆分成模組化結構，
+  提升可維護性與開發體驗。
+
+tags:
+  - prisma
+  - refactor
+  - schema
+
+estimated_hours: 5-6
+actual_hours: null
+
+dependencies: []
+
+deliverables:
+  - 拆分後的 Schema 檔案結構
+  - 驗證通過（prisma validate）
+  - 文件更新

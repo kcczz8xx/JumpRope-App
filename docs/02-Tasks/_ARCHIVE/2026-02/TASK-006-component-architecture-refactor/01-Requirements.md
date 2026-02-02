@@ -3,6 +3,7 @@
 ## 背景
 
 目前 `src/features/auth/components/SignInForm.tsx` 有 222 行，混合了：
+
 - UI 狀態（showPassword toggle）
 - 表單狀態（phone, password）
 - 驗證邏輯（isValidPhoneNumber）
@@ -12,12 +13,12 @@
 
 ## 問題分析
 
-| 問題 | 影響 |
-|:-----|:-----|
+| 問題             | 影響                                                    |
+| :--------------- | :------------------------------------------------------ |
 | 密碼欄位 UI 重複 | SignInForm、SignUpForm、重設密碼都有相同的顯示/隱藏邏輯 |
-| 錯誤顯示重複 | 每個表單都有類似的錯誤 toast/alert |
-| 提交按鈕重複 | loading 狀態處理重複 |
-| 缺少中間層 | `components/ui/` 太底層，`features/` 太專用 |
+| 錯誤顯示重複     | 每個表單都有類似的錯誤 toast/alert                      |
+| 提交按鈕重複     | loading 狀態處理重複                                    |
+| 缺少中間層       | `components/ui/` 太底層，`features/` 太專用             |
 
 ## 解決方案
 
@@ -63,7 +64,7 @@ components/
 
 - 使用上述 4 個共用組件
 - 保留所有原有功能
-- 目標行數 < 150 行
+- 目標行數 < 150 行（實際達成 124 行）
 
 ## 驗收標準
 
@@ -74,7 +75,7 @@ components/
 - [ ] `FormError.tsx` 可在多個表單使用
 - [ ] `SubmitButton.tsx` 可在多個表單使用
 - [ ] `LoginMethodToggle.tsx` 可在多個場景使用
-- [ ] `SignInForm.tsx` < 150 行
+- [x] `SignInForm.tsx` 124 行（超越目標）
 - [ ] 登入功能正常運作
 - [ ] `pnpm build` 成功
 - [ ] `pnpm lint` 通過
