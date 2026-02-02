@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { useModal } from "@/hooks/useModal";
-import { useUpdateBank, useDeleteBank } from "@/hooks/useUserProfile";
+import { useUpdateBank, useDeleteBank } from "@/hooks/useUserActions";
 import UserBankEditModal, { UserBankFormData } from "./UserBankEditModal";
 
 interface UserBankCardProps {

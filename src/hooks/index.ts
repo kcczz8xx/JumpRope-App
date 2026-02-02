@@ -5,6 +5,6 @@
 
 export * from "./useFormSubmit";
 export * from "./usePermission";
-export * from "./useUserProfile";
+export * from "./useUserActions";
 export * from "./useGoBack";
 export * from "./useModal";

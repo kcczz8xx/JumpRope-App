@@ -9,7 +9,7 @@ import {
   changePasswordSchema,
   type ChangePasswordFormData,
 } from "@/lib/validations/user";
-import { useChangePassword } from "@/hooks/useUserProfile";
+import { useChangePassword } from "@/hooks/useUserActions";
 
 interface UserChangePasswordModalProps {
   isOpen: boolean;

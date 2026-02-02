@@ -2,7 +2,7 @@
 import React from "react";
 import { useModal } from "@/hooks/useModal";
 import { parsePhoneNumber } from "libphonenumber-js";
-import { useUpdateProfile } from "@/hooks/useUserProfile";
+import { useUpdateProfile } from "@/hooks/useUserActions";
 import UserInfoEditModal, { UserInfoFormData } from "./UserInfoEditModal";
 
 const formatPhoneNumber = (phone: string | null | undefined) => {

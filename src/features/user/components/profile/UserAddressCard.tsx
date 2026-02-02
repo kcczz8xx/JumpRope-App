@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { useModal } from "@/hooks/useModal";
-import { useUpdateAddress, useDeleteAddress } from "@/hooks/useUserProfile";
+import { useUpdateAddress, useDeleteAddress } from "@/hooks/useUserActions";
 import UserAddressEditModal, {
   UserAddressFormData,
 } from "./UserAddressEditModal";

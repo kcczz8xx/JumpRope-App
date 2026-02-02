@@ -1,10 +1,5 @@
 "use client";
 import React from "react";
-import {
-  useUserProfile,
-  useUserAddress,
-  useUserBank,
-} from "@/hooks/useUserProfile";
 import { usePermission } from "@/hooks/usePermission";
 import UserMetaCard from "./UserMetaCard";
 import UserInfoCard from "./UserInfoCard";
@@ -75,44 +70,25 @@ const GENDER_MAP: Record<string, "男" | "女" | ""> = {
 export default function ProfilePageContent({
   initialData,
 }: ProfilePageContentProps) {
-  const { profile } = useUserProfile();
-  const { address: swrAddress } = useUserAddress();
-  const { bankAccount: swrBank } = useUserBank();
   const { can } = usePermission();
 
-  const info = profile
-    ? {
-        memberNumber: profile.memberNumber || undefined,
-        nickname: profile.nickname || undefined,
-        title: profile.title || undefined,
-        nameChinese: profile.nameChinese || undefined,
-        nameEnglish: profile.nameEnglish || undefined,
-        identityCardNumber: profile.identityCardNumber || undefined,
-        gender: profile.gender ? GENDER_MAP[profile.gender] : undefined,
-        email: profile.email || undefined,
-        phone: profile.phone,
-        whatsappEnabled: profile.whatsappEnabled,
-      }
-    : initialData.info;
+  const info = {
+    memberNumber: initialData.info.memberNumber,
+    nickname: initialData.info.nickname,
+    title: initialData.info.title,
+    nameChinese: initialData.info.nameChinese,
+    nameEnglish: initialData.info.nameEnglish,
+    identityCardNumber: initialData.info.identityCardNumber,
+    gender: initialData.info.gender
+      ? GENDER_MAP[initialData.info.gender]
+      : undefined,
+    email: initialData.info.email,
+    phone: initialData.info.phone,
+    whatsappEnabled: initialData.info.whatsappEnabled,
+  };
 
-  const address = swrAddress
-    ? {
-        region: swrAddress.region || undefined,
-        district: swrAddress.district || undefined,
-        address: swrAddress.address || undefined,
-      }
-    : initialData.address;
-
-  const bank = swrBank
-    ? {
-        bankName: swrBank.bankName || undefined,
-        accountNumber: swrBank.accountNumber || undefined,
-        accountHolderName: swrBank.accountHolderName || undefined,
-        fpsId: swrBank.fpsId || undefined,
-        fpsEnabled: swrBank.fpsEnabled,
-        notes: swrBank.notes || undefined,
-      }
-    : initialData.bank;
+  const address = initialData.address;
+  const bank = initialData.bank;
 
   return (
     <div className="space-y-6">

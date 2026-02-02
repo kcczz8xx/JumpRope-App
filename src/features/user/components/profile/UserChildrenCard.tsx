@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { useModal } from "@/hooks/useModal";
-import { useUserChildren, useUpdateChild } from "@/hooks/useUserProfile";
+import { useUpdateChild } from "@/hooks/useUserActions";
 import UserChildEditModal, { UserChildFormData } from "./UserChildEditModal";
 
 interface ChildInfo {
@@ -24,11 +24,10 @@ export default function UserChildrenCard({
   const { isOpen, openModal, closeModal } = useModal();
   const [editingChild, setEditingChild] = useState<ChildInfo | null>(null);
 
-  const { children: swrChildren } = useUserChildren();
   const { isSubmitting: isUpdating, submit: updateChild } =
     useUpdateChild(closeModal);
 
-  const children = swrChildren.length > 0 ? swrChildren : initialChildren ?? [];
+  const children = initialChildren ?? [];
   const isLoading = isUpdating;
 
   const genderToDisplay = (
@@ -45,7 +44,15 @@ export default function UserChildrenCard({
   };
 
   const handleSave = async (data: UserChildFormData) => {
-    await updateChild(data);
+    if (!data.id) return;
+    await updateChild({
+      id: data.id,
+      nameChinese: data.nameChinese,
+      nameEnglish: data.nameEnglish || undefined,
+      birthYear: data.birthYear || undefined,
+      school: data.school || undefined,
+      gender: data.gender === "" ? undefined : data.gender,
+    });
   };
 
   if (children.length === 0) {

@@ -9,7 +9,7 @@ import SignUpFormStep from "./signup/SignUpFormStep";
 import SignUpOtpStep from "./signup/SignUpOtpStep";
 import SignUpEmailFallback from "./signup/SignUpEmailFallback";
 import { sendOtpAction, verifyOtpAction, registerAction } from "../actions";
-import { FormError } from "@/components/shared/forms";
+import { FormError, useCountdown } from "@/components/shared/forms";
 
 export default function SignUpForm() {
   const [step, setStep] = useState<SignUpStep>("form");
@@ -25,7 +25,7 @@ export default function SignUpForm() {
   const [otpAttempts, setOtpAttempts] = useState(0);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
-  const [countdown, setCountdown] = useState(0);
+  const { countdown, startCountdown } = useCountdown(60);
 
   const handleFormChange = (field: keyof SignUpFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -65,19 +65,6 @@ export default function SignUpForm() {
       return false;
     }
     return true;
-  };
-
-  const startCountdown = () => {
-    setCountdown(60);
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
   };
 
   const handleSendOtp = () => {
