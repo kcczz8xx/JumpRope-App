@@ -1,59 +1,270 @@
 # 項目概述
 
-本項目為 Next.js App Router 架構的全端 Web 應用，前端頁面與後端 API 皆在同一專案內維護，並整合 Prisma 與資料庫進行資料存取。
+本項目為 Next.js 15 App Router 架構的全端 Web 應用，採用 **Feature-First + Colocation** 模式組織程式碼。前端頁面與後端 API 皆在同一專案內維護，並整合 Prisma 與資料庫進行資料存取。
 
 # 安裝、環境變量、運行與構建
 
 ## 安裝
 
-- 使用 `pnpm` 作為套件管理器（已提供 `pnpm-lock.yaml`）。
+- 使用 `pnpm` 作為套件管理器（已提供 `pnpm-lock.yaml`）
 - 安裝依賴：`pnpm install`
 
 ## 環境變量
 
-- 複製 `.env.example` 為 `.env`。
+- 複製 `.env.example` 為 `.env`
 - 設定必要環境變量：
-  - `DATABASE_URL`
+  - `DATABASE_URL` — 資料庫連線 URL（支援 connection pooling）
+  - `POSTGRES_URL_NON_POOLING` — 直連 URL（用於 migrations，避免 dangling databases）
   - `NEXT_PUBLIC_APP_URL`
 
 ## 開發/構建/啟動
 
-- `pnpm dev` — 啟動本地開發伺服器。
-- `pnpm build` — 產生生產環境構建。
-- `pnpm start` — 以構建結果啟動生產伺服器。
-- `pnpm lint` — 執行 ESLint（Next.js 設定）。
-- `pnpm test` — 執行 Jest 測試（單次）。
-- `pnpm test:watch` — Jest 監看模式。
-- `pnpm test:coverage` — 產生測試覆蓋率報告。
+- `pnpm dev` — 啟動本地開發伺服器
+- `pnpm build` — 產生生產環境構建
+- `pnpm start` — 以構建結果啟動生產伺服器
+- `pnpm lint` — 執行 ESLint
+- `pnpm type-check` — 執行 TypeScript 類型檢查（`tsc -b`）
+- `pnpm test` — 執行 Jest 測試（單次）
+- `pnpm test:watch` — Jest 監看模式
+- `pnpm test:coverage` — 產生測試覆蓋率報告
 
-# 目錄結構（前後端 / 路由 / API）
+## Prisma 指令
 
-- `app/`：Next.js App Router 路由與頁面，包含路由群組（例如 `(public)`、`(private)`）。
-  - `app/api/`：後端 API Route Handlers。
-- `components/`：可重用 UI 元件；測試放在 `components/__tests__/`。
-- `layout/`：共用版面配置（Layout wrappers）。
-- `context/`、`hooks/`、`lib/`、`utils/`：狀態管理、Hook、共用邏輯與工具函式。
-- `prisma/`：資料庫 Schema 與遷移檔（schema 位於 `prisma/schema/`）。
-- `public/`、`icons/`：靜態資源。
-- `docs/`、`scripts/`：專案文件與輔助腳本。
+- `pnpm prisma:migrate <name>` — 建立新 migration
+- `pnpm prisma:deploy` — 部署 migrations + 產生 Client
+- `pnpm prisma:push` — 直接推送 schema 到 DB（prototyping 用）
+- `pnpm prisma:studio` — 開啟 Prisma Studio GUI
+- `pnpm prisma:seed` — 執行 seed 腳本填充資料
+- `pnpm prisma:wipe` — 重置資料庫（⚠️ 會刪除所有資料）
 
-# 技術棧與主要依賴
+# 目錄結構（Feature-First + src/）
 
-- 框架：Next.js（App Router）。
-- 語言：TypeScript（嚴格模式，參見 `tsconfig.json`）。
-- 樣式：Tailwind CSS。
-- 測試：Jest + Testing Library（JSDOM 環境）。
-- 資料層：Prisma（Schema 位於 `prisma/`）。
-- Lint：ESLint（`eslint-config-next`）。
+採用 **Feature-First + Colocation** 模式，將原始碼與設定檔分離：
 
-# 代碼規範與測試規範
+```
+jumprope-app/
+├── prisma/                 # ⚠️ 必須在根目錄（Prisma CLI 預設位置）
+├── public/                 # ⚠️ 必須在根目錄（Next.js 靜態資源）
+├── docs/                   # 專案文件
+├── scripts/                # 輔助腳本
+│
+└── src/                    # 原始碼目錄
+    ├── app/                # Next.js App Router
+    │   ├── (public)/       # 公開路由群組
+    │   ├── (private)/      # 需驗證路由群組
+    │   │   └── dashboard/
+    │   │       └── _components/  # 路由專屬元件（_ 前綴避免成為路由）
+    │   └── api/            # API Route Handlers
+    │
+    ├── features/           # 🎯 功能模組（核心）
+    │   ├── auth/           # 認證模組
+    │   ├── user/           # 用戶模組
+    │   ├── school-service/ # 學校服務模組
+    │   └── [feature]/      # 每個功能標準結構 ↓
+    │       ├── components/ # 該功能專用 UI 元件
+    │       ├── hooks/      # 該功能專用 Hooks
+    │       ├── actions.ts  # Server Actions
+    │       ├── queries.ts  # 資料查詢函式
+    │       ├── schema.ts   # Zod 驗證規則
+    │       ├── types.ts    # TypeScript 型別
+    │       └── index.ts    # 公開 API（控制 export）
+    │
+    ├── components/         # 全域共用元件
+    │   ├── ui/             # 基礎 UI（Button, Input, Modal）
+    │   ├── layout/         # Layout 元件（Sidebar, Header）
+    │   └── tailadmin/      # UI 模板元件
+    │
+    ├── lib/                # 全域工具與設定
+    │   ├── auth/           # NextAuth 配置（options.ts, types.ts）
+    │   ├── db/             # Prisma 客戶端
+    │   ├── providers/      # Context Providers
+    │   ├── utils/          # 工具函式（cn, formatDate 等）
+    │   ├── validations/    # 共用 Zod Schema
+    │   └── rbac/           # 權限控制
+    │
+    ├── hooks/              # 全域共用 Hooks
+    ├── config/             # 應用配置（sidebar-nav 等）
+    └── icons/              # React 圖標元件
+```
 
-- 格式：2 空格縮排、雙引號、分號。
-- 路徑：使用 `@/` 作為 repo root 的 alias。
-- 命名：React 元件使用 PascalCase，函式/變數使用 camelCase。
-- 測試：放在 `__tests__/` 或命名為 `*.test.ts(x)` / `*.spec.ts(x)`。
+## 元件放置原則
+
+| 類型 | 位置 | 範例 |
+|:-----|:-----|:-----|
+| 功能專屬元件 | `src/features/[name]/components/` | `LoginForm`, `UserCard` |
+| 路由專屬元件 | `src/app/[route]/_components/` | `DashboardStats` |
+| 全域共用元件 | `src/components/` | `Button`, `Sidebar` |
+
+# 技術棧
+
+- **框架**：Next.js 15（App Router）
+- **語言**：TypeScript 5（嚴格模式）
+- **樣式**：Tailwind CSS v4（CSS-based 配置）
+- **測試**：Jest + Testing Library（JSDOM）
+- **資料層**：Prisma ORM
+- **Lint**：ESLint（`eslint-config-next`）
+
+# Feature-First 開發規範
+
+## Feature 標準結構
+
+每個功能模組必須包含 `index.ts` 作為公開 API：
+
+```typescript
+// src/features/auth/index.ts
+export { LoginForm } from "./components/LoginForm";
+export { RegisterForm } from "./components/RegisterForm";
+export { loginAction, registerAction } from "./actions";
+export { loginSchema, registerSchema } from "./schema";
+export type { LoginInput, RegisterInput } from "./types";
+```
+
+## Import 規則
+
+```typescript
+// ✅ 正確：透過功能的公開 API import
+import { LoginForm, loginAction } from "@/features/auth";
+
+// ❌ 錯誤：直接 import 功能內部檔案
+import { LoginForm } from "@/features/auth/components/LoginForm";
+
+// ✅ 功能內部可用相對路徑
+// src/features/auth/components/LoginForm.tsx
+import { loginAction } from "../actions";
+import { loginSchema } from "../schema";
+```
+
+## Server Actions 規範
+
+```typescript
+// src/features/auth/actions.ts
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { loginSchema } from "./schema";
+
+export async function loginAction(input: z.infer<typeof loginSchema>) {
+  // 1. 驗證輸入（必須）
+  const validated = loginSchema.parse(input);
+  
+  // 2. 執行業務邏輯
+  // ...
+  
+  // 3. 重新驗證路由（如需要）
+  revalidatePath("/dashboard");
+  
+  // 4. 返回結果
+  return { success: true };
+}
+```
+
+## 依賴流向（單向）
+
+```
+app/ → features/ → lib/
+       ↓
+       components/ui/
+```
+
+- `features/` 可以 import `lib/` 和 `components/ui/`
+- `features/` 之間**不應**互相 import
+- 如需共用邏輯，提取到 `lib/`
+
+# Next.js 15 最佳實踐
+
+## Server Components vs Client Components
+
+- **預設使用 Server Components** — 減少 client bundle、直接存取資料庫
+- **只在必要時加 `"use client"`** — 需要 interactivity、hooks、browser APIs 時
+- **Client Components 放在組件樹葉端** — 最小化 client JS
+
+```tsx
+// ✅ Server Component（預設）
+async function UserProfile({ userId }: { userId: string }) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  return <div>{user?.name}</div>;
+}
+
+// ✅ Client Component（需要互動）
+"use client";
+function LikeButton() {
+  const [liked, setLiked] = useState(false);
+  return <button onClick={() => setLiked(!liked)}>Like</button>;
+}
+```
+
+## 資料獲取模式
+
+- **Server Components 直接 `await`** — 無需 `useEffect`
+- **使用 SWR 處理 Client-side 資料** — 已配置於 `lib/client/swr-config.ts`
+- **優先 Server Actions** — 取代傳統 API Routes 處理表單提交
+
+## 錯誤處理
+
+- **使用 `error.tsx`** — 每個路由段的錯誤邊界
+- **使用 `loading.tsx`** — Suspense 載入狀態
+- **使用 `not-found.tsx`** — 404 處理
+
+## 性能優化
+
+- **動態導入** — `next/dynamic` 延遲載入大型組件
+- **Image 優化** — 使用 `next/image`
+- **字體優化** — 使用 `next/font`
+- **Metadata API** — 使用 `generateMetadata` 處理 SEO
+
+# 代碼規範
+
+- **格式**：2 空格縮排、單引號、分號
+- **路徑**：使用 `@/` 指向 `src/`
+- **命名**：
+  - React 元件：PascalCase（`UserCard.tsx`）
+  - 函式/變數：camelCase
+  - 常數：UPPER_SNAKE_CASE
+- **Import 排序**：使用 `eslint-plugin-simple-import-sort`
+- **測試**：放在同目錄 `__tests__/` 或命名為 `*.test.ts(x)`
+
+## 測試規範
+
+- **測試檔與實作檔放一起**（Group by Feature）
+- **使用 AAA 模式**：Arrange → Act → Assert
+- **命名格式**：`given [context]: [expected behavior]`
+
+```ts
+describe("UserCard", () => {
+  test("given a user with name: renders the name", () => {
+    render(<UserCard user={{ name: "Alice" }} />);
+    expect(screen.getByText("Alice")).toBeInTheDocument();
+  });
+});
+```
+
+# 安全性規範
+
+- ✅ Server Actions 必須加 `"use server"` 標記
+- ✅ 所有 user input 必須通過 Zod 驗證
+- ✅ 不要在 Client Components 暴露敏感邏輯
+- ✅ 使用 NextAuth 的 `auth()` 檢查權限
 
 # 提交流程
 
-- Commit 風格：Conventional Commits（如 `feat:`、`fix:`、`docs:`、`chore:`）。
-- PR：需包含摘要、關聯議題（若有）與 UI 截圖；並註記測試結果（例如 `pnpm test`）。
+- **Commit**：Conventional Commits（`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`）
+- **PR**：需包含摘要、關聯議題（若有）、UI 截圖、測試結果
+
+# CI/CD 檢查清單
+
+PR 合併前需通過：
+1. `pnpm lint` — ESLint 檢查
+2. `pnpm type-check` — TypeScript 類型檢查
+3. `pnpm test` — 單元測試
+4. `pnpm build` — 構建成功
+
+# 常見錯誤速查
+
+| 錯誤訊息 | 解決方案 |
+|:---------|:---------|
+| `Module not found: '@/utils'` | 改為 `@/lib/utils` |
+| `Cannot find module '@/layout'` | 改為 `@/components/layout` |
+| `Cannot find module '@/context'` | 改為 `@/lib/providers` |
+| Tailwind 樣式失效 | 檢查 `tsconfig.json` 的 `include` 是否涵蓋 `src/` |
+| Prisma 找不到 schema | 確認 `prisma/` 在根目錄 |
