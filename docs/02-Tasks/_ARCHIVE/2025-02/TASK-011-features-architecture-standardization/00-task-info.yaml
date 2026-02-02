@@ -1,0 +1,22 @@
+id: TASK-20260202-features-architecture-standardization
+title: Features 模組架構統一化
+status: pending
+priority: high
+created: 2026-02-02
+owner: AI Assistant
+
+tags:
+  - refactoring
+  - architecture
+  - feature-first
+  - standardization
+
+summary: |
+  統一 src/features/ 下三個模組（auth, user, school-service）的架構模式，
+  採用 user 的「分層式」結構作為標準，解決模式不一致導致的維護困難。
+
+related_files:
+  - src/features/auth/
+  - src/features/user/
+  - src/features/school-service/
+  - src/features/STRUCTURE.md

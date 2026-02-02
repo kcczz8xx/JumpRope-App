@@ -17,7 +17,7 @@
 └── index.ts        # 公開 API（必須）
 ```
 
-### 大型 Feature（子目錄模式）
+### 大型 Feature（子目錄模式）— 標準
 
 當單一檔案超過 **10KB** 或包含 **3+ 個邏輯域** 時，應拆分為子目錄：
 
@@ -38,15 +38,19 @@
 │   ├── profile.ts
 │   └── index.ts
 ├── types.ts
-└── index.ts              # 公開 API
+├── server.ts             # Server-only exports（必須）
+└── index.ts              # Client-accessible exports（必須）
 ```
+
+> 📖 詳細規範請參考 [STRUCTURE.md](./STRUCTURE.md)
 
 ## 核心規則
 
 1. **Public API** — 每個 feature 必須透過 `index.ts` 導出公開介面
-2. **封裝性** — Feature A 不能直接 import Feature B 的內部檔案
-3. **Colocation** — 該功能專用的 components、hooks、actions 都放在此目錄
-4. **大小閾值** — 單一 actions/schema 檔案超過 10KB 應考慮拆分
+2. **Server-only** — 每個 feature 必須有 `server.ts` 分離 server-only exports
+3. **封裝性** — Feature A 不能直接 import Feature B 的內部檔案
+4. **Colocation** — 該功能專用的 components、hooks、actions 都放在此目錄
+5. **大小閾值** — 單一 actions/schema 檔案超過 10KB 應考慮拆分
 
 ## Import 規則
 
