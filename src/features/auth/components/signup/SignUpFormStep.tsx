@@ -5,11 +5,10 @@ import Checkbox from "@/components/tailadmin/form/input/Checkbox";
 import Input from "@/components/tailadmin/form/input/InputField";
 import Label from "@/components/tailadmin/form/Label";
 import PhoneInput from "@/components/tailadmin/form/group-input/PhoneInput";
-import Button from "@/components/tailadmin/ui/button/Button";
 import SearchableSelect from "@/components/tailadmin/form/select/SearchableSelect";
-import { EyeCloseIcon, EyeIcon } from "@/icons";
 import Link from "next/link";
-import { SignUpFormData, TITLE_OPTIONS, INPUT_CLASS_NAME } from "./types";
+import { SignUpFormData, TITLE_OPTIONS } from "./types";
+import { PasswordField, SubmitButton } from "@/components/shared/forms";
 
 interface SignUpFormStepProps {
   formData: SignUpFormData;
@@ -24,8 +23,6 @@ export default function SignUpFormStep({
   onSubmit,
   isLoading,
 }: SignUpFormStepProps) {
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -92,56 +89,20 @@ export default function SignUpFormStep({
         </div>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <div>
-            <Label>
-              密碼 <span className="text-error-500">*</span>
-            </Label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="至少 8 個字元"
-                value={formData.password}
-                onChange={(e) => onFormChange("password", e.target.value)}
-                className={INPUT_CLASS_NAME}
-              />
-              <span
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
-              >
-                {showPassword ? (
-                  <EyeIcon className="fill-gray-500 dark:fill-gray-400" />
-                ) : (
-                  <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400" />
-                )}
-              </span>
-            </div>
-          </div>
-          <div>
-            <Label>
-              確認密碼 <span className="text-error-500">*</span>
-            </Label>
-            <div className="relative">
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                placeholder="再次輸入密碼"
-                value={formData.confirmPassword}
-                onChange={(e) =>
-                  onFormChange("confirmPassword", e.target.value)
-                }
-                className={INPUT_CLASS_NAME}
-              />
-              <span
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
-              >
-                {showConfirmPassword ? (
-                  <EyeIcon className="fill-gray-500 dark:fill-gray-400" />
-                ) : (
-                  <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400" />
-                )}
-              </span>
-            </div>
-          </div>
+          <PasswordField
+            name="password"
+            label="密碼"
+            placeholder="至少 8 個字元"
+            value={formData.password}
+            onChange={(value) => onFormChange("password", value)}
+          />
+          <PasswordField
+            name="confirmPassword"
+            label="確認密碼"
+            placeholder="再次輸入密碼"
+            value={formData.confirmPassword}
+            onChange={(value) => onFormChange("confirmPassword", value)}
+          />
         </div>
 
         <div className="flex items-start gap-3">
@@ -168,15 +129,13 @@ export default function SignUpFormStep({
           </p>
         </div>
 
-        <div>
-          <Button
-            className="w-full"
-            size="sm"
-            disabled={isLoading || !isChecked}
-          >
-            {isLoading ? "處理中..." : "發送驗證碼"}
-          </Button>
-        </div>
+        <SubmitButton
+          isLoading={isLoading}
+          disabled={!isChecked}
+          loadingText="處理中..."
+        >
+          發送驗證碼
+        </SubmitButton>
       </div>
     </form>
   );

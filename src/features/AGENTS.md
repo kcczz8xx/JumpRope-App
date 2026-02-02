@@ -4,6 +4,8 @@
 
 ## 模組標準結構
 
+### 小型 Feature（單一檔案模式）
+
 ```
 [feature]/
 ├── components/     # 該功能專用 UI 元件
@@ -15,11 +17,36 @@
 └── index.ts        # 公開 API（必須）
 ```
 
+### 大型 Feature（子目錄模式）
+
+當單一檔案超過 **10KB** 或包含 **3+ 個邏輯域** 時，應拆分為子目錄：
+
+```
+[feature]/
+├── components/
+├── hooks/
+├── actions/              # Actions 子目錄
+│   ├── _helpers.ts       # 共用輔助函式（_ 前綴避免導出）
+│   ├── profile.ts
+│   ├── address.ts
+│   └── index.ts          # 統一導出
+├── schemas/              # Schemas 子目錄
+│   ├── profile.ts
+│   ├── address.ts
+│   └── index.ts
+├── queries/              # Queries 子目錄
+│   ├── profile.ts
+│   └── index.ts
+├── types.ts
+└── index.ts              # 公開 API
+```
+
 ## 核心規則
 
 1. **Public API** — 每個 feature 必須透過 `index.ts` 導出公開介面
 2. **封裝性** — Feature A 不能直接 import Feature B 的內部檔案
 3. **Colocation** — 該功能專用的 components、hooks、actions 都放在此目錄
+4. **大小閾值** — 單一 actions/schema 檔案超過 10KB 應考慮拆分
 
 ## Import 規則
 
@@ -30,8 +57,11 @@ import { LoginForm, loginAction } from "@/features/auth";
 // ❌ 錯誤：直接 import 功能內部檔案
 import { LoginForm } from "@/features/auth/components/LoginForm";
 
-// ✅ 功能內部可用相對路徑
+// ✅ 功能內部可用相對路徑（單一檔案模式）
 import { loginAction } from "../actions";
+
+// ✅ 功能內部可用相對路徑（子目錄模式）
+import { loginSchema } from "../schemas/login";
 ```
 
 ## 依賴流向（單向）
@@ -46,12 +76,33 @@ features/ → components/ui/
 
 ## index.ts 模板
 
+### 單一檔案模式
+
 ```typescript
 // src/features/[name]/index.ts
 export { ComponentA } from "./components/ComponentA";
-export { ComponentB } from "./components/ComponentB";
 export { someAction, otherAction } from "./actions";
 export { someQuery } from "./queries";
 export { schema } from "./schema";
 export type { TypeA, TypeB } from "./types";
+```
+
+### 子目錄模式
+
+```typescript
+// src/features/[name]/index.ts
+export { ComponentA } from "./components/ComponentA";
+export { someAction, otherAction } from "./actions"; // 從 actions/index.ts 導入
+export { someQuery } from "./queries"; // 從 queries/index.ts 導入
+export * from "./schemas"; // 重新導出所有 schemas
+export type { TypeA, TypeB } from "./types";
+```
+
+## 子目錄 index.ts 範例
+
+```typescript
+// src/features/user/actions/index.ts
+export { updateProfileAction } from "./profile";
+export { updateAddressAction, deleteAddressAction } from "./address";
+export { updateBankAction, deleteBankAction } from "./bank";
 ```

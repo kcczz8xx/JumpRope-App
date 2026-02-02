@@ -6,6 +6,12 @@ import Input from "@/components/tailadmin/form/input/InputField";
 import Switch from "@/components/tailadmin/form/switch/Switch";
 import PhoneInput from "@/components/tailadmin/form/group-input/PhoneInput";
 import { sendOtpAction, verifyOtpAction } from "@/features/auth";
+import {
+  OtpInput,
+  OtpInputRef,
+  FormError,
+  useCountdown,
+} from "@/components/shared/forms";
 
 export interface UserInfoFormData {
   nickname: string;
@@ -51,24 +57,17 @@ export default function UserInfoEditModal({
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [otpError, setOtpError] = useState("");
   const [isPending, startTransition] = useTransition();
-  const [countdown, setCountdown] = useState(0);
+  const { countdown, isActive, startCountdown } = useCountdown(60);
   const [pendingField, setPendingField] = useState<"email" | "phone" | null>(
     null
   );
   const [pendingValue, setPendingValue] = useState("");
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [emailNeedsVerify, setEmailNeedsVerify] = useState(false);
-  const inputsRef = useRef<HTMLInputElement[]>([]);
+  const otpRef = useRef<OtpInputRef>(null);
 
   const originalEmail = initialData.email || "";
   const originalPhone = initialData.phone || "";
-
-  useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [countdown]);
 
   useEffect(() => {
     if (isOpen) {
@@ -86,41 +85,6 @@ export default function UserInfoEditModal({
     }
   }, [isOpen, initialData]);
 
-  const handleOtpChange = (value: string, index: number) => {
-    if (!/^\d*$/.test(value)) return;
-    const updatedOtp = [...otp];
-    updatedOtp[index] = value;
-    setOtp(updatedOtp);
-    if (value && index < 5) {
-      inputsRef.current[index + 1]?.focus();
-    }
-  };
-
-  const handleOtpKeyDown = (
-    event: React.KeyboardEvent<HTMLInputElement>,
-    index: number
-  ) => {
-    if (event.key === "Backspace" && !otp[index] && index > 0) {
-      inputsRef.current[index - 1]?.focus();
-    }
-  };
-
-  const handleOtpPaste = (event: React.ClipboardEvent<HTMLInputElement>) => {
-    event.preventDefault();
-    const pasteData = event.clipboardData
-      .getData("text")
-      .replace(/\D/g, "")
-      .slice(0, 6)
-      .split("");
-    const updatedOtp = [...otp];
-    pasteData.forEach((char, idx) => {
-      if (idx < 6) updatedOtp[idx] = char;
-    });
-    setOtp(updatedOtp);
-    const filledIndex = Math.min(pasteData.length - 1, 5);
-    inputsRef.current[filledIndex]?.focus();
-  };
-
   const sendOtp = async (
     field: "email" | "phone",
     value: string
@@ -136,7 +100,7 @@ export default function UserInfoEditModal({
       setOtpError(result.error.message);
       return false;
     }
-    setCountdown(60);
+    startCountdown();
     return true;
   };
 
@@ -156,8 +120,7 @@ export default function UserInfoEditModal({
 
     if (!result.ok) {
       setOtpError(result.error.message);
-      setOtp(["", "", "", "", "", ""]);
-      inputsRef.current[0]?.focus();
+      otpRef.current?.clear();
       return false;
     }
     return true;
@@ -247,11 +210,10 @@ export default function UserInfoEditModal({
   };
 
   const handleResendOtp = () => {
-    if (countdown > 0 || !pendingField || !pendingValue) return;
+    if (isActive || !pendingField || !pendingValue) return;
     startTransition(async () => {
       await sendOtp(pendingField, pendingValue);
-      setOtp(["", "", "", "", "", ""]);
-      inputsRef.current[0]?.focus();
+      otpRef.current?.clear();
     });
   };
 
@@ -292,35 +254,20 @@ export default function UserInfoEditModal({
         驗證碼已發送至 {pendingValue}，請輸入 6 位數驗證碼
       </p>
 
-      {otpError && (
-        <div className="mb-4 rounded-lg bg-error-50 p-3 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400">
-          {otpError}
-        </div>
-      )}
+      <FormError message={otpError} className="mb-4" />
 
-      <div className="flex gap-2 mb-4">
-        {otp.map((digit, index) => (
-          <input
-            key={index}
-            type="text"
-            inputMode="numeric"
-            maxLength={1}
-            value={digit}
-            onChange={(e) => handleOtpChange(e.target.value, index)}
-            onKeyDown={(e) => handleOtpKeyDown(e, index)}
-            onPaste={handleOtpPaste}
-            ref={(el) => {
-              if (el) inputsRef.current[index] = el;
-            }}
-            className="h-12 w-full rounded-lg border border-gray-300 bg-transparent text-center text-xl font-semibold text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
-            disabled={isPending}
-          />
-        ))}
+      <div className="mb-4">
+        <OtpInput
+          ref={otpRef}
+          value={otp}
+          onChange={setOtp}
+          disabled={isPending}
+        />
       </div>
 
       <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
         沒有收到驗證碼？{" "}
-        {countdown > 0 ? (
+        {isActive ? (
           <span className="text-gray-400">{countdown} 秒後可重新發送</span>
         ) : (
           <button

@@ -3,6 +3,7 @@
 import React, { useState, useCallback, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/tailadmin/ui/button/Button";
+import { FormError } from "@/components/shared/forms";
 import StepIndicator from "@/components/tailadmin/form/StepIndicator";
 import SchoolFormStep from "./SchoolFormStep";
 import CoursesFormStep from "./CoursesFormStep";
@@ -319,11 +320,7 @@ export default function NewCourseForm({
       <div className="space-y-6">
         {renderStep()}
 
-        {errors.submit && (
-          <div className="rounded-lg bg-error-50 p-4 text-sm text-error-600 dark:bg-error-900/20 dark:text-error-400">
-            {errors.submit}
-          </div>
-        )}
+        <FormError message={errors.submit} />
 
         <div className="flex items-center justify-between">
           <Button

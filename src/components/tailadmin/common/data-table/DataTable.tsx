@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo } from "react";
 import { DataTableProps, SortState } from "./types";
 import { DataTableHeader } from "./DataTableHeader";
 import { DataTableToolbar } from "./DataTableToolbar";
@@ -8,13 +8,24 @@ import { DataTablePagination } from "./DataTablePagination";
 import Button from "@/components/tailadmin/ui/button/Button";
 import Link from "next/link";
 
-const getNestedValue = (obj: any, path: string): any => {
+const getNestedValue = (
+  obj: Record<string, unknown>,
+  path: string
+): unknown => {
   return path.includes(".")
-    ? path.split(".").reduce((o, k) => o?.[k], obj)
+    ? path
+        .split(".")
+        .reduce((o, k) => (o as Record<string, unknown>)?.[k], obj as unknown)
     : obj[path];
 };
 
-const SortIcon = ({ sortKey, currentSort }: { sortKey: string; currentSort: SortState | null }) => (
+const SortIcon = ({
+  sortKey,
+  currentSort,
+}: {
+  sortKey: string;
+  currentSort: SortState | null;
+}) => (
   <span className="flex flex-col gap-0.5">
     <svg
       className={
@@ -53,7 +64,7 @@ const SortIcon = ({ sortKey, currentSort }: { sortKey: string; currentSort: Sort
   </span>
 );
 
-export function DataTable<T = any>({
+export function DataTable<T>({
   title,
   description,
   columns,
@@ -65,7 +76,7 @@ export function DataTable<T = any>({
   searchKeys,
   selectable = false,
   onSelectionChange,
-  getRowId = (row: any) => row.id,
+  getRowId = (row: T) => (row as Record<string, unknown>).id as string,
   pagination = true,
   pageSize: initialPageSize = 10,
   pageSizeOptions = [10, 20, 50, 100],
@@ -86,9 +97,9 @@ export function DataTable<T = any>({
     if (searchValue && searchable) {
       const keysToSearch = searchKeys || columns.map((col) => col.key);
       const lowerSearch = searchValue.toLowerCase();
-      result = result.filter((row: any) => {
+      result = result.filter((row) => {
         return keysToSearch.some((key) => {
-          const value = getNestedValue(row, key);
+          const value = getNestedValue(row as Record<string, unknown>, key);
           if (value == null) return false;
           return String(value).toLowerCase().includes(lowerSearch);
         });
@@ -100,8 +111,11 @@ export function DataTable<T = any>({
         const filterValue = filterValues[filter.key];
         if (filterValue) {
           const lowerFilter = filterValue.toLowerCase();
-          result = result.filter((row: any) => {
-            const value = getNestedValue(row, filter.key);
+          result = result.filter((row) => {
+            const value = getNestedValue(
+              row as Record<string, unknown>,
+              filter.key
+            );
             if (value == null) return false;
             return String(value).toLowerCase().includes(lowerFilter);
           });
@@ -110,7 +124,15 @@ export function DataTable<T = any>({
     }
 
     return result;
-  }, [data, searchValue, filterValues, columns, filters, searchable, searchKeys]);
+  }, [
+    data,
+    searchValue,
+    filterValues,
+    columns,
+    filters,
+    searchable,
+    searchKeys,
+  ]);
 
   // 當搜尋或篩選改變時重置頁碼
   React.useEffect(() => {
@@ -120,13 +142,16 @@ export function DataTable<T = any>({
   const sortedData = useMemo(() => {
     if (!sort) return filteredData;
 
-    return [...filteredData].sort((a: any, b: any) => {
-      let valA = getNestedValue(a, sort.key);
-      let valB = getNestedValue(b, sort.key);
+    return [...filteredData].sort((a, b) => {
+      const rawA = getNestedValue(a as Record<string, unknown>, sort.key);
+      const rawB = getNestedValue(b as Record<string, unknown>, sort.key);
 
-      if (valA == null && valB == null) return 0;
-      if (valA == null) return sort.asc ? 1 : -1;
-      if (valB == null) return sort.asc ? -1 : 1;
+      if (rawA == null && rawB == null) return 0;
+      if (rawA == null) return sort.asc ? 1 : -1;
+      if (rawB == null) return sort.asc ? -1 : 1;
+
+      let valA: string | number | boolean = rawA as string | number | boolean;
+      let valB: string | number | boolean = rawB as string | number | boolean;
 
       if (typeof valA === "string" && typeof valB === "string") {
         valA = valA.toLowerCase();
@@ -192,7 +217,11 @@ export function DataTable<T = any>({
 
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
-      <DataTableHeader title={title} description={description} actions={actions} />
+      <DataTableHeader
+        title={title}
+        description={description}
+        actions={actions}
+      />
 
       <DataTableToolbar
         searchable={searchable}
@@ -207,7 +236,9 @@ export function DataTable<T = any>({
       <div className="overflow-x-auto custom-scrollbar">
         {paginatedData.length === 0 ? (
           <div className="flex h-64 flex-col items-center justify-center">
-            <div className="text-gray-500 dark:text-gray-400">{emptyMessage}</div>
+            <div className="text-gray-500 dark:text-gray-400">
+              {emptyMessage}
+            </div>
             {emptyAction && (
               <div className="mt-4">
                 {emptyAction.href ? (
@@ -215,7 +246,9 @@ export function DataTable<T = any>({
                     <Button>{emptyAction.label}</Button>
                   </Link>
                 ) : (
-                  <Button onClick={emptyAction.onClick}>{emptyAction.label}</Button>
+                  <Button onClick={emptyAction.onClick}>
+                    {emptyAction.label}
+                  </Button>
                 )}
               </div>
             )}
@@ -265,7 +298,9 @@ export function DataTable<T = any>({
                   <th
                     key={column.key}
                     onClick={() => column.sortable && handleSort(column.key)}
-                    className={`px-5 py-4 text-${column.align || "left"} text-xs font-medium text-gray-500 dark:text-gray-400 ${
+                    className={`px-5 py-4 text-${
+                      column.align || "left"
+                    } text-xs font-medium text-gray-500 dark:text-gray-400 ${
                       column.sortable ? "cursor-pointer" : ""
                     }`}
                     style={column.width ? { width: column.width } : undefined}
@@ -274,7 +309,9 @@ export function DataTable<T = any>({
                       <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
                         {column.label}
                       </p>
-                      {column.sortable && <SortIcon sortKey={column.key} currentSort={sort} />}
+                      {column.sortable && (
+                        <SortIcon sortKey={column.key} currentSort={sort} />
+                      )}
                     </div>
                   </th>
                 ))}
@@ -304,7 +341,11 @@ export function DataTable<T = any>({
                                 : "bg-transparent border-gray-300 dark:border-gray-700"
                             }`}
                           >
-                            <span className={selected.includes(rowId) ? "" : "opacity-0"}>
+                            <span
+                              className={
+                                selected.includes(rowId) ? "" : "opacity-0"
+                              }
+                            >
                               <svg
                                 width="12"
                                 height="12"
@@ -328,9 +369,15 @@ export function DataTable<T = any>({
                     {columns.map((column) => (
                       <td
                         key={column.key}
-                        className={`px-5 py-4 whitespace-nowrap text-${column.align || "left"}`}
+                        className={`px-5 py-4 whitespace-nowrap text-${
+                          column.align || "left"
+                        }`}
                       >
-                        {column.render ? column.render(row) : (row as any)[column.key]}
+                        {column.render
+                          ? column.render(row)
+                          : ((row as Record<string, unknown>)[
+                              column.key
+                            ] as React.ReactNode)}
                       </td>
                     ))}
                   </tr>
@@ -351,7 +398,9 @@ export function DataTable<T = any>({
           onPageChange={setPage}
           pageSize={showPageSizeSelector ? pageSize : undefined}
           pageSizeOptions={pageSizeOptions}
-          onPageSizeChange={showPageSizeSelector ? handlePageSizeChange : undefined}
+          onPageSizeChange={
+            showPageSizeSelector ? handlePageSizeChange : undefined
+          }
         />
       )}
     </div>

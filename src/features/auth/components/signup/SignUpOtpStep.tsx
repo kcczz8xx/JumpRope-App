@@ -2,7 +2,7 @@
 
 import React from "react";
 import Label from "@/components/tailadmin/form/Label";
-import Button from "@/components/tailadmin/ui/button/Button";
+import { SubmitButton } from "@/components/shared/forms";
 
 interface SignUpOtpStepProps {
   otp: string[];
@@ -52,16 +52,14 @@ export default function SignUpOtpStep({
         </div>
       </div>
 
-      <div>
-        <Button
-          className="w-full"
-          size="sm"
-          onClick={onVerify}
-          disabled={isLoading}
-        >
-          {isLoading ? "驗證中..." : "驗證並完成註冊"}
-        </Button>
-      </div>
+      <SubmitButton
+        type="button"
+        onClick={onVerify}
+        isLoading={isLoading}
+        loadingText="驗證中..."
+      >
+        驗證並完成註冊
+      </SubmitButton>
 
       <div className="text-center">
         <p className="text-sm text-gray-500 dark:text-gray-400">

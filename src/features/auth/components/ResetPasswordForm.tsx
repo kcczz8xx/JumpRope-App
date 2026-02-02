@@ -2,6 +2,7 @@
 import React, { useState, useTransition } from "react";
 import Link from "next/link";
 import { ChevronLeftIcon } from "@/icons";
+import { FormError } from "@/components/shared/forms";
 import { ResetMethod, ResetStep } from "./reset-password/types";
 import ResetPasswordRequestStep from "./reset-password/ResetPasswordRequestStep";
 import ResetPasswordOtpStep from "./reset-password/ResetPasswordOtpStep";
@@ -192,11 +193,7 @@ export default function ResetPasswordForm() {
           </p>
         </div>
 
-        {error && (
-          <div className="mb-4 rounded-lg bg-error-50 p-3 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400">
-            {error}
-          </div>
-        )}
+        <FormError message={error} className="mb-4" />
 
         <div>
           {step === "request" && (

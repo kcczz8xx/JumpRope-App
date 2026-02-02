@@ -1,9 +1,15 @@
 "use client";
 import Link from "next/link";
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState } from "react";
 import Label from "@/components/tailadmin/form/Label";
-import Button from "@/components/tailadmin/ui/button/Button";
 import { ChevronLeftIcon } from "@/icons";
+import {
+  OtpInput,
+  OtpInputRef,
+  FormError,
+  SubmitButton,
+  useCountdown,
+} from "@/components/shared/forms";
 
 interface OtpFormProps {
   phone?: string;
@@ -25,75 +31,8 @@ export default function OtpForm({
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [countdown, setCountdown] = useState(0);
-  const inputsRef = useRef<HTMLInputElement[]>([]);
-
-  useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [countdown]);
-
-  const handleChange = (value: string, index: number) => {
-    if (!/^\d*$/.test(value)) return;
-
-    const updatedOtp = [...otp];
-    updatedOtp[index] = value;
-    setOtp(updatedOtp);
-
-    if (value && index < inputsRef.current.length - 1) {
-      inputsRef.current[index + 1].focus();
-    }
-  };
-
-  const handleKeyDown = (
-    event: React.KeyboardEvent<HTMLInputElement>,
-    index: number
-  ) => {
-    if (event.key === "Backspace") {
-      const updatedOtp = [...otp];
-
-      if (!otp[index] && index > 0) {
-        inputsRef.current[index - 1].focus();
-      }
-
-      updatedOtp[index] = "";
-      setOtp(updatedOtp);
-    }
-
-    if (event.key === "ArrowLeft" && index > 0) {
-      inputsRef.current[index - 1].focus();
-    }
-
-    if (event.key === "ArrowRight" && index < inputsRef.current.length - 1) {
-      inputsRef.current[index + 1].focus();
-    }
-  };
-
-  const handlePaste = (event: React.ClipboardEvent<HTMLInputElement>) => {
-    event.preventDefault();
-
-    const pasteData = event.clipboardData
-      .getData("text")
-      .replace(/\D/g, "")
-      .slice(0, 6)
-      .split("");
-
-    const updatedOtp = [...otp];
-    pasteData.forEach((char, idx) => {
-      if (idx < updatedOtp.length) {
-        updatedOtp[idx] = char;
-      }
-    });
-
-    setOtp(updatedOtp);
-
-    const filledIndex = Math.min(pasteData.length - 1, 5);
-    if (inputsRef.current[filledIndex]) {
-      inputsRef.current[filledIndex].focus();
-    }
-  };
+  const otpRef = useRef<OtpInputRef>(null);
+  const { countdown, isActive, startCountdown } = useCountdown(60);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,8 +50,7 @@ export default function OtpForm({
         const success = await onVerify(otpCode);
         if (!success) {
           setError("驗證碼錯誤，請重新輸入");
-          setOtp(["", "", "", "", "", ""]);
-          inputsRef.current[0]?.focus();
+          otpRef.current?.clear();
         }
       }
     } catch {
@@ -123,17 +61,16 @@ export default function OtpForm({
   };
 
   const handleResend = async () => {
-    if (countdown > 0) return;
+    if (isActive) return;
 
     setIsLoading(true);
     try {
       if (onResend) {
         await onResend();
       }
-      setCountdown(60);
-      setOtp(["", "", "", "", "", ""]);
+      startCountdown();
       setError("");
-      inputsRef.current[0]?.focus();
+      otpRef.current?.clear();
     } catch {
       setError("重新發送失敗，請稍後再試");
     } finally {
@@ -172,52 +109,31 @@ export default function OtpForm({
           </p>
         </div>
 
-        {error && (
-          <div className="mb-4 rounded-lg bg-error-50 p-3 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400">
-            {error}
-          </div>
-        )}
+        <FormError message={error} />
 
         <div>
           <form onSubmit={handleSubmit}>
             <div className="space-y-5">
               <div>
                 <Label>輸入 6 位數驗證碼</Label>
-                <div className="flex gap-2 sm:gap-3" id="otp-container">
-                  {otp.map((digit, index) => (
-                    <input
-                      key={index}
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(e) => handleChange(e.target.value, index)}
-                      onKeyDown={(e) => handleKeyDown(e, index)}
-                      onPaste={(e) => handlePaste(e)}
-                      ref={(el) => {
-                        if (el) {
-                          inputsRef.current[index] = el;
-                        }
-                      }}
-                      className="h-12 w-full rounded-lg border border-gray-300 bg-transparent text-center text-xl font-semibold text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                      disabled={isLoading}
-                    />
-                  ))}
-                </div>
+                <OtpInput
+                  ref={otpRef}
+                  value={otp}
+                  onChange={setOtp}
+                  disabled={isLoading}
+                />
               </div>
 
-              <div>
-                <Button className="w-full" size="sm" disabled={isLoading}>
-                  {isLoading ? "驗證中..." : "驗證"}
-                </Button>
-              </div>
+              <SubmitButton isLoading={isLoading} loadingText="驗證中...">
+                驗證
+              </SubmitButton>
             </div>
           </form>
 
           <div className="mt-5">
             <p className="text-sm font-normal text-center text-gray-700 dark:text-gray-400 sm:text-start">
               沒有收到驗證碼？{" "}
-              {countdown > 0 ? (
+              {isActive ? (
                 <span className="text-gray-400">
                   {countdown} 秒後可重新發送
                 </span>

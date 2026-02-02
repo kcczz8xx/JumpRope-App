@@ -1,16 +1,26 @@
 "use client";
-import Checkbox from "@/components/tailadmin/form/input/Checkbox";
-import Label from "@/components/tailadmin/form/Label";
-import Button from "@/components/tailadmin/ui/button/Button";
-import PhoneInput from "@/components/tailadmin/form/group-input/PhoneInput";
-import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "@/icons";
+
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
 import { signIn } from "next-auth/react";
 import { isValidPhoneNumber } from "libphonenumber-js";
+import Checkbox from "@/components/tailadmin/form/input/Checkbox";
+import Label from "@/components/tailadmin/form/Label";
+import PhoneInput from "@/components/tailadmin/form/group-input/PhoneInput";
+import { ChevronLeftIcon } from "@/icons";
+import {
+  PasswordField,
+  FormError,
+  SubmitButton,
+  LoginMethodToggle,
+} from "@/components/shared/forms";
 
 type LoginMethod = "phone" | "memberNumber";
+const LOGIN_OPTIONS = [
+  { value: "phone", label: "電話號碼" },
+  { value: "memberNumber", label: "會員編號" },
+];
 
 export default function SignInForm() {
   const router = useRouter();
@@ -18,7 +28,6 @@ export default function SignInForm() {
   const [phone, setPhone] = useState("");
   const [memberNumber, setMemberNumber] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -27,25 +36,19 @@ export default function SignInForm() {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-
     const identifier = loginMethod === "phone" ? phone : memberNumber;
 
     if (!identifier) {
       setError(loginMethod === "phone" ? "請輸入電話號碼" : "請輸入會員編號");
-      setIsLoading(false);
-      return;
+      return setIsLoading(false);
     }
-
     if (loginMethod === "phone" && !isValidPhoneNumber(phone)) {
       setError("請輸入有效的電話號碼格式");
-      setIsLoading(false);
-      return;
+      return setIsLoading(false);
     }
-
     if (!password) {
       setError("請輸入密碼");
-      setIsLoading(false);
-      return;
+      return setIsLoading(false);
     }
 
     try {
@@ -54,12 +57,10 @@ export default function SignInForm() {
         password,
         redirect: false,
       });
-
       if (result?.error) {
         setError("電話號碼/會員編號或密碼錯誤");
         return;
       }
-
       router.push("/dashboard");
       router.refresh();
     } catch {
@@ -92,38 +93,13 @@ export default function SignInForm() {
           </div>
           <div>
             <div className="mb-6">
-              <div className="flex rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
-                <button
-                  type="button"
-                  onClick={() => setLoginMethod("phone")}
-                  className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${
-                    loginMethod === "phone"
-                      ? "bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white"
-                      : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                  }`}
-                >
-                  電話號碼
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLoginMethod("memberNumber")}
-                  className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${
-                    loginMethod === "memberNumber"
-                      ? "bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white"
-                      : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                  }`}
-                >
-                  會員編號
-                </button>
-              </div>
+              <LoginMethodToggle
+                value={loginMethod}
+                onChange={(v) => setLoginMethod(v as LoginMethod)}
+                options={LOGIN_OPTIONS}
+              />
             </div>
-
-            {error && (
-              <div className="mb-4 rounded-lg bg-error-50 p-3 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400">
-                {error}
-              </div>
-            )}
-
+            <FormError message={error} />
             <form onSubmit={handleSubmit}>
               <div className="space-y-6">
                 {loginMethod === "phone" ? (
@@ -133,7 +109,7 @@ export default function SignInForm() {
                     </Label>
                     <PhoneInput
                       value={phone}
-                      onChange={(value) => setPhone(value)}
+                      onChange={setPhone}
                       placeholder="9123 4567"
                       defaultCountry="hk"
                       showValidation={true}
@@ -153,32 +129,13 @@ export default function SignInForm() {
                     />
                   </div>
                 )}
-
-                <div>
-                  <Label>
-                    密碼 <span className="text-error-500">*</span>
-                  </Label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="輸入您的密碼"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                    />
-                    <span
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
-                    >
-                      {showPassword ? (
-                        <EyeIcon className="fill-gray-500 dark:fill-gray-400" />
-                      ) : (
-                        <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400" />
-                      )}
-                    </span>
-                  </div>
-                </div>
-
+                <PasswordField
+                  name="password"
+                  label="密碼"
+                  placeholder="輸入您的密碼"
+                  value={password}
+                  onChange={setPassword}
+                />
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Checkbox checked={isChecked} onChange={setIsChecked} />
@@ -193,15 +150,11 @@ export default function SignInForm() {
                     忘記密碼？
                   </Link>
                 </div>
-
-                <div>
-                  <Button className="w-full" size="sm" disabled={isLoading}>
-                    {isLoading ? "登入中..." : "登入"}
-                  </Button>
-                </div>
+                <SubmitButton isLoading={isLoading} loadingText="登入中...">
+                  登入
+                </SubmitButton>
               </div>
             </form>
-
             <div className="mt-5">
               <p className="text-sm font-normal text-center text-gray-700 dark:text-gray-400 sm:text-start">
                 還沒有帳戶？{" "}

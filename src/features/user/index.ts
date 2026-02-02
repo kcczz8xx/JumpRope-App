@@ -21,14 +21,8 @@ export {
     deleteTutorDocumentAction,
 } from "./actions";
 
-// Queries
-export {
-    getProfile,
-    getAddress,
-    getBankAccount,
-    getChildren,
-    getTutorDocuments,
-} from "./queries";
+// Queries - 已移至 ./server.ts（僅供 Server Components 使用）
+// import { getProfile, ... } from "@/features/user/server";
 
 // Schemas
 export {
@@ -41,7 +35,7 @@ export {
     createTutorDocumentSchema,
     updateTutorDocumentSchema,
     deleteTutorDocumentSchema,
-} from "./schema";
+} from "./schemas";
 
 // Types
 export type {
@@ -54,4 +48,4 @@ export type {
     CreateTutorDocumentInput,
     UpdateTutorDocumentInput,
     DeleteTutorDocumentInput,
-} from "./schema";
+} from "./schemas";

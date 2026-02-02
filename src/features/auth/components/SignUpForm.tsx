@@ -9,6 +9,7 @@ import SignUpFormStep from "./signup/SignUpFormStep";
 import SignUpOtpStep from "./signup/SignUpOtpStep";
 import SignUpEmailFallback from "./signup/SignUpEmailFallback";
 import { sendOtpAction, verifyOtpAction, registerAction } from "../actions";
+import { FormError } from "@/components/shared/forms";
 
 export default function SignUpForm() {
   const [step, setStep] = useState<SignUpStep>("form");
@@ -254,11 +255,7 @@ export default function SignUpForm() {
             </p>
           </div>
 
-          {error && (
-            <div className="mb-4 rounded-lg bg-error-50 p-3 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400">
-              {error}
-            </div>
-          )}
+          <FormError message={error} />
 
           <div>
             {step === "form" && (

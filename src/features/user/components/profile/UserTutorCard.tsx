@@ -6,7 +6,7 @@ import {
   createTutorDocumentAction,
   updateTutorDocumentAction,
   deleteTutorDocumentAction,
-} from "../../actions";
+} from "@/features/user";
 import DocumentTable from "./tutor-documents/DocumentTable";
 import TutorDocumentEditModal from "./tutor-documents/TutorDocumentEditModal";
 import {

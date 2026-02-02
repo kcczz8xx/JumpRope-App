@@ -1,0 +1,22 @@
+id: TASK-20260202-user-feature-refactor
+title: User Feature 架構重構
+status: completed
+priority: medium
+created: 2026-02-02
+completed: 2026-02-02
+owner: AI Assistant
+
+tags:
+  - refactoring
+  - architecture
+  - feature-first
+
+summary: |
+  將 src/features/user/ 從單一檔案模式重構為子目錄模式，
+  解決 16KB actions.ts 的維護困難問題。
+
+related_files:
+  - src/features/user/actions/
+  - src/features/user/schemas/
+  - src/features/user/queries/
+  - src/features/AGENTS.md

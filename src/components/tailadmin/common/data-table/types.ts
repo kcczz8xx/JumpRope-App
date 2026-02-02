@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 
-export interface DataTableColumn<T = any> {
+export interface DataTableColumn<T = unknown> {
     key: string;
     label: string;
     sortable?: boolean;
@@ -25,7 +25,7 @@ export interface DataTableFilter {
     placeholder?: string;
 }
 
-export interface DataTableProps<T = any> {
+export interface DataTableProps<T = unknown> {
     title?: string;
     description?: string;
     columns: DataTableColumn<T>[];

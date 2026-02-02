@@ -3,8 +3,8 @@
 import React from "react";
 import Input from "@/components/tailadmin/form/input/InputField";
 import Label from "@/components/tailadmin/form/Label";
-import Button from "@/components/tailadmin/ui/button/Button";
 import { SignUpFormData } from "./types";
+import { SubmitButton } from "@/components/shared/forms";
 
 interface SignUpEmailFallbackProps {
   formData: SignUpFormData;
@@ -33,16 +33,14 @@ export default function SignUpEmailFallback({
         />
       </div>
 
-      <div>
-        <Button
-          className="w-full"
-          size="sm"
-          onClick={onSubmit}
-          disabled={isLoading}
-        >
-          {isLoading ? "發送中..." : "發送驗證連結"}
-        </Button>
-      </div>
+      <SubmitButton
+        type="button"
+        onClick={onSubmit}
+        isLoading={isLoading}
+        loadingText="發送中..."
+      >
+        發送驗證連結
+      </SubmitButton>
 
       <div className="rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
         <p className="text-sm text-blue-600 dark:text-blue-400">
