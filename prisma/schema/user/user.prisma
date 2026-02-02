@@ -1,0 +1,46 @@
+// ============================================
+// 用戶模組 - User
+// ============================================
+
+model User {
+  id String @id @default(cuid())
+
+  // 會員編號
+  memberNumber String? @unique // 會員編號 (e.g. M2024-001)
+
+  // 基本資料
+  title       String? // 稱呼（先生/女士/小姐）
+  phone       String  @unique // 電話號碼（註冊帳號）
+  email       String? @unique
+  nameChinese String? // 中文姓名
+  nameEnglish String? // 英文姓名
+  nickname    String? // 暱稱
+  gender      Gender? // 性別
+
+  // 密碼（用於登入）
+  passwordHash String? // 加密後的密碼
+
+  // 身份證明
+  identityCardNumber String? // 身份證號碼
+
+  // 聯絡偏好
+  whatsappEnabled Boolean @default(false) // 是否啟用 WhatsApp
+
+  // 角色
+  role UserRole @default(USER) // USER, TUTOR, ADMIN, STAFF, STUDENT
+
+  // 關聯
+  address        UserAddress? // 地址（一對一）
+  bankAccount    UserBankAccount? // 銀行帳戶（一對一）
+  children       UserChild[] // 學員資料（一對多）
+  tutorProfile   TutorProfile? // 導師資料（一對一）
+  tutorLessons   SchoolTutorLesson[] // 任教記錄
+  sentQuotations SchoolQuotation[]   @relation("QuotationSentBy") // 發送的報價單
+
+  // 系統欄位
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("users")
+}

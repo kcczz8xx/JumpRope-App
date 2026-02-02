@@ -1,0 +1,41 @@
+// ============================================
+// 導師模組 - 導師文件
+// ============================================
+
+model TutorDocument {
+  id String @id @default(cuid())
+
+  tutorProfileId String
+  tutorProfile   TutorProfile @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+
+  // 文件類型與名稱
+  documentType DocumentType // 文件類型
+  name         String // 文件名稱（e.g. "花式跳繩教練證書（一級）"）
+
+  // 狀態
+  status DocumentStatus @default(NOT_SUBMITTED)
+
+  // 文件詳情
+  referenceNumber String? // 參考編號（性罪行查核用）
+  certificateType String? // 證書類型（急救證書用）
+  issuingBody     String? // 簽發機構
+  issueDate       DateTime? // 簽發日期
+  expiryDate      DateTime? // 到期日期（null = 永久有效）
+
+  // 文件存儲
+  documentUrl String? // 文件 URL
+  uploadDate  DateTime? // 上傳日期
+
+  // 審核
+  reviewedAt DateTime? // 審核日期
+  reviewedBy String? // 審核人員 ID
+  reviewNote String?   @db.Text // 審核備註
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tutorProfileId])
+  @@index([documentType])
+  @@index([status])
+  @@map("tutor_documents")
+}

@@ -1,0 +1,17 @@
+// ============================================
+// 用戶模組 - Enums
+// ============================================
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+  TUTOR
+  PARENT
+  STUDENT
+  USER
+}

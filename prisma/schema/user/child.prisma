@@ -1,0 +1,24 @@
+// ============================================
+// 用戶模組 - 學員資料
+// ============================================
+
+model UserChild {
+  id String @id @default(cuid())
+
+  parentId String
+  parent   User   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+
+  memberNumber String? @unique // 會員編號
+  nameChinese  String // 中文名（必填）
+  nameEnglish  String? // 英文名
+  birthYear    Int? // 出生年份
+  school       String? // 就讀學校
+  gender       Gender? // 性別
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([parentId])
+  @@map("user_children")
+}

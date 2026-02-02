@@ -1,0 +1,22 @@
+// ============================================
+// 用戶模組 - 用戶銀行帳戶
+// ============================================
+
+model UserBankAccount {
+  id String @id @default(cuid())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  bankName          String? // 所屬銀行
+  accountNumber     String? // 戶口號碼
+  accountHolderName String? // 戶口持有人姓名
+  fpsId             String? // 轉數快 ID
+  fpsEnabled        Boolean @default(false) // 轉數快是否啟用
+  notes             String? @db.Text // 備註
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_bank_accounts")
+}

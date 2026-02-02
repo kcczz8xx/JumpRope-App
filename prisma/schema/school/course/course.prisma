@@ -1,0 +1,64 @@
+// ============================================
+// 到校服務模組 - 課程
+// ============================================
+
+/// 到校課程
+model SchoolCourse {
+  id String @id @default(cuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  // 課程基本資料
+  courseName  String // 課程名稱
+  courseCode  String? // 課程編號（可選）
+  courseType  String // 課程類型
+  description String? @db.Text // 課程描述
+
+  // 學期設定
+  courseTerm   CourseTerm @default(FULL_YEAR) // 學期類型
+  academicYear String // 學年（例如：2024-2025）
+  startDate    DateTime? // 課程開始日期
+  endDate      DateTime? // 課程結束日期
+
+  // 人數設定
+  requiredTutors Int  @default(1) // 所需導師人數
+  maxStudents    Int? // 最大學生人數
+
+  // 收費模式
+  chargingModels ChargingModel[] @default([]) // 收費模式（多選）
+
+  // 學生收費（依 chargingModel 而定，部分欄位可為 null）
+  studentPerLessonFee  Decimal? @db.Decimal(10, 2) // 學生每堂收費
+  studentHourlyFee     Decimal? @db.Decimal(10, 2) // 學生時薪收費
+  studentFullCourseFee Decimal? @db.Decimal(10, 2) // 學生全期收費
+  teamActivityFee      Decimal? @db.Decimal(10, 2) // 帶隊活動收費
+
+  // 導師薪資（依 chargingModel 而定）
+  tutorPerLessonFee Decimal? @db.Decimal(10, 2) // 導師每堂收費
+  tutorHourlyFee    Decimal? @db.Decimal(10, 2) // 導師時薪
+
+  // 付款模式
+  paymentMode String? // 付款模式（例如：月結30天、即時付款）
+
+  // 課程狀態
+  status CourseStatus @default(DRAFT)
+
+  // 備註
+  remarks String? @db.Text
+
+  // 關聯
+  lessons        SchoolLesson[]
+  invoiceCourses SchoolInvoiceCourse[] // 多對多關聯
+
+  // 系統欄位
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([schoolId])
+  @@index([academicYear])
+  @@index([courseType])
+  @@index([status])
+  @@map("school_courses")
+}

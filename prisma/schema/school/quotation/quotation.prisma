@@ -1,0 +1,54 @@
+// ============================================
+// 到校服務模組 - 報價單
+// ============================================
+
+/// 報價單
+model SchoolQuotation {
+  id String @id @default(cuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  // 報價編號
+  quotationNumber String @unique // 自動生成（例如：Q2024-001）
+
+  // 報價狀態
+  status QuotationStatus @default(DRAFT)
+
+  // 查詢需求記錄
+  inquiryDate           DateTime? // 查詢日期
+  desiredStartDate      DateTime? // 希望開始日期
+  estimatedStudentCount Int? // 預計學生人數
+  desiredSchedule       String?   @db.Text // 希望上課時間（文字描述）
+  inquiryRemarks        String?   @db.Text // 查詢內容備註
+
+  // 報價資料
+  quotationDate DateTime  @default(now()) // 報價日期
+  validUntil    DateTime? // 報價有效期至
+  totalAmount   Decimal?  @db.Decimal(10, 2) // 報價總金額
+
+  // 發送記錄
+  sentDate   DateTime? // 發送日期
+  sentBy     String? // 發送人員 ID
+  sentByUser User?     @relation("QuotationSentBy", fields: [sentBy], references: [id])
+
+  // 回應記錄
+  respondedDate   DateTime? // 回應日期
+  rejectionReason String?   @db.Text // 拒絕原因
+
+  // 備註
+  remarks String? @db.Text
+
+  // 關聯
+  items SchoolQuotationItem[] // 報價項目（可包含多個課程方案）
+
+  // 系統欄位
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([schoolId])
+  @@index([status])
+  @@index([quotationNumber])
+  @@map("school_quotations")
+}

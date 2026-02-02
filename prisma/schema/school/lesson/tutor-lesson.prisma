@@ -1,0 +1,67 @@
+// ============================================
+// 到校服務模組 - 導師任教記錄
+// ============================================
+
+/// 導師任教記錄
+model SchoolTutorLesson {
+  id String @id @default(cuid())
+
+  // 關聯
+  lessonId String
+  lesson   SchoolLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  userId String // 關聯到 User.id
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  courseId String // 冗餘欄位，方便查詢
+
+  // 導師角色
+  tutorRole TutorRole @default(HEAD_COACH)
+
+  // 出勤狀態
+  attendanceStatus   AttendanceStatus @default(SCHEDULED)
+  notificationStatus String? // 通知狀態（已通知/未通知）
+
+  // 簽到資料
+  checkInImage   String? // 簽到相片 URL
+  geoLocation    String? // 簽到地理位置（經緯度）
+  checkInTime    DateTime? // 簽到時間
+  checkOutTime   DateTime? // 簽退時間
+  workingMinutes Int? // 實際工作分鐘數
+
+  // 薪資計算
+  salaryCalculationMode SalaryCalculationMode? // 薪資計算方式
+  baseLessonSalary      Decimal?               @db.Decimal(10, 2) // 基本課堂薪資
+  salaryDetails         Json? // 薪資明細（JSON，例如加班費、津貼等）
+  totalSalary           Decimal?               @db.Decimal(10, 2) // 總薪資
+
+  // 付款狀態
+  paymentStatus PaymentStatus @default(PENDING)
+  paymentId     String? // 關聯到薪資發放記錄（未來擴展）
+
+  // 課堂資料（冗餘，方便查詢）
+  lessonDate     DateTime? // 上課日期
+  startTime      String? // 開始時間
+  endTime        String? // 結束時間
+  lessonLocation String? // 上課地點（學校名稱）
+
+  // 教案
+  lessonPlanId String? // 教案 ID（未來擴展）
+
+  // 備註
+  attendanceRemarks String? @db.Text
+
+  // 系統欄位
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([lessonId, userId]) // 防止同一課堂重複分配同一導師
+  @@index([lessonId])
+  @@index([userId])
+  @@index([courseId])
+  @@index([attendanceStatus])
+  @@index([paymentStatus])
+  @@index([lessonDate])
+  @@map("school_tutor_lessons")
+}

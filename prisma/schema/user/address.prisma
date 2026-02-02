@@ -1,0 +1,19 @@
+// ============================================
+// 用戶模組 - 用戶地址
+// ============================================
+
+model UserAddress {
+  id String @id @default(cuid())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  region   String? // 地域（HK/KLN/NT）
+  district String? // 十八區（中西區、觀塘區等）
+  address  String? @db.Text // 詳細地址
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_addresses")
+}

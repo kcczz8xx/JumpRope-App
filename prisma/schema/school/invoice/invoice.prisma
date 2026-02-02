@@ -1,0 +1,71 @@
+// ============================================
+// 到校服務模組 - 發票
+// ============================================
+
+/// 到校發票
+model SchoolInvoice {
+  id String @id @default(cuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  // 發票編號
+  invoiceNumber String  @unique // 發票編號（自動生成）
+  invoiceToken  String? @unique // 發票 Token（用於查詢）
+
+  // 發票類型
+  invoiceType String? // 發票類型（課程/設備/其他服務）
+
+  // 發票日期
+  invoiceDate DateTime @default(now()) // 發票日期
+
+  // 付款條款
+  paymentTermsDays Int       @default(30) // 付款期限（天數）
+  dueDate          DateTime? // 到期日
+
+  // 發票狀態
+  status          InvoiceStatus @default(DRAFT)
+  invoiceProgress String? // 發票進度（舊欄位保留）
+
+  // 金額
+  invoiceAmount Decimal @db.Decimal(10, 2) // 發票總金額
+
+  // 發送記錄
+  sentDate DateTime? // 發送日期
+
+  // 收件人資料（可與 SchoolContact 不同）
+  salutation           String? // 稱謂
+  recipientNameChinese String? // 收件人中文姓名
+  recipientNameEnglish String? // 收件人英文姓名
+  contactPosition      String? // 職位
+  contactPhone         String? // 聯絡電話
+  contactEmail         String? // 聯絡電郵
+  schoolPhone          String? // 學校電話
+  schoolFax            String? // 學校傳真
+  mailingAddress       String? @db.Text // 郵寄地址
+
+  // 項目明細（JSON 格式，保留舊系統兼容）
+  courseItems         Json? // 課程項目
+  onsiteServiceItems  Json? // 到校服務項目
+  equipmentSalesItems Json? // 設備銷售項目
+  otherServiceItems   Json? // 其他服務項目
+
+  // 備註
+  invoiceRemarks String? @db.Text
+
+  // 關聯
+  courses SchoolInvoiceCourse[] // 多對多關聯到課程
+  receipt SchoolReceipt? // 一對一關聯收據
+  lessons SchoolLesson[] // 直接關聯的課堂（可個別課堂出發票）
+
+  // 系統欄位
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([schoolId])
+  @@index([status])
+  @@index([invoiceNumber])
+  @@index([invoiceDate])
+  @@map("school_invoices")
+}

@@ -1,0 +1,85 @@
+// ============================================
+// 到校服務模組 - 學校基本資料
+// ============================================
+
+/// 合作學校
+model School {
+  id String @id @default(cuid())
+
+  // 基本資料
+  schoolName   String // 學校名稱（中文）
+  schoolNameEn String? // 學校名稱（英文）
+  schoolCode   String? @unique // 學校編號（可選）
+
+  // 聯絡資料
+  address String // 學校地址
+  phone   String? // 學校電話
+  fax     String? // 傳真
+  email   String? // 學校電郵
+  website String? // 學校網站
+
+  // 合作狀態
+  partnershipStatus    PartnershipStatus @default(INQUIRY)
+  partnershipStartDate DateTime? // 合作開始日期
+  partnershipEndDate   DateTime? // 合作結束日期
+  partnershipStartYear String? // 合作開始學年（例如：2024-2025）
+  partnershipEndYear   String? // 合作結束學年
+
+  // 確認渠道
+  confirmationChannel String? // 合作確認渠道（電話/電郵/會議）
+
+  // 備註
+  remarks String? @db.Text
+
+  // 關聯
+  contacts   SchoolContact[]
+  quotations SchoolQuotation[]
+  courses    SchoolCourse[]
+  invoices   SchoolInvoice[]
+  receipts   SchoolReceipt[]
+
+  // 系統欄位
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Soft delete
+
+  @@index([partnershipStatus])
+  @@index([schoolName])
+  @@map("schools")
+}
+
+/// 學校聯絡人（支援多位聯絡人）
+model SchoolContact {
+  id String @id @default(cuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  // 聯絡人資料
+  salutation  String? // 稱謂（先生/女士/校長等）
+  nameChinese String // 中文姓名
+  nameEnglish String? // 英文姓名
+  position    String? // 職位
+  department  String? // 部門
+
+  // 聯絡方式
+  phone  String? // 電話
+  mobile String? // 手提電話
+  email  String? // 電郵
+
+  // 主要聯絡人標記
+  isPrimary Boolean @default(false)
+
+  // 備註
+  remarks String? @db.Text
+
+  // 系統欄位
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([schoolId, email]) // 同一學校不可有重複電郵的聯絡人
+  @@index([schoolId])
+  @@index([isPrimary])
+  @@map("school_contacts")
+}

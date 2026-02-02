@@ -1,0 +1,40 @@
+// ============================================
+// 導師模組 - 導師資料
+// ============================================
+
+/// 導師資料
+model TutorProfile {
+  id String @id @default(cuid())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // 導師資格
+  specialties String[] // 專長（個人花式/速度跳/團體等）
+
+  // 薪資設定
+  defaultSalaryMode   SalaryCalculationMode @default(PER_LESSON) // 預設薪資計算方式
+  defaultPerLessonFee Decimal?              @db.Decimal(10, 2) // 預設每堂薪資
+  defaultHourlyRate   Decimal?              @db.Decimal(10, 2) // 預設時薪
+  monthlyFixedSalary  Decimal?              @db.Decimal(10, 2) // 固定月薪
+
+  // 關聯文件
+  documents TutorDocument[] // 導師文件（一對多）
+
+  // 狀態
+  isActive   Boolean   @default(true)
+  approvedAt DateTime? // 審核通過日期
+  approvedBy String? // 審核人員 ID
+
+  // 備註
+  remarks String? @db.Text
+
+  // 系統欄位
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([userId])
+  @@index([isActive])
+  @@map("tutor_profiles")
+}

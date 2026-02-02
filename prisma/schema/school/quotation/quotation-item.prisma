@@ -1,0 +1,38 @@
+// ============================================
+// 到校服務模組 - 報價項目
+// ============================================
+
+/// 報價項目（支援一份報價包含多個課程方案）
+model SchoolQuotationItem {
+  id String @id @default(cuid())
+
+  quotationId String
+  quotation   SchoolQuotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  // 課程資料
+  courseName  String // 課程名稱
+  courseType  String // 課程類型
+  description String? @db.Text // 課程描述
+
+  // 收費資料
+  chargingModel ChargingModel // 收費模式
+  unitPrice     Decimal       @db.Decimal(10, 2) // 單價
+  quantity      Int // 數量（堂數/小時數等）
+  totalPrice    Decimal       @db.Decimal(10, 2) // 小計
+
+  // 課程安排
+  lessonsPerWeek    Int? // 每週堂數
+  durationMinutes   Int? // 每堂時長（分鐘）
+  estimatedStudents Int? // 預計學生人數
+  requiredTutors    Int? // 所需導師人數
+
+  // 備註
+  remarks String? @db.Text
+
+  // 系統欄位
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([quotationId])
+  @@map("school_quotation_items")
+}

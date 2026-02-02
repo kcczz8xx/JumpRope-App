@@ -1,0 +1,117 @@
+// ============================================
+// 到校服務模組 - Enums
+// ============================================
+
+enum PartnershipStatus {
+  INQUIRY // 查詢中
+  QUOTATION_SENT // 已發送報價
+  NEGOTIATING // 洽談中
+  CONFIRMED // 已確認合作
+  ACTIVE // 合作中
+  SUSPENDED // 暫停合作
+  TERMINATED // 已終止
+}
+
+enum QuotationStatus {
+  DRAFT // 草稿
+  SENT // 已發送
+  ACCEPTED // 已接受
+  REJECTED // 已拒絕
+  EXPIRED // 已過期
+  REVISED // 已修訂
+}
+
+enum ChargingModel {
+  STUDENT_PER_LESSON // 學生每節課堂收費
+  TUTOR_PER_LESSON // 導師每堂節數收費
+  STUDENT_HOURLY // 學生課堂時數收費
+  TUTOR_HOURLY // 導師時薪節數收費
+  STUDENT_FULL_COURSE // 學生全期課程收費
+  TEAM_ACTIVITY // 帶隊活動收費
+}
+
+enum LessonType {
+  REGULAR // 恆常課堂
+  MAKEUP // 補堂
+  EXTRA_PRACTICE // 加操
+}
+
+enum LessonStatus {
+  SCHEDULED // 已排程
+  IN_PROGRESS // 進行中
+  COMPLETED // 已完成
+  CANCELLED // 已取消
+  POSTPONED // 已延期
+}
+
+enum InvoiceStatus {
+  DRAFT // 草稿
+  PENDING_APPROVAL // 待審核
+  PENDING_SEND // 待發送
+  SENT // 已發送
+  OVERDUE // 已逾期
+  PAID // 已付款
+  CANCELLED // 已取消
+  VOID // 作廢
+}
+
+enum PaymentStatus {
+  PENDING // 待付款
+  PARTIAL // 部分付款（保留以防未來需要）
+  PAID // 已付款
+  REFUNDED // 已退款（保留以防未來需要）
+}
+
+enum PaymentMethod {
+  CASH // 現金
+  CHEQUE // 支票
+  BANK_TRANSFER // 銀行轉帳
+  FPS // 轉數快
+  PAYME // PayMe
+  ALIPAY_HK // 支付寶香港
+  WECHAT_PAY_HK // 微信支付香港
+  CREDIT_CARD // 信用卡
+  AUTOPAY // 自動轉帳
+  OTHER // 其他
+}
+
+enum TutorRole {
+  HEAD_COACH // 主教
+  ASSISTANT_COACH // 副教
+  TEACHING_ASSISTANT // 助教
+  SUBSTITUTE // 代課
+  STAFF // 工作人員
+  NOT_APPLICABLE // 不適用
+}
+
+enum AttendanceStatus {
+  SCHEDULED // 已排班
+  CONFIRMED // 已確認
+  CHECKED_IN // 已簽到
+  COMPLETED // 已完成
+  ABSENT // 缺席
+  LATE // 遲到
+  EARLY_LEAVE // 早退
+}
+
+enum SalaryCalculationMode {
+  PER_LESSON // 按堂
+  HOURLY // 按小時
+  MONTHLY_FIXED // 固定月薪
+}
+
+enum CourseTerm {
+  FULL_YEAR // 全期不分學期
+  FIRST_TERM // 上學期
+  SECOND_TERM // 下學期
+  SUMMER // 暑期
+}
+
+enum CourseStatus {
+  DRAFT // 草稿
+  SCHEDULED // 已排程
+  ACTIVE // 進行中
+  COMPLETED // 已完成
+  CANCELLED // 已取消
+  SUSPENDED // 已暫停
+}
