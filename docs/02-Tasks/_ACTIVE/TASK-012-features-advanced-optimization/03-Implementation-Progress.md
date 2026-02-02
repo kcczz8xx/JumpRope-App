@@ -120,6 +120,33 @@
 
 **新增錯誤碼**：`VALIDATION.FILE_TOO_LARGE`
 
+### 5.5 Error-Codes 模組化拆分 ✅
+
+將 424 行的 `error-codes.ts` 拆分為模組化結構：
+
+```
+src/features/_core/error-codes/
+├── index.ts           ← 統一導出（向後兼容）
+├── types.ts           ← ErrorDefinition 介面
+└── categories/
+    ├── auth.ts        (13 codes)
+    ├── otp.ts         (6)
+    ├── validation.ts  (10)
+    ├── permission.ts  (4)
+    ├── rate-limit.ts  (2)
+    ├── resource.ts    (4)
+    ├── database.ts    (3)
+    ├── external.ts    (3)
+    ├── business.ts    (3)
+    └── index.ts       ← 分類統一導出
+```
+
+**改善效果**：
+
+- 最大檔案大小：10.3KB → 2.5KB（-76%）
+- 維護性：按分類獨立修改
+- 向後兼容：`ERROR_CODES` 仍可用
+
 ---
 
 ## 下一步
