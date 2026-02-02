@@ -1,0 +1,66 @@
+# JumpRope-App 文檔索引
+# 最後更新：2026-02-02
+
+structure:
+  00-Context:
+    description: "業務與技術背景"
+    files:
+      - 01-Project-Overview.md
+      - 02-Tech-Stack.md
+  
+  01-Architecture:
+    description: "系統架構文檔"
+    files:
+      - 00-System-Design.md
+      - 01-Data-Models.md
+      - 02-API-Routes.md
+      - 03-Components-Structure.md
+  
+  02-Tasks:
+    description: "開發任務管理"
+    subdirs:
+      - _ACTIVE
+      - _PAUSED
+      - _ARCHIVE
+  
+  03-Knowledge-Base:
+    description: "知識庫"
+    files:
+      - API-Integration-Guide.md
+      - Prisma-7-Patterns.md
+      - Prisma-Multi-File.md
+      - Prisma-Neon-Comparison.md
+      - Prisma-Setup-Guide.md
+      - TypeScript-Standards.md
+  
+  04-Reference:
+    description: "快速參考"
+    files:
+      - API-Endpoint-Catalog.md
+      - Command-Cheatsheet.md
+      - File-Structure-Map.md
+  
+  05-Issues-Log:
+    description: "問題與解決方案"
+    files:
+      - Bug-Fixes-Log.md
+      - Known-Issues.md
+      - Performance-Issues.md
+      - Resolved-Challenges.md
+  
+  06-Deployment:
+    description: "部署與運維"
+    files: []
+  
+  99-Meta:
+    description: "系統元配置"
+    files:
+      - .index.yaml
+      - doc-template-guide.md
+      - naming-conventions.md
+
+archived_tasks:
+  2026-02:
+    - TASK-0001-refactor-project-structure
+    - TASK-0002-school-service
+    - TASK-0003-user-profile
