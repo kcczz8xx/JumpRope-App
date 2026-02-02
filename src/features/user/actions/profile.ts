@@ -12,7 +12,8 @@
  */
 
 import { prisma } from "@/lib/db";
-import { createAction, success, failure } from "@/lib/patterns";
+import { createAction, success } from "@/lib/patterns";
+import { failureFromCode } from "@/features/_core/error-codes";
 import { OTP_CONFIG } from "@/lib/constants/otp";
 import { updateProfileSchema, type UpdateProfileInput } from "../schemas/profile";
 
@@ -25,7 +26,7 @@ export const updateProfileAction = createAction<
 >(
   async (input, ctx) => {
     if (!ctx.session?.user) {
-      return failure("UNAUTHORIZED", "請先登入");
+      return failureFromCode("PERMISSION", "UNAUTHORIZED");
     }
 
     const userId = ctx.session.user.id;
@@ -60,7 +61,7 @@ export const updateProfileAction = createAction<
           });
 
           if (!verifiedOtp) {
-            return failure("FORBIDDEN", "請先完成電郵地址驗證");
+            return failureFromCode("AUTH", "EMAIL_NOT_VERIFIED");
           }
 
           if (currentUser?.phone) {
@@ -75,7 +76,7 @@ export const updateProfileAction = createAction<
           },
         });
         if (existingUser) {
-          return failure("CONFLICT", "此電郵地址已被使用");
+          return failureFromCode("AUTH", "EMAIL_IN_USE");
         }
       }
       updateData.email = email || null;
@@ -83,7 +84,7 @@ export const updateProfileAction = createAction<
 
     if (phone !== undefined) {
       if (!phone) {
-        return failure("VALIDATION_ERROR", "電話號碼不能為空");
+        return failureFromCode("VALIDATION", "PHONE_REQUIRED");
       }
 
       if (currentUser?.phone !== phone) {
@@ -98,7 +99,7 @@ export const updateProfileAction = createAction<
         });
 
         if (!verifiedOtp) {
-          return failure("FORBIDDEN", "請先完成新電話號碼驗證");
+          return failureFromCode("AUTH", "PHONE_NOT_VERIFIED");
         }
 
         otpPhonesToDelete.push(phone);
@@ -111,7 +112,7 @@ export const updateProfileAction = createAction<
         },
       });
       if (existingUser) {
-        return failure("CONFLICT", "此電話號碼已被使用");
+        return failureFromCode("AUTH", "PHONE_IN_USE");
       }
       updateData.phone = phone;
     }
@@ -121,7 +122,7 @@ export const updateProfileAction = createAction<
     }
 
     if (Object.keys(updateData).length === 0) {
-      return failure("VALIDATION_ERROR", "沒有要更新的資料");
+      return failureFromCode("VALIDATION", "NO_UPDATE_DATA");
     }
 
     const updatedUser = await prisma.user.update({

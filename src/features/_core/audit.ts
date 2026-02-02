@@ -19,6 +19,10 @@ export interface AuditEntry {
   result: "success" | "failure";
   errorCode?: string;
   metadata?: Record<string, unknown>;
+  /** 客戶端 IP 地址（可選，若未提供則從 headers 取得） */
+  ipAddress?: string;
+  /** 客戶端 User-Agent（可選，若未提供則從 headers 取得） */
+  userAgent?: string;
 }
 
 export interface AuditLogFilters {
@@ -67,12 +71,19 @@ function maskSensitiveData(
  */
 export async function logAudit(entry: AuditEntry): Promise<void> {
   try {
-    const headersList = await headers();
-    const ipAddress =
-      headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      headersList.get("x-real-ip") ||
-      "unknown";
-    const userAgent = headersList.get("user-agent") || "unknown";
+    // 優先使用傳入的值，否則從 headers 取得
+    let ipAddress = entry.ipAddress;
+    let userAgent = entry.userAgent;
+
+    if (!ipAddress || !userAgent) {
+      const headersList = await headers();
+      ipAddress =
+        ipAddress ||
+        headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+        headersList.get("x-real-ip") ||
+        "unknown";
+      userAgent = userAgent || headersList.get("user-agent") || "unknown";
+    }
 
     // 遮蔽敏感資料
     const maskedInput = entry.input ? maskSensitiveData(entry.input) : null;

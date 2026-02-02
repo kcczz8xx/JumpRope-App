@@ -12,7 +12,8 @@
  */
 
 import { prisma } from "@/lib/db";
-import { createAction, success, failure } from "@/lib/patterns";
+import { createAction, success } from "@/lib/patterns";
+import { failureFromCode } from "@/features/_core/error-codes";
 import { rateLimit, RATE_LIMIT_CONFIGS } from "@/lib/server";
 import { createChildWithMemberNumber } from "@/lib/services";
 import {
@@ -41,11 +42,11 @@ export const createChildAction = createAction<
     );
 
     if (!rateLimitResult.success) {
-      return failure("RATE_LIMITED", "請求過於頻繁，請稍後再試");
+      return failureFromCode("RATE_LIMIT", "EXCEEDED");
     }
 
     if (!ctx.session?.user) {
-      return failure("UNAUTHORIZED", "請先登入");
+      return failureFromCode("PERMISSION", "UNAUTHORIZED");
     }
 
     const userId = ctx.session.user.id;
@@ -79,7 +80,7 @@ export const updateChildAction = createAction<
 >(
   async (input, ctx) => {
     if (!ctx.session?.user) {
-      return failure("UNAUTHORIZED", "請先登入");
+      return failureFromCode("PERMISSION", "UNAUTHORIZED");
     }
 
     const userId = ctx.session.user.id;
@@ -93,7 +94,7 @@ export const updateChildAction = createAction<
     });
 
     if (!existingChild) {
-      return failure("NOT_FOUND", "找不到該學員或無權限修改");
+      return failureFromCode("RESOURCE", "NOT_FOUND");
     }
 
     const updatedChild = await prisma.userChild.update({
@@ -128,7 +129,7 @@ export const deleteChildAction = createAction<
 >(
   async (input, ctx) => {
     if (!ctx.session?.user) {
-      return failure("UNAUTHORIZED", "請先登入");
+      return failureFromCode("PERMISSION", "UNAUTHORIZED");
     }
 
     const userId = ctx.session.user.id;
@@ -142,7 +143,7 @@ export const deleteChildAction = createAction<
     });
 
     if (!existingChild) {
-      return failure("NOT_FOUND", "找不到該學員或無權限刪除");
+      return failureFromCode("RESOURCE", "NOT_FOUND");
     }
 
     await prisma.userChild.update({

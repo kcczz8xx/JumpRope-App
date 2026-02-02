@@ -13,7 +13,8 @@
  */
 
 import { prisma } from "@/lib/db";
-import { createAction, success, failure } from "@/lib/patterns";
+import { createAction, success } from "@/lib/patterns";
+import { failureFromCode } from "@/features/_core/error-codes";
 import { rateLimit, RATE_LIMIT_CONFIGS } from "@/lib/server";
 import { OTP_CONFIG } from "@/lib/constants/otp";
 import { sendOtpSchema, verifyOtpSchema } from "../schemas/otp";
@@ -39,7 +40,7 @@ export const sendOtpAction = createAction<
     );
 
     if (!rateLimitResult.success) {
-      return failure("RATE_LIMITED", "請求過於頻繁，請稍後再試");
+      return failureFromCode("RATE_LIMIT", "EXCEEDED");
     }
 
     const { phone, email, purpose } = input;
@@ -47,7 +48,7 @@ export const sendOtpAction = createAction<
     // 註冊時檢查用戶是否已存在
     if (purpose === "register") {
       if (!email) {
-        return failure("VALIDATION_ERROR", "請提供電郵地址");
+        return failureFromCode("VALIDATION", "MISSING_EMAIL");
       }
 
       const existingUser = await prisma.user.findFirst({
@@ -56,10 +57,10 @@ export const sendOtpAction = createAction<
 
       if (existingUser) {
         if (existingUser.phone === phone) {
-          return failure("CONFLICT", "此電話號碼已被註冊");
+          return failureFromCode("AUTH", "PHONE_REGISTERED");
         }
         if (existingUser.email === email) {
-          return failure("CONFLICT", "此電郵地址已被註冊");
+          return failureFromCode("AUTH", "EMAIL_REGISTERED");
         }
       }
     }
@@ -68,7 +69,7 @@ export const sendOtpAction = createAction<
     if (purpose === "reset-password") {
       const existingUser = await prisma.user.findUnique({ where: { phone } });
       if (!existingUser) {
-        return failure("NOT_FOUND", "此電話號碼未註冊");
+        return failureFromCode("RESOURCE", "NOT_FOUND");
       }
     }
 
@@ -113,7 +114,7 @@ export const verifyOtpAction = createAction<
     );
 
     if (!rateLimitResult.success) {
-      return failure("RATE_LIMITED", "請求過於頻繁，請稍後再試");
+      return failureFromCode("RATE_LIMIT", "EXCEEDED");
     }
 
     const { phone, code, purpose } = input;
@@ -125,15 +126,15 @@ export const verifyOtpAction = createAction<
     });
 
     if (!otp) {
-      return failure("NOT_FOUND", "驗證碼不存在，請重新發送");
+      return failureFromCode("OTP", "NOT_FOUND");
     }
 
     if (new Date() > otp.expiresAt) {
-      return failure("VALIDATION_ERROR", "驗證碼已過期，請重新發送");
+      return failureFromCode("OTP", "EXPIRED");
     }
 
     if (otp.attempts >= OTP_CONFIG.MAX_ATTEMPTS) {
-      return failure("RATE_LIMITED", "嘗試次數過多，請重新發送驗證碼");
+      return failureFromCode("OTP", "MAX_ATTEMPTS");
     }
 
     if (otp.code !== code) {
@@ -141,7 +142,7 @@ export const verifyOtpAction = createAction<
         where: { id: otp.id },
         data: { attempts: { increment: 1 } },
       });
-      return failure("VALIDATION_ERROR", "驗證碼錯誤");
+      return failureFromCode("OTP", "INVALID");
     }
 
     await prisma.otp.update({

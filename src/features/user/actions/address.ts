@@ -13,7 +13,8 @@
 
 import { prisma } from "@/lib/db";
 import type { UserAddress } from "@prisma/client";
-import { createAction, success, failure } from "@/lib/patterns";
+import { createAction, success } from "@/lib/patterns";
+import { failureFromCode } from "@/features/_core/error-codes";
 import { updateAddressSchema, type UpdateAddressInput } from "../schemas/address";
 
 /**
@@ -25,7 +26,7 @@ export const updateAddressAction = createAction<
 >(
   async (input, ctx) => {
     if (!ctx.session?.user) {
-      return failure("UNAUTHORIZED", "請先登入");
+      return failureFromCode("PERMISSION", "UNAUTHORIZED");
     }
 
     const userId = ctx.session.user.id;
@@ -63,7 +64,7 @@ export const updateAddressAction = createAction<
 export const deleteAddressAction = createAction<void, { message: string }>(
   async (_, ctx) => {
     if (!ctx.session?.user) {
-      return failure("UNAUTHORIZED", "請先登入");
+      return failureFromCode("PERMISSION", "UNAUTHORIZED");
     }
 
     const userId = ctx.session.user.id;
@@ -73,7 +74,7 @@ export const deleteAddressAction = createAction<void, { message: string }>(
     });
 
     if (!existingAddress) {
-      return failure("NOT_FOUND", "沒有地址資料可刪除");
+      return failureFromCode("RESOURCE", "NOT_FOUND");
     }
 
     await prisma.userAddress.delete({

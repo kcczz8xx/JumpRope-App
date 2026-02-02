@@ -1,9 +1,9 @@
 import PageBreadcrumb from "@/components/tailadmin/common/PageBreadCrumb";
 import { NewCourseForm } from "@/features/school-service/components/course";
-import { getSchools } from "@/features/school-service";
+import { getSchoolsAction } from "@/features/school-service";
 
 export default async function NewCoursePage() {
-  const result = await getSchools();
+  const result = await getSchoolsAction();
   const schools = result.success ? result.data : [];
 
   return (

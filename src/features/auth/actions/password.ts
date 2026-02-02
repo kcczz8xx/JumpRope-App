@@ -13,7 +13,8 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
-import { createAction, success, failure } from "@/lib/patterns";
+import { createAction, success } from "@/lib/patterns";
+import { failureFromCode } from "@/features/_core/error-codes";
 import { rateLimit, RATE_LIMIT_CONFIGS } from "@/lib/server";
 import { OTP_CONFIG } from "@/lib/constants/otp";
 import {
@@ -39,7 +40,7 @@ export const changePasswordAction = createAction<
 >(
   async (input, ctx) => {
     if (!ctx.session?.user) {
-      return failure("UNAUTHORIZED", "請先登入");
+      return failureFromCode("PERMISSION", "UNAUTHORIZED");
     }
 
     const { currentPassword, newPassword } = input;
@@ -51,7 +52,7 @@ export const changePasswordAction = createAction<
     });
 
     if (!user || !user.passwordHash) {
-      return failure("NOT_FOUND", "用戶不存在或無法修改密碼");
+      return failureFromCode("RESOURCE", "NOT_FOUND");
     }
 
     const isPasswordValid = await bcrypt.compare(
@@ -59,7 +60,7 @@ export const changePasswordAction = createAction<
       user.passwordHash
     );
     if (!isPasswordValid) {
-      return failure("VALIDATION_ERROR", "目前密碼不正確");
+      return failureFromCode("AUTH", "INVALID_PASSWORD");
     }
 
     const newPasswordHash = await bcrypt.hash(newPassword, 12);
@@ -96,16 +97,13 @@ export const resetPasswordSendAction = createAction<
     );
 
     if (!rateLimitResult.success) {
-      return failure("RATE_LIMITED", "請求過於頻繁，請稍後再試");
+      return failureFromCode("RATE_LIMIT", "EXCEEDED");
     }
 
     const { phone, email } = input;
 
     if (email && !phone) {
-      return failure(
-        "VALIDATION_ERROR",
-        "電郵重設功能尚未開放，請使用電話號碼重設密碼"
-      );
+      return failureFromCode("VALIDATION", "EMAIL_RESET_NOT_AVAILABLE");
     }
 
     const user = await prisma.user.findFirst({
@@ -113,10 +111,7 @@ export const resetPasswordSendAction = createAction<
     });
 
     if (!user) {
-      return failure(
-        "NOT_FOUND",
-        phone ? "此電話號碼未註冊" : "此電郵地址未註冊"
-      );
+      return failureFromCode("RESOURCE", "NOT_FOUND");
     }
 
     if (phone) {
@@ -158,7 +153,7 @@ export const resetPasswordVerifyAction = createAction<
     );
 
     if (!rateLimitResult.success) {
-      return failure("RATE_LIMITED", "請求過於頻繁，請稍後再試");
+      return failureFromCode("RATE_LIMIT", "EXCEEDED");
     }
 
     const { phone, code } = input;
@@ -169,15 +164,15 @@ export const resetPasswordVerifyAction = createAction<
     });
 
     if (!otp) {
-      return failure("NOT_FOUND", "驗證碼不存在，請重新發送");
+      return failureFromCode("OTP", "NOT_FOUND");
     }
 
     if (new Date() > otp.expiresAt) {
-      return failure("VALIDATION_ERROR", "驗證碼已過期，請重新發送");
+      return failureFromCode("OTP", "EXPIRED");
     }
 
     if (otp.attempts >= OTP_CONFIG.MAX_ATTEMPTS) {
-      return failure("RATE_LIMITED", "嘗試次數過多，請重新發送驗證碼");
+      return failureFromCode("OTP", "MAX_ATTEMPTS");
     }
 
     if (otp.code !== code) {
@@ -185,7 +180,7 @@ export const resetPasswordVerifyAction = createAction<
         where: { id: otp.id },
         data: { attempts: { increment: 1 } },
       });
-      return failure("VALIDATION_ERROR", "驗證碼錯誤");
+      return failureFromCode("OTP", "INVALID");
     }
 
     await prisma.otp.update({
@@ -233,7 +228,7 @@ export const resetPasswordAction = createAction<
     );
 
     if (!rateLimitResult.success) {
-      return failure("RATE_LIMITED", "請求過於頻繁，請稍後再試");
+      return failureFromCode("RATE_LIMIT", "EXCEEDED");
     }
 
     const { phone, password, resetToken } = input;
@@ -245,16 +240,16 @@ export const resetPasswordAction = createAction<
     });
 
     if (!tokenRecord) {
-      return failure("VALIDATION_ERROR", "重設令牌無效");
+      return failureFromCode("AUTH", "INVALID_RESET_TOKEN");
     }
 
     if (new Date() > tokenRecord.expiresAt) {
-      return failure("VALIDATION_ERROR", "重設令牌已過期，請重新驗證");
+      return failureFromCode("AUTH", "RESET_TOKEN_EXPIRED");
     }
 
     const user = await prisma.user.findUnique({ where: { phone } });
     if (!user) {
-      return failure("NOT_FOUND", "用戶不存在");
+      return failureFromCode("RESOURCE", "NOT_FOUND");
     }
 
     // 更新密碼

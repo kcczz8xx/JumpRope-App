@@ -11,7 +11,8 @@
  */
 
 import { prisma } from "@/lib/db";
-import { createAction, success, failure } from "@/lib/patterns";
+import { createAction, success } from "@/lib/patterns";
+import { failureFromCode } from "@/features/_core/error-codes";
 import {
   createSchoolSchema,
   updateSchoolSchema,
@@ -35,7 +36,7 @@ export const createSchoolAction = createAction<
 >(
   async (input, ctx) => {
     if (!ctx.session?.user) {
-      return failure("UNAUTHORIZED", "請先登入");
+      return failureFromCode("PERMISSION", "UNAUTHORIZED");
     }
 
     const {
@@ -94,7 +95,7 @@ export const updateSchoolAction = createAction<
 >(
   async (input, ctx) => {
     if (!ctx.session?.user) {
-      return failure("UNAUTHORIZED", "請先登入");
+      return failureFromCode("PERMISSION", "UNAUTHORIZED");
     }
 
     const { id, ...updateData } = input;
@@ -104,7 +105,7 @@ export const updateSchoolAction = createAction<
     });
 
     if (!existingSchool || existingSchool.deletedAt) {
-      return failure("NOT_FOUND", "學校不存在");
+      return failureFromCode("RESOURCE", "NOT_FOUND");
     }
 
     const data: Record<string, unknown> = {};
@@ -164,7 +165,7 @@ export const deleteSchoolAction = createAction<
 >(
   async (input, ctx) => {
     if (!ctx.session?.user) {
-      return failure("UNAUTHORIZED", "請先登入");
+      return failureFromCode("PERMISSION", "UNAUTHORIZED");
     }
 
     const { id } = input;
@@ -174,7 +175,7 @@ export const deleteSchoolAction = createAction<
     });
 
     if (!existingSchool || existingSchool.deletedAt) {
-      return failure("NOT_FOUND", "學校不存在");
+      return failureFromCode("RESOURCE", "NOT_FOUND");
     }
 
     await prisma.school.update({

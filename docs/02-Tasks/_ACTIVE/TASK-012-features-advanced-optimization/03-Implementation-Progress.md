@@ -64,14 +64,80 @@
 
 ---
 
+## Phase 5：Code Review 修正（2026-02-03）
+
+根據 Code Review 報告執行的修正：
+
+### 5.1 ActionContext 補充 ipAddress/userAgent ✅
+
+- 修改 `lib/patterns/types.ts`：新增 `ipAddress` 和 `userAgent` 欄位
+- 修改 `lib/patterns/server-action.ts`：從 headers 取得並傳入 ctx
+- 修改 `features/_core/audit.ts`：`AuditEntry` 補充可選欄位，`logAudit` 優先使用傳入值
+
+### 5.2 統一錯誤碼遷移 ✅
+
+**新增錯誤碼**（共 8 個）：
+
+- `AUTH`: `EMAIL_REGISTERED`, `PHONE_NOT_VERIFIED`, `INVALID_PASSWORD`, `INVALID_RESET_TOKEN`, `RESET_TOKEN_EXPIRED`, `EMAIL_NOT_VERIFIED`, `PHONE_IN_USE`, `EMAIL_IN_USE`
+- `OTP`: `NOT_FOUND`
+- `VALIDATION`: `MISSING_EMAIL`, `EMAIL_RESET_NOT_AVAILABLE`, `PHONE_REQUIRED`, `NO_UPDATE_DATA`
+
+**遷移統計**（共 53 處）：
+
+| Feature        | 檔案                  | 數量 |
+| -------------- | --------------------- | ---- |
+| auth           | `actions/otp.ts`      | 8    |
+| auth           | `actions/register.ts` | 4    |
+| auth           | `actions/password.ts` | 12   |
+| user           | `actions/profile.ts`  | 7    |
+| user           | `actions/children.ts` | 6    |
+| user           | `actions/address.ts`  | 3    |
+| user           | `actions/bank.ts`     | 3    |
+| school-service | `actions/school.ts`   | 5    |
+| school-service | `actions/course.ts`   | 4    |
+| school-service | `actions/batch.ts`    | 1    |
+
+### 5.3 Prisma AuditLog relation ✅
+
+確認已存在（無需修改）
+
+### 5.4 Queries 遷移到 createAction ✅
+
+將使用舊系統的 queries 完整遷移：
+
+| 檔案                               | 舊函式名                      | 新函式名                                  |
+| ---------------------------------- | ----------------------------- | ----------------------------------------- |
+| `user/queries/profile.ts`          | `getProfile`                  | `getProfileAction`                        |
+| `school-service/queries/course.ts` | `getCourses`, `getCourseById` | `getCoursesAction`, `getCourseByIdAction` |
+| `school-service/queries/school.ts` | `getSchools`, `getSchoolById` | `getSchoolsAction`, `getSchoolByIdAction` |
+| `user/actions/documents.ts`        | —                             | 使用 `failureFromCode`（10 處）           |
+
+**同步更新的引用**：
+
+- `features/*/index.ts`、`server.ts`、`queries/index.ts`
+- `app/(private)/dashboard/school/courses/new/page.tsx`
+- `features/school-service/components/course/SchoolFormStep.tsx`
+
+**新增錯誤碼**：`VALIDATION.FILE_TOO_LARGE`
+
+---
+
 ## 下一步
 
 **任務完成** ✅
 
-可選後續工作：
+### 短期（2 週內）
 
-- 清理 `lib/actions/` 舊模組（待確認無其他依賴）
-- 遷移 `documents.ts`（使用 FormData，需特殊處理）
+- [ ] 補充單元測試（createAction, error-codes, audit）
+- [ ] 完善文檔（錯誤碼指南、createAction 指南）
+- [ ] 決策速率限制統一方案（Upstash vs Prisma）
+
+### 中期（1 個月內）
+
+- [ ] 監控 AuditLog 表大小和查詢效能
+- [ ] 清理 `lib/actions/` 舊模組（待確認無其他依賴）
+- [ ] 遷移 `documents.ts`（使用 FormData，需特殊處理）
+- [ ] 準備 TASK-013：舊模組清理
 
 ## 已建立/修改檔案
 

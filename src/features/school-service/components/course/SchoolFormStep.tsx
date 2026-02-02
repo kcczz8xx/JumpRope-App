@@ -2,7 +2,7 @@
 
 import React, { useEffect, useTransition } from "react";
 import SearchableSelect from "@/components/tailadmin/form/select/SearchableSelect";
-import { getSchoolById } from "../../queries";
+import { getSchoolByIdAction } from "../../queries";
 import Input from "@/components/tailadmin/form/input/InputField";
 import TextArea from "@/components/tailadmin/form/input/TextArea";
 import DatePicker from "@/components/tailadmin/form/date-picker";
@@ -94,7 +94,7 @@ export default function SchoolFormStep({
     }
 
     startTransition(async () => {
-      const result = await getSchoolById(selectedSchoolId);
+      const result = await getSchoolByIdAction({ id: selectedSchoolId });
 
       if (!result.success) {
         console.error("Failed to load school data:", result.error.message);

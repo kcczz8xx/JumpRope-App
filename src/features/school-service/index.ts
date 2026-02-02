@@ -40,10 +40,10 @@ export {
 // ===== Queries =====
 // 注意：Queries 也可透過 server.ts 導入（僅限 Server Components）
 export {
-    getSchools,
-    getSchoolById,
-    getCourses,
-    getCourseById,
+    getSchoolsAction,
+    getSchoolByIdAction,
+    getCoursesAction,
+    getCourseByIdAction,
 } from "./queries";
 
 // ===== Schemas =====

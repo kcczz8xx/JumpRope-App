@@ -6,8 +6,8 @@
 import "server-only";
 
 export {
-  getSchools,
-  getSchoolById,
-  getCourses,
-  getCourseById,
+  getSchoolsAction,
+  getSchoolByIdAction,
+  getCoursesAction,
+  getCourseByIdAction,
 } from "./queries";

@@ -15,6 +15,7 @@
  * 調用方（如 otp.ts）已有 "use server" 標記
  */
 
+import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { createErrorResponse } from "@/features/_core/error-codes";
@@ -148,7 +149,15 @@ export function createAction<TInput, TOutput>(
         }
       }
 
-      // 6. 執行 handler
+      // 6. 獲取客戶端資訊
+      const headersList = await headers();
+      const ipAddress =
+        headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+        headersList.get("x-real-ip") ||
+        "unknown";
+      const userAgent = headersList.get("user-agent") || "unknown";
+
+      // 7. 執行 handler
       const ctx: ActionContext = {
         session: session
           ? {
@@ -162,11 +171,13 @@ export function createAction<TInput, TOutput>(
           : null,
         requestId,
         timestamp,
+        ipAddress,
+        userAgent,
       };
 
       const result = await handler(input, ctx);
 
-      // 7. 審計日誌（成功）
+      // 8. 審計日誌（成功）
       if (options.audit) {
         await logAudit({
           requestId,
@@ -177,6 +188,8 @@ export function createAction<TInput, TOutput>(
           input: input as Record<string, unknown>,
           result: result.success ? "success" : "failure",
           errorCode: result.success ? undefined : result.error.code,
+          ipAddress,
+          userAgent,
         });
       }
 

@@ -12,7 +12,8 @@
 
 import { prisma } from "@/lib/db";
 import type { CourseTerm, ChargingModel, SchoolCourse, School } from "@prisma/client";
-import { createAction, success, failure } from "@/lib/patterns";
+import { createAction, success } from "@/lib/patterns";
+import { failureFromCode } from "@/features/_core/error-codes";
 import { createCourseSchema, type CreateCourseInput } from "../schemas/course";
 import { z } from "zod";
 
@@ -34,7 +35,7 @@ export const createCourseAction = createAction<
 >(
   async (input, ctx) => {
     if (!ctx.session?.user) {
-      return failure("UNAUTHORIZED", "請先登入");
+      return failureFromCode("PERMISSION", "UNAUTHORIZED");
     }
 
     const {
@@ -59,7 +60,7 @@ export const createCourseAction = createAction<
     });
 
     if (!school || school.deletedAt) {
-      return failure("NOT_FOUND", "學校不存在");
+      return failureFromCode("RESOURCE", "NOT_FOUND");
     }
 
     const course = await prisma.schoolCourse.create({
@@ -111,7 +112,7 @@ export const deleteCourseAction = createAction<
 >(
   async (input, ctx) => {
     if (!ctx.session?.user) {
-      return failure("UNAUTHORIZED", "請先登入");
+      return failureFromCode("PERMISSION", "UNAUTHORIZED");
     }
 
     const { id } = input;
@@ -121,7 +122,7 @@ export const deleteCourseAction = createAction<
     });
 
     if (!existingCourse || existingCourse.deletedAt) {
-      return failure("NOT_FOUND", "課程不存在");
+      return failureFromCode("RESOURCE", "NOT_FOUND");
     }
 
     await prisma.schoolCourse.update({

@@ -3,7 +3,7 @@
  * 統一導出所有 Queries
  */
 
-export { getProfile } from "./profile";
+export { getProfileAction } from "./profile";
 export { getAddress } from "./address";
 export { getBankAccount } from "./bank";
 export { getChildren } from "./children";

@@ -48,6 +48,54 @@ export const ERROR_CODES = {
       i18n: "errors.auth.account_locked",
       message: "帳號已被鎖定",
     },
+    EMAIL_REGISTERED: {
+      code: "AUTH_006",
+      status: 409,
+      i18n: "errors.auth.email_registered",
+      message: "此電郵地址已註冊",
+    },
+    PHONE_NOT_VERIFIED: {
+      code: "AUTH_007",
+      status: 403,
+      i18n: "errors.auth.phone_not_verified",
+      message: "請先完成電話號碼驗證",
+    },
+    INVALID_PASSWORD: {
+      code: "AUTH_008",
+      status: 401,
+      i18n: "errors.auth.invalid_password",
+      message: "密碼不正確",
+    },
+    INVALID_RESET_TOKEN: {
+      code: "AUTH_009",
+      status: 400,
+      i18n: "errors.auth.invalid_reset_token",
+      message: "重設令牌無效",
+    },
+    RESET_TOKEN_EXPIRED: {
+      code: "AUTH_010",
+      status: 400,
+      i18n: "errors.auth.reset_token_expired",
+      message: "重設令牌已過期，請重新驗證",
+    },
+    EMAIL_NOT_VERIFIED: {
+      code: "AUTH_011",
+      status: 403,
+      i18n: "errors.auth.email_not_verified",
+      message: "請先完成電郵地址驗證",
+    },
+    PHONE_IN_USE: {
+      code: "AUTH_012",
+      status: 409,
+      i18n: "errors.auth.phone_in_use",
+      message: "此電話號碼已被使用",
+    },
+    EMAIL_IN_USE: {
+      code: "AUTH_013",
+      status: 409,
+      i18n: "errors.auth.email_in_use",
+      message: "此電郵地址已被使用",
+    },
   },
 
   // ===== OTP 相關 =====
@@ -82,6 +130,12 @@ export const ERROR_CODES = {
       i18n: "errors.otp.already_sent",
       message: "驗證碼已發送，請稍後再試",
     },
+    NOT_FOUND: {
+      code: "OTP_006",
+      status: 404,
+      i18n: "errors.otp.not_found",
+      message: "驗證碼不存在，請重新發送",
+    },
   },
 
   // ===== 驗證相關 =====
@@ -115,6 +169,36 @@ export const ERROR_CODES = {
       status: 400,
       i18n: "errors.validation.invalid_email",
       message: "電子郵件格式不正確",
+    },
+    MISSING_EMAIL: {
+      code: "VAL_006",
+      status: 400,
+      i18n: "errors.validation.missing_email",
+      message: "請提供電郵地址",
+    },
+    EMAIL_RESET_NOT_AVAILABLE: {
+      code: "VAL_007",
+      status: 400,
+      i18n: "errors.validation.email_reset_not_available",
+      message: "電郵重設功能尚未開放，請使用電話號碼重設密碼",
+    },
+    PHONE_REQUIRED: {
+      code: "VAL_008",
+      status: 400,
+      i18n: "errors.validation.phone_required",
+      message: "電話號碼不能為空",
+    },
+    NO_UPDATE_DATA: {
+      code: "VAL_009",
+      status: 400,
+      i18n: "errors.validation.no_update_data",
+      message: "沒有要更新的資料",
+    },
+    FILE_TOO_LARGE: {
+      code: "VAL_010",
+      status: 400,
+      i18n: "errors.validation.file_too_large",
+      message: "文件大小超過限制",
     },
   },
 
@@ -310,4 +394,30 @@ export function isError<T extends ErrorCategory>(
 ): boolean {
   const error = getError(category, code);
   return response.error?.code === error.code;
+}
+
+/**
+ * 創建失敗回應（用於 Server Action handler）
+ *
+ * 這是 createErrorResponse 的簡化版本，返回符合 ActionResult 的格式
+ *
+ * @example
+ * return failureFromCode("RATE_LIMIT", "EXCEEDED");
+ * return failureFromCode("AUTH", "PHONE_REGISTERED");
+ */
+export function failureFromCode<T extends ErrorCategory>(
+  category: T,
+  code: ErrorCode<T>,
+  details?: Record<string, unknown>
+): { success: false; error: { code: string; message: string; i18n: string; details?: Record<string, unknown> } } {
+  const error = getError(category, code);
+  return {
+    success: false,
+    error: {
+      code: error.code,
+      message: error.message,
+      i18n: error.i18n,
+      details,
+    },
+  };
 }

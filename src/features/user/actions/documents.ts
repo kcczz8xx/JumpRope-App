@@ -3,12 +3,16 @@
 /**
  * User Actions - Tutor Documents
  * 導師文件管理操作
+ *
+ * 注意：這些 actions 使用 FormData，無法使用 createAction wrapper
+ * 但仍使用 failureFromCode 保持錯誤碼一致性
  */
 
 import { prisma } from "@/lib/db";
 import { DocumentType, DocumentStatus } from "@prisma/client";
 import { put, del } from "@vercel/blob";
-import { success, failure, requireUser } from "@/lib/actions";
+import { success, requireUser } from "@/lib/actions";
+import { failureFromCode } from "@/features/_core/error-codes";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_MIME_TYPES = ["application/pdf", "image/jpeg", "image/png"];
@@ -41,19 +45,19 @@ export async function createTutorDocumentAction(formData: FormData) {
   const file = formData.get("file") as File | null;
 
   if (!documentType || !name) {
-    return failure("VALIDATION_ERROR", "請填寫文件類型和名稱");
+    return failureFromCode("VALIDATION", "MISSING_FIELD");
   }
 
   if (!file) {
-    return failure("VALIDATION_ERROR", "請上傳文件");
+    return failureFromCode("VALIDATION", "MISSING_FIELD");
   }
 
   if (!validateFileType(file.type)) {
-    return failure("VALIDATION_ERROR", "只接受 PDF、JPG 或 PNG 格式的文件");
+    return failureFromCode("VALIDATION", "INVALID_FORMAT");
   }
 
   if (!validateFileSize(file.size)) {
-    return failure("VALIDATION_ERROR", "文件大小不能超過 5MB");
+    return failureFromCode("VALIDATION", "FILE_TOO_LARGE");
   }
 
   let tutorProfile = await prisma.tutorProfile.findUnique({
@@ -110,7 +114,7 @@ export async function updateTutorDocumentAction(formData: FormData) {
   const file = formData.get("file") as File | null;
 
   if (!documentId) {
-    return failure("VALIDATION_ERROR", "缺少文件 ID");
+    return failureFromCode("VALIDATION", "MISSING_FIELD");
   }
 
   const existingDocument = await prisma.tutorDocument.findFirst({
@@ -121,18 +125,18 @@ export async function updateTutorDocumentAction(formData: FormData) {
   });
 
   if (!existingDocument) {
-    return failure("NOT_FOUND", "找不到該文件或無權限修改");
+    return failureFromCode("RESOURCE", "NOT_FOUND");
   }
 
   let documentUrl = existingDocument.documentUrl;
 
   if (file) {
     if (!validateFileType(file.type)) {
-      return failure("VALIDATION_ERROR", "只接受 PDF、JPG 或 PNG 格式的文件");
+      return failureFromCode("VALIDATION", "INVALID_FORMAT");
     }
 
     if (!validateFileSize(file.size)) {
-      return failure("VALIDATION_ERROR", "文件大小不能超過 5MB");
+      return failureFromCode("VALIDATION", "FILE_TOO_LARGE");
     }
 
     if (existingDocument.documentUrl) {
@@ -183,7 +187,7 @@ export async function deleteTutorDocumentAction(documentId: string) {
   const userId = auth.data.id;
 
   if (!documentId) {
-    return failure("VALIDATION_ERROR", "缺少文件 ID");
+    return failureFromCode("VALIDATION", "MISSING_FIELD");
   }
 
   const existingDocument = await prisma.tutorDocument.findFirst({
@@ -194,7 +198,7 @@ export async function deleteTutorDocumentAction(documentId: string) {
   });
 
   if (!existingDocument) {
-    return failure("NOT_FOUND", "找不到該文件或無權限刪除");
+    return failureFromCode("RESOURCE", "NOT_FOUND");
   }
 
   if (existingDocument.documentUrl) {

@@ -40,6 +40,10 @@ export interface ActionContext {
   session: SessionData | null;
   requestId: string;
   timestamp: Date;
+  /** 客戶端 IP 地址 */
+  ipAddress: string;
+  /** 客戶端 User-Agent */
+  userAgent: string;
 }
 
 export interface SessionData {

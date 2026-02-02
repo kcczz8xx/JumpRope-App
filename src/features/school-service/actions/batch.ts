@@ -12,7 +12,8 @@
 
 import { prisma } from "@/lib/db";
 import type { CourseTerm, ChargingModel } from "@prisma/client";
-import { createAction, success, failure } from "@/lib/patterns";
+import { createAction, success } from "@/lib/patterns";
+import { failureFromCode } from "@/features/_core/error-codes";
 import {
   batchCreateWithSchoolSchema,
   type BatchCreateWithSchoolInput,
@@ -27,7 +28,7 @@ export const batchCreateWithSchoolAction = createAction<
 >(
   async (input, ctx) => {
     if (!ctx.session?.user) {
-      return failure("UNAUTHORIZED", "請先登入");
+      return failureFromCode("PERMISSION", "UNAUTHORIZED");
     }
 
     const { school, contact, academicYear, courses } = input;

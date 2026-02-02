@@ -3,5 +3,5 @@
  * 統一導出所有 Queries
  */
 
-export { getSchools, getSchoolById } from "./school";
-export { getCourses, getCourseById } from "./course";
+export { getSchoolsAction, getSchoolByIdAction } from "./school";
+export { getCoursesAction, getCourseByIdAction } from "./course";

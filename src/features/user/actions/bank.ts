@@ -13,7 +13,8 @@
 
 import { prisma } from "@/lib/db";
 import type { UserBankAccount } from "@prisma/client";
-import { createAction, success, failure } from "@/lib/patterns";
+import { createAction, success } from "@/lib/patterns";
+import { failureFromCode } from "@/features/_core/error-codes";
 import { updateBankSchema, type UpdateBankInput } from "../schemas/bank";
 
 /**
@@ -25,7 +26,7 @@ export const updateBankAction = createAction<
 >(
   async (input, ctx) => {
     if (!ctx.session?.user) {
-      return failure("UNAUTHORIZED", "請先登入");
+      return failureFromCode("PERMISSION", "UNAUTHORIZED");
     }
 
     const userId = ctx.session.user.id;
@@ -70,7 +71,7 @@ export const updateBankAction = createAction<
 export const deleteBankAction = createAction<void, { message: string }>(
   async (_, ctx) => {
     if (!ctx.session?.user) {
-      return failure("UNAUTHORIZED", "請先登入");
+      return failureFromCode("PERMISSION", "UNAUTHORIZED");
     }
 
     const userId = ctx.session.user.id;
@@ -80,7 +81,7 @@ export const deleteBankAction = createAction<void, { message: string }>(
     });
 
     if (!existingAccount) {
-      return failure("NOT_FOUND", "沒有收款資料可刪除");
+      return failureFromCode("RESOURCE", "NOT_FOUND");
     }
 
     await prisma.userBankAccount.delete({

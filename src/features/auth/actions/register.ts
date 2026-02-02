@@ -11,7 +11,8 @@
 
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
-import { createAction, success, failure } from "@/lib/patterns";
+import { createAction, success } from "@/lib/patterns";
+import { failureFromCode } from "@/features/_core/error-codes";
 import { rateLimit, RATE_LIMIT_CONFIGS } from "@/lib/server";
 import { createUserWithMemberNumber } from "@/lib/services";
 import { OTP_CONFIG } from "@/lib/constants/otp";
@@ -37,7 +38,7 @@ export const registerAction = createAction<
     );
 
     if (!rateLimitResult.success) {
-      return failure("RATE_LIMITED", "請求過於頻繁，請稍後再試");
+      return failureFromCode("RATE_LIMIT", "EXCEEDED");
     }
 
     const { phone, password, email, nickname, title } = input;
@@ -56,7 +57,7 @@ export const registerAction = createAction<
     });
 
     if (!verifiedOtp) {
-      return failure("FORBIDDEN", "請先完成電話號碼驗證");
+      return failureFromCode("AUTH", "PHONE_NOT_VERIFIED");
     }
 
     // 檢查用戶是否已存在
@@ -66,10 +67,10 @@ export const registerAction = createAction<
 
     if (existingUser) {
       if (existingUser.phone === phone) {
-        return failure("CONFLICT", "此電話號碼已被註冊");
+        return failureFromCode("AUTH", "PHONE_REGISTERED");
       }
       if (existingUser.email === email) {
-        return failure("CONFLICT", "此電郵地址已被註冊");
+        return failureFromCode("AUTH", "EMAIL_REGISTERED");
       }
     }
 

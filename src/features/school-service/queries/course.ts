@@ -1,100 +1,128 @@
 /**
  * School Service Queries - 課程查詢
+ *
+ * 使用 createAction wrapper 自動處理認證和錯誤
  */
 
 import { prisma } from "@/lib/db";
-import { requireUser, success, failure, type ActionResult } from "@/lib/actions";
+import { createAction, success } from "@/lib/patterns";
+import { failureFromCode } from "@/features/_core/error-codes";
 
-export async function getCourses(params?: {
+type CourseListParams = {
   schoolId?: string;
   status?: string;
   academicYear?: string;
-}): Promise<
-  ActionResult<
-    Array<{
-      id: string;
-      courseName: string;
-      courseType: string | null;
-      courseTerm: string | null;
-      academicYear: string | null;
-      startDate: Date | null;
-      endDate: Date | null;
-      status: string;
-      requiredTutors: number;
-      maxStudents: number | null;
-      school: {
-        id: string;
-        schoolName: string;
-      };
-      _count: {
-        lessons: number;
-      };
-    }>
-  >
-> {
-  const auth = await requireUser();
-  if (!auth.success) return auth;
+};
 
-  const where: Record<string, unknown> = {
-    deletedAt: null,
+type CourseListItem = {
+  id: string;
+  courseName: string;
+  courseType: string | null;
+  courseTerm: string | null;
+  academicYear: string | null;
+  startDate: Date | null;
+  endDate: Date | null;
+  status: string;
+  requiredTutors: number;
+  maxStudents: number | null;
+  school: {
+    id: string;
+    schoolName: string;
   };
+  _count: {
+    lessons: number;
+  };
+};
 
-  if (params?.schoolId) {
-    where.schoolId = params.schoolId;
-  }
+/**
+ * 獲取課程列表
+ */
+export const getCoursesAction = createAction<CourseListParams | undefined, CourseListItem[]>(
+  async (params, ctx) => {
+    if (!ctx.session?.user) {
+      return failureFromCode("PERMISSION", "UNAUTHORIZED");
+    }
 
-  if (params?.status) {
-    where.status = params.status;
-  }
+    const where: Record<string, unknown> = {
+      deletedAt: null,
+    };
 
-  if (params?.academicYear) {
-    where.academicYear = params.academicYear;
-  }
+    if (params?.schoolId) {
+      where.schoolId = params.schoolId;
+    }
 
-  const courses = await prisma.schoolCourse.findMany({
-    where,
-    include: {
-      school: {
-        select: {
-          id: true,
-          schoolName: true,
+    if (params?.status) {
+      where.status = params.status;
+    }
+
+    if (params?.academicYear) {
+      where.academicYear = params.academicYear;
+    }
+
+    const courses = await prisma.schoolCourse.findMany({
+      where,
+      include: {
+        school: {
+          select: {
+            id: true,
+            schoolName: true,
+          },
+        },
+        _count: {
+          select: {
+            lessons: true,
+          },
         },
       },
-      _count: {
-        select: {
-          lessons: true,
+      orderBy: [{ createdAt: "desc" }],
+    });
+
+    return success(courses);
+  },
+  {
+    requireAuth: true,
+  }
+);
+
+type CourseByIdInput = { id: string };
+
+/**
+ * 根據 ID 獲取課程詳情
+ */
+export const getCourseByIdAction = createAction<CourseByIdInput, CourseListItem>(
+  async (input, ctx) => {
+    if (!ctx.session?.user) {
+      return failureFromCode("PERMISSION", "UNAUTHORIZED");
+    }
+
+    if (!input.id) {
+      return failureFromCode("VALIDATION", "MISSING_FIELD");
+    }
+
+    const course = await prisma.schoolCourse.findUnique({
+      where: { id: input.id },
+      include: {
+        school: {
+          select: {
+            id: true,
+            schoolName: true,
+          },
+        },
+        _count: {
+          select: {
+            lessons: true,
+          },
         },
       },
-    },
-    orderBy: [{ createdAt: "desc" }],
-  });
+    });
 
-  return success(courses);
-}
+    if (!course || course.deletedAt) {
+      return failureFromCode("RESOURCE", "NOT_FOUND");
+    }
 
-export async function getCourseById(id: string) {
-  const auth = await requireUser();
-  if (!auth.success) return auth;
-
-  if (!id) {
-    return failure("VALIDATION_ERROR", "缺少課程 ID");
+    return success(course);
+  },
+  {
+    requireAuth: true,
   }
-
-  const course = await prisma.schoolCourse.findUnique({
-    where: { id },
-    include: {
-      school: {
-        select: {
-          id: true,
-          schoolName: true,
-        },
-      },
-    },
-  });
-
-  if (!course || course.deletedAt) {
-    return failure("NOT_FOUND", "課程不存在");
-  }
-
-  return success(course);
-}
+);

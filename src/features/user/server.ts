@@ -6,7 +6,7 @@
 import "server-only";
 
 export {
-  getProfile,
+  getProfileAction,
   getAddress,
   getBankAccount,
   getChildren,
