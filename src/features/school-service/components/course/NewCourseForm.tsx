@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/tailadmin/ui/button/Button";
 import StepIndicator from "@/components/tailadmin/form/StepIndicator";
 import SchoolFormStep from "./SchoolFormStep";
 import CoursesFormStep from "./CoursesFormStep";
 import SummaryFormStep from "./SummaryFormStep";
+import { batchCreateWithSchoolAction } from "../../actions";
 import {
   NewCourseFormData,
   SchoolBasicData,
@@ -28,11 +29,7 @@ interface NewCourseFormProps {
   quotationId?: string;
 }
 
-const STEPS = [
-  { label: "學校資料" },
-  { label: "課程資料" },
-  { label: "總結" },
-];
+const STEPS = [{ label: "學校資料" }, { label: "課程資料" }, { label: "總結" }];
 
 export default function NewCourseForm({
   schools,
@@ -47,47 +44,56 @@ export default function NewCourseForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSchoolChange = useCallback((updates: Partial<SchoolBasicData>) => {
-    setFormData((prev) => {
-      const updatedSchool = { ...prev.school, ...updates };
-      
-      setErrors((prevErrors) => {
-        const newErrors = { ...prevErrors };
-        Object.keys(updates).forEach((key) => {
-          delete newErrors[key];
+  const handleSchoolChange = useCallback(
+    (updates: Partial<SchoolBasicData>) => {
+      setFormData((prev) => {
+        const updatedSchool = { ...prev.school, ...updates };
+
+        setErrors((prevErrors) => {
+          const newErrors = { ...prevErrors };
+          Object.keys(updates).forEach((key) => {
+            delete newErrors[key];
+          });
+
+          if (
+            updatedSchool.partnershipEndDate &&
+            updatedSchool.partnershipStartDate &&
+            updatedSchool.partnershipEndDate <
+              updatedSchool.partnershipStartDate
+          ) {
+            newErrors.partnershipEndDate = "結束日期不能早於開始日期";
+          }
+
+          return newErrors;
         });
-        
-        if (
-          updatedSchool.partnershipEndDate &&
-          updatedSchool.partnershipStartDate &&
-          updatedSchool.partnershipEndDate < updatedSchool.partnershipStartDate
-        ) {
-          newErrors.partnershipEndDate = "結束日期不能早於開始日期";
-        }
-        
+
+        return {
+          ...prev,
+          school: updatedSchool,
+        };
+      });
+    },
+    []
+  );
+
+  const handleContactChange = useCallback(
+    (updates: Partial<SchoolContactData>) => {
+      setFormData((prev) => ({
+        ...prev,
+        contact: { ...prev.contact, ...updates },
+      }));
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        Object.keys(updates).forEach((key) => {
+          delete newErrors[
+            `contact${key.charAt(0).toUpperCase() + key.slice(1)}`
+          ];
+        });
         return newErrors;
       });
-      
-      return {
-        ...prev,
-        school: updatedSchool,
-      };
-    });
-  }, []);
-
-  const handleContactChange = useCallback((updates: Partial<SchoolContactData>) => {
-    setFormData((prev) => ({
-      ...prev,
-      contact: { ...prev.contact, ...updates },
-    }));
-    setErrors((prev) => {
-      const newErrors = { ...prev };
-      Object.keys(updates).forEach((key) => {
-        delete newErrors[`contact${key.charAt(0).toUpperCase() + key.slice(1)}`];
-      });
-      return newErrors;
-    });
-  }, []);
+    },
+    []
+  );
 
   const handleCoursesChange = useCallback((courses: CourseItemData[]) => {
     setFormData((prev) => ({ ...prev, courses }));
@@ -147,7 +153,7 @@ export default function NewCourseForm({
       if (!course.chargingModel || course.chargingModel.length === 0) {
         newErrors[`${prefix}chargingModel`] = "請選擇至少一個收費模式";
       }
-      
+
       if (
         course.endDate &&
         course.startDate &&
@@ -162,8 +168,12 @@ export default function NewCourseForm({
       course.chargingModel.forEach((model) => {
         switch (model) {
           case ChargingModel.STUDENT_PER_LESSON:
-            if (!course.studentPerLessonFee || course.studentPerLessonFee <= 0) {
-              newErrors[`${prefix}studentPerLessonFee`] = "請輸入有效的收費金額";
+            if (
+              !course.studentPerLessonFee ||
+              course.studentPerLessonFee <= 0
+            ) {
+              newErrors[`${prefix}studentPerLessonFee`] =
+                "請輸入有效的收費金額";
             }
             break;
           case ChargingModel.TUTOR_PER_LESSON:
@@ -182,8 +192,12 @@ export default function NewCourseForm({
             }
             break;
           case ChargingModel.STUDENT_FULL_COURSE:
-            if (!course.studentFullCourseFee || course.studentFullCourseFee <= 0) {
-              newErrors[`${prefix}studentFullCourseFee`] = "請輸入有效的收費金額";
+            if (
+              !course.studentFullCourseFee ||
+              course.studentFullCourseFee <= 0
+            ) {
+              newErrors[`${prefix}studentFullCourseFee`] =
+                "請輸入有效的收費金額";
             }
             break;
           case ChargingModel.TEAM_ACTIVITY:
@@ -226,43 +240,34 @@ export default function NewCourseForm({
 
     try {
       const { school, contact, academicYear, courses } = formData;
-      
+
       const academicYearCalculated = calculateAcademicYear(
         school.partnershipStartDate,
         school.partnershipEndDate
       );
 
-      const response = await fetch("/api/school-service/courses/batch-with-school", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const result = await batchCreateWithSchoolAction({
+        school: {
+          ...school,
+          partnershipStartYear: academicYearCalculated,
         },
-        body: JSON.stringify({
-          school: {
-            ...school,
-            partnershipStartYear: academicYearCalculated,
-          },
-          contact,
+        contact,
+        academicYear,
+        courses: courses.map((course) => ({
+          ...course,
           academicYear,
-          courses: courses.map((course) => ({
-            ...course,
-            academicYear,
-          })),
-        }),
+        })),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "建立失敗");
+      if (!result.ok) {
+        throw new Error(result.error.message || "建立失敗");
       }
 
-      const result = await response.json();
-      router.push(`/dashboard/school/courses?schoolId=${result.schoolId}`);
+      router.push(`/dashboard/school/courses?schoolId=${result.data.schoolId}`);
     } catch (error) {
       console.error("Failed to create:", error);
       setErrors({
-        submit:
-          error instanceof Error ? error.message : "建立失敗，請稍後再試",
+        submit: error instanceof Error ? error.message : "建立失敗，請稍後再試",
       });
     } finally {
       setIsSubmitting(false);
@@ -272,7 +277,6 @@ export default function NewCourseForm({
   const handleCancel = useCallback(() => {
     router.push("/dashboard/school/courses");
   }, [router]);
-
 
   const renderStep = () => {
     switch (currentStep) {

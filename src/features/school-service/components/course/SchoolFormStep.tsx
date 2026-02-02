@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useTransition } from "react";
 import SearchableSelect from "@/components/tailadmin/form/select/SearchableSelect";
+import { getSchoolById } from "../../queries";
 import Input from "@/components/tailadmin/form/input/InputField";
 import TextArea from "@/components/tailadmin/form/input/TextArea";
 import DatePicker from "@/components/tailadmin/form/date-picker";
@@ -40,6 +41,8 @@ export default function SchoolFormStep({
   isLoadingSchools = false,
   quotationId,
 }: SchoolFormStepProps) {
+  const [isPending, startTransition] = useTransition();
+
   const schoolOptions = schools.map((school) => ({
     value: school.id,
     label: school.schoolName,
@@ -76,7 +79,7 @@ export default function SchoolFormStep({
     }
   }, [schoolData.partnershipStartDate, schoolData.partnershipEndDate]);
 
-  const handleSchoolSelect = async (selectedSchoolId: string) => {
+  const handleSchoolSelect = (selectedSchoolId: string) => {
     if (!selectedSchoolId) {
       onSchoolChange({
         schoolId: undefined,
@@ -90,15 +93,15 @@ export default function SchoolFormStep({
       return;
     }
 
-    try {
-      const response = await fetch(`/api/school-service/schools/${selectedSchoolId}`);
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("API Error:", response.status, errorData);
-        throw new Error(`Failed to fetch school data: ${response.status}`);
+    startTransition(async () => {
+      const result = await getSchoolById(selectedSchoolId);
+
+      if (!result.ok) {
+        console.error("Failed to load school data:", result.error.message);
+        return;
       }
 
-      const school = await response.json();
+      const school = result.data;
 
       // 只填入資料作為參考，不設置 schoolId
       // 後端會根據學校名稱和合作日期判斷是否使用現有學校
@@ -111,13 +114,13 @@ export default function SchoolFormStep({
         email: school.email || "",
         website: school.website || "",
       });
-    } catch (error) {
-      console.error("Error loading school data:", error);
-    }
+    });
   };
 
   const fillMockData = async () => {
-    const { formFixtures } = await import('@/lib/mock-data/school-service/client');
+    const { formFixtures } = await import(
+      "@/lib/mock-data/school-service/client"
+    );
     onSchoolChange(formFixtures.school());
     onContactChange(formFixtures.contact());
   };
@@ -169,7 +172,7 @@ export default function SchoolFormStep({
               error={errors.schoolName}
             >
               <Input
-                key={`schoolName-${schoolData.schoolId || 'new'}`}
+                key={`schoolName-${schoolData.schoolId || "new"}`}
                 type="text"
                 placeholder="例如：聖保羅小學"
                 defaultValue={schoolData.schoolName}
@@ -180,7 +183,7 @@ export default function SchoolFormStep({
 
             <FormField label="學校名稱（英文）" error={errors.schoolNameEn}>
               <Input
-                key={`schoolNameEn-${schoolData.schoolId || 'new'}`}
+                key={`schoolNameEn-${schoolData.schoolId || "new"}`}
                 type="text"
                 placeholder="St. Paul's Primary School"
                 defaultValue={schoolData.schoolNameEn}
@@ -194,7 +197,7 @@ export default function SchoolFormStep({
 
           <FormField label="學校地址" required error={errors.address}>
             <Input
-              key={`address-${schoolData.schoolId || 'new'}`}
+              key={`address-${schoolData.schoolId || "new"}`}
               type="text"
               placeholder="香港九龍..."
               defaultValue={schoolData.address}
@@ -206,7 +209,7 @@ export default function SchoolFormStep({
           <div className="grid gap-6 sm:grid-cols-2">
             <FormField label="學校電話" error={errors.phone}>
               <PhoneInput
-                key={`phone-${schoolData.schoolId || 'new'}`}
+                key={`phone-${schoolData.schoolId || "new"}`}
                 value={schoolData.phone}
                 placeholder="2123 4567"
                 onChange={(phone) => onSchoolChange({ phone })}
@@ -218,7 +221,7 @@ export default function SchoolFormStep({
 
             <FormField label="學校電郵" error={errors.email}>
               <Input
-                key={`email-${schoolData.schoolId || 'new'}`}
+                key={`email-${schoolData.schoolId || "new"}`}
                 type="email"
                 placeholder="info@school.edu.hk"
                 defaultValue={schoolData.email}
@@ -230,7 +233,7 @@ export default function SchoolFormStep({
 
           <FormField label="學校網站" error={errors.website}>
             <Input
-              key={`website-${schoolData.schoolId || 'new'}`}
+              key={`website-${schoolData.schoolId || "new"}`}
               type="url"
               placeholder="https://www.school.edu.hk"
               defaultValue={schoolData.website}
@@ -277,10 +280,7 @@ export default function SchoolFormStep({
             </FormField>
           </div>
 
-          <FormField
-            label="合作學年"
-            hint="根據開始日期自動計算"
-          >
+          <FormField label="合作學年" hint="根據開始日期自動計算">
             <Input
               key={`${schoolData.partnershipStartDate}-${schoolData.partnershipEndDate}`}
               type="text"
@@ -394,10 +394,7 @@ export default function SchoolFormStep({
           </div>
 
           <div className="grid gap-6 sm:grid-cols-2">
-            <FormField
-              label="手提電話"
-              error={errors.contactMobile}
-            >
+            <FormField label="手提電話" error={errors.contactMobile}>
               <PhoneInput
                 value={contactData.mobile}
                 placeholder="9123 4567"
@@ -408,10 +405,7 @@ export default function SchoolFormStep({
               />
             </FormField>
 
-            <FormField
-              label="聯絡電郵"
-              error={errors.contactEmail}
-            >
+            <FormField label="聯絡電郵" error={errors.contactEmail}>
               <Input
                 type="email"
                 placeholder="teacher@school.edu.hk"
