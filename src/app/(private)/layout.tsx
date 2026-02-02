@@ -3,10 +3,10 @@ import type { Viewport } from "next";
 import "./globals.css";
 import "swiper/swiper-bundle.css";
 import "simplebar-react/dist/simplebar.min.css";
-import { SidebarProvider } from "@/context-temp/SidebarContext";
-import { ThemeProvider } from "@/context-temp/ThemeContext";
-import SessionProvider from "@/context-temp/SessionProvider";
-import { SWRProvider } from "@/context-temp/SWRProvider";
+import { SidebarProvider } from "@/lib/providers/SidebarContext";
+import { ThemeProvider } from "@/lib/providers/ThemeContext";
+import SessionProvider from "@/lib/providers/SessionProvider";
+import { SWRProvider } from "@/lib/providers/SWRProvider";
 import { Toaster } from "@/components/ui/Toaster";
 
 const outfit = Outfit({

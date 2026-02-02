@@ -1,6 +1,6 @@
 "use client";
 
-import { useSidebar } from "@/context-temp/SidebarContext";
+import { useSidebar } from "@/lib/providers/SidebarContext";
 import { usePermission } from "@/hooks/usePermission";
 import AppHeader from "@/components/layout/private/AppHeader";
 import AppSidebar from "@/components/layout/private/AppSidebar";

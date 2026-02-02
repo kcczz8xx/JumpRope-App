@@ -1,6 +1,6 @@
 import GridShape from "@/components/tailadmin/common/GridShape";
 import ThemeTogglerTwo from "@/components/tailadmin/common/ThemeTogglerTwo";
-import { ThemeProvider } from "@/context-temp/ThemeContext";
+import { ThemeProvider } from "@/lib/providers/ThemeContext";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";

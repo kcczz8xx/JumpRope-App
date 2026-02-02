@@ -1,7 +1,7 @@
 "use client";
 import { ThemeToggleButton } from "@/components/tailadmin/common/ThemeToggleButton";
 import UserDropdown from "@/components/tailadmin/header/UserDropdown";
-import { useSidebar } from "@/context-temp/SidebarContext";
+import { useSidebar } from "@/lib/providers/SidebarContext";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";

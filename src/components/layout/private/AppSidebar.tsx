@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useCallback, useState, useMemo } from "react";
 import { usePathname } from "next/navigation";
-import { useSidebar } from "@/context-temp/SidebarContext";
+import { useSidebar } from "@/lib/providers/SidebarContext";
 import { usePermission } from "@/hooks/usePermission";
 import { cn } from "@/lib/utils/cn";
 import { HorizontaLDots } from "@/icons/index";
