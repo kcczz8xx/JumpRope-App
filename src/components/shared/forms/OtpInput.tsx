@@ -8,6 +8,8 @@ export interface OtpInputProps {
   length?: number;
   disabled?: boolean;
   autoFocus?: boolean;
+  error?: boolean;
+  ariaLabel?: string;
 }
 
 export interface OtpInputRef {
@@ -16,7 +18,18 @@ export interface OtpInputRef {
 }
 
 export const OtpInput = forwardRef<OtpInputRef, OtpInputProps>(
-  ({ value, onChange, length = 6, disabled = false, autoFocus = false }, ref) => {
+  (
+    {
+      value,
+      onChange,
+      length = 6,
+      disabled = false,
+      autoFocus = false,
+      error = false,
+      ariaLabel = "驗證碼",
+    },
+    ref
+  ) => {
     const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
     useImperativeHandle(ref, () => ({
@@ -90,7 +103,7 @@ export const OtpInput = forwardRef<OtpInputRef, OtpInputProps>(
     };
 
     return (
-      <div className="flex gap-2 sm:gap-3">
+      <div role="group" aria-label={ariaLabel} className="flex gap-2 sm:gap-3">
         {value.map((digit, index) => (
           <input
             key={index}
@@ -105,7 +118,13 @@ export const OtpInput = forwardRef<OtpInputRef, OtpInputProps>(
               inputsRef.current[index] = el;
             }}
             autoFocus={autoFocus && index === 0}
-            className="h-12 w-full rounded-lg border border-gray-300 bg-transparent text-center text-xl font-semibold text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+            aria-label={`${ariaLabel}第 ${index + 1} 位`}
+            aria-invalid={error}
+            className={`h-12 w-full rounded-lg border bg-transparent text-center text-xl font-semibold text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:text-white/90 ${
+              error
+                ? "border-error-500 focus:border-error-500 focus:ring-error-500/20 dark:border-error-500"
+                : "border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700"
+            }`}
             disabled={disabled}
           />
         ))}
