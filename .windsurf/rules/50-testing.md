@@ -1,7 +1,5 @@
----
-trigger: glob
-globs: **/*.test.ts, **/*.test.tsx, **/__tests__/**/*
----
+<activation_mode>glob</activation_mode>
+<glob_pattern>**/\*.test.ts, **/_.test.tsx, **/**tests**/**/_</glob_pattern>
 
 <testing_rules>
 
@@ -171,11 +169,11 @@ describe("useCounter", () => {
 
   test("given increment called: increases count", () => {
     const { result } = renderHook(() => useCounter(0));
-    
+
     act(() => {
       result.current.increment();
     });
-    
+
     expect(result.current.count).toBe(1);
   });
 });

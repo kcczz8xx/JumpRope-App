@@ -1,6 +1,4 @@
----
-trigger: always_on
----
+<activation_mode>always_on</activation_mode>
 
 <global_rules>
 
@@ -58,21 +56,21 @@ import type { User } from "@/features/user";
 
 ## 路徑別名對照
 
-| 別名 | 實際路徑 |
-|:-----|:---------|
-| `@/app` | `src/app` |
-| `@/features` | `src/features` |
+| 別名           | 實際路徑         |
+| :------------- | :--------------- |
+| `@/app`        | `src/app`        |
+| `@/features`   | `src/features`   |
 | `@/components` | `src/components` |
-| `@/lib` | `src/lib` |
-| `@/hooks` | `src/hooks` |
+| `@/lib`        | `src/lib`        |
+| `@/hooks`      | `src/hooks`      |
 
 ### 已棄用路徑
 
-| ❌ 舊路徑 | ✅ 新路徑 |
-|:----------|:----------|
-| `@/utils` | `@/lib/utils` |
-| `@/layout` | `@/components/layout` |
-| `@/context` | `@/lib/providers` |
+| ❌ 舊路徑   | ✅ 新路徑             |
+| :---------- | :-------------------- |
+| `@/utils`   | `@/lib/utils`         |
+| `@/layout`  | `@/components/layout` |
+| `@/context` | `@/lib/providers`     |
 
 </path_aliases>
 

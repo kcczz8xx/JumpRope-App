@@ -1,7 +1,5 @@
----
-trigger: glob
-globs: prisma/**/*.prisma, prisma/**/*.ts, **/db/**/*.ts, **/*prisma*.ts
----
+<activation_mode>glob</activation_mode>
+<glob_pattern>prisma/**/\*.prisma, prisma/**/_.ts, src/lib/db/\*\*/_.ts</glob_pattern>
 
 <prisma_rules>
 
@@ -40,13 +38,13 @@ enum UserRole {
 
 ### 命名規則
 
-| 類型 | 命名風格 | 範例 |
-|:-----|:---------|:-----|
-| Model | PascalCase | `User`, `SchoolService` |
-| 欄位 | camelCase | `firstName`, `createdAt` |
-| 資料表 | snake_case (@@map) | `users`, `school_services` |
-| Enum | PascalCase | `UserRole`, `OrderStatus` |
-| Enum 值 | UPPER_SNAKE | `ADMIN`, `IN_PROGRESS` |
+| 類型    | 命名風格           | 範例                       |
+| :------ | :----------------- | :------------------------- |
+| Model   | PascalCase         | `User`, `SchoolService`    |
+| 欄位    | camelCase          | `firstName`, `createdAt`   |
+| 資料表  | snake_case (@@map) | `users`, `school_services` |
+| Enum    | PascalCase         | `UserRole`, `OrderStatus`  |
+| Enum 值 | UPPER_SNAKE        | `ADMIN`, `IN_PROGRESS`     |
 
 </schema_conventions>
 
@@ -67,7 +65,7 @@ model Profile {
   id     String @id @default(cuid())
   userId String @unique @map("user_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@map("profiles")
 }
 
@@ -75,7 +73,7 @@ model Post {
   id       String @id @default(cuid())
   authorId String @map("author_id")
   author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  
+
   @@map("posts")
 }
 ```

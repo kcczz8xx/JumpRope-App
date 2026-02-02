@@ -1,7 +1,5 @@
----
-trigger: model_decision
-description: 當用戶要建立、修改、或討論 feature module 架構時啟用
----
+<activation_mode>model_decision</activation_mode>
+<description>當用戶要建立、修改、或討論 feature module 架構時啟用</description>
 
 <feature_first_rules>
 
@@ -118,12 +116,12 @@ lib/
 
 ## 元件放置原則
 
-| 類型 | 位置 | 範例 |
-|:-----|:-----|:-----|
+| 類型         | 位置                              | 範例                    |
+| :----------- | :-------------------------------- | :---------------------- |
 | 功能專屬元件 | `src/features/[name]/components/` | `LoginForm`, `UserCard` |
-| 路由專屬元件 | `src/app/[route]/_components/` | `DashboardStats` |
-| 全域共用元件 | `src/components/ui/` | `Button`, `Modal` |
-| Layout 元件 | `src/components/layout/` | `Sidebar`, `Header` |
+| 路由專屬元件 | `src/app/[route]/_components/`    | `DashboardStats`        |
+| 全域共用元件 | `src/components/ui/`              | `Button`, `Modal`       |
+| Layout 元件  | `src/components/layout/`          | `Sidebar`, `Header`     |
 
 </component_placement>
 
@@ -134,6 +132,7 @@ lib/
 1. **建立目錄**: `src/features/[name]/`
 
 2. **建立核心檔案**:
+
    ```bash
    src/features/[name]/
    ├── index.ts      # 公開 API（必須）
@@ -144,6 +143,7 @@ lib/
    ```
 
 3. **建立元件**:
+
    ```bash
    src/features/[name]/components/
    ├── FeatureForm.tsx
@@ -152,6 +152,7 @@ lib/
    ```
 
 4. **設定 index.ts**:
+
    ```typescript
    // 只匯出需要對外使用的
    export { FeatureForm, FeatureList } from "./components";

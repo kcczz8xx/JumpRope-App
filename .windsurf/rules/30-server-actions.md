@@ -1,7 +1,5 @@
----
-trigger: manual
-match_phrase: "@server-action"
----
+<activation_mode>manual</activation_mode>
+<trigger_phrase>@server-action</trigger_phrase>
 
 <server_actions_rules>
 
@@ -40,9 +38,9 @@ export async function createUserAction(
   // 2. 驗證輸入
   const validated = createUserSchema.safeParse(input);
   if (!validated.success) {
-    return { 
-      success: false, 
-      error: validated.error.flatten().fieldErrors 
+    return {
+      success: false,
+      error: validated.error.flatten().fieldErrors,
     };
   }
 
@@ -71,9 +69,10 @@ export async function createUserAction(
 ## 開發步驟
 
 1. **建立 Schema** (`schema.ts`)
+
    ```typescript
    import { z } from "zod";
-   
+
    export const createUserSchema = z.object({
      name: z.string().min(1, "名稱必填"),
      email: z.string().email("Email 格式錯誤"),
@@ -81,13 +80,15 @@ export async function createUserAction(
    ```
 
 2. **定義型別** (`types.ts`)
+
    ```typescript
-   export type ActionResult<T = unknown> = 
+   export type ActionResult<T = unknown> =
      | { success: true; data: T }
      | { success: false; error: string | Record<string, string[]> };
    ```
 
 3. **建立 Action** (`actions.ts`)
+
    - 加上 `"use server"` 標記
    - 驗證權限 → 驗證輸入 → 執行邏輯 → 返回結果
 
@@ -121,7 +122,7 @@ function CreateUserForm() {
         name: formData.get("name") as string,
         email: formData.get("email") as string,
       });
-      
+
       if (result.success) {
         // 成功處理
       } else {

@@ -1,7 +1,5 @@
----
-trigger: model_decision
-description: 當處理 Next.js App Router、路由、頁面、layouts、Server/Client Components 時啟用
----
+<activation_mode>model_decision</activation_mode>
+<description>當處理 Next.js App Router、路由、頁面、layouts、Server/Client Components 時啟用</description>
 
 <nextjs_rules>
 
@@ -26,6 +24,7 @@ async function UserProfile({ userId }: { userId: string }) {
 ### 只在必要時使用 Client Components
 
 需要 `"use client"` 的情況：
+
 - 使用 React hooks（useState, useEffect 等）
 - 事件處理（onClick, onChange 等）
 - 瀏覽器 API（localStorage, window 等）
@@ -61,7 +60,13 @@ function LikeButton() {
 // ✅ 在 Server Component 直接 fetch
 async function ProductList() {
   const products = await prisma.product.findMany();
-  return <ul>{products.map(p => <li key={p.id}>{p.name}</li>)}</ul>;
+  return (
+    <ul>
+      {products.map((p) => (
+        <li key={p.id}>{p.name}</li>
+      ))}
+    </ul>
+  );
 }
 ```
 
@@ -120,9 +125,12 @@ src/app/
 ```tsx
 "use client";
 
-export default function Error({ error, reset }: { 
-  error: Error; 
-  reset: () => void 
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error;
+  reset: () => void;
 }) {
   return (
     <div>
