@@ -164,5 +164,9 @@ export function getClientIP(request: Request): string {
     if (trueClientIP) {
         return trueClientIP;
     }
-    return `fallback_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    // Fallback: 使用固定的 unknown IP 標識符
+    // 這會導致所有無法識別 IP 的請求共享同一個 rate limit bucket
+    // 比每次生成唯一 ID 更安全（後者會完全繞過 rate limit）
+    console.warn("getClientIP: Unable to determine client IP, using shared fallback bucket");
+    return "unknown_ip";
 }

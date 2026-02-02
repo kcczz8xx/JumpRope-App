@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { OtpPurpose } from "@prisma/client";
 import { rateLimit, getClientIP, RATE_LIMIT_CONFIGS } from "@/lib/server";
+import { OTP_CONFIG } from "@/lib/constants/otp";
 
 interface VerifyOtpRequest {
     phone: string;
@@ -79,7 +80,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        if (otp.attempts >= 5) {
+        if (otp.attempts >= OTP_CONFIG.MAX_ATTEMPTS) {
             return NextResponse.json(
                 { error: "嘗試次數過多，請重新發送驗證碼" },
                 { status: 429 }

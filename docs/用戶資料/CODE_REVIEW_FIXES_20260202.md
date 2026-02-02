@@ -416,3 +416,123 @@ return `fallback_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 2. **Email 重設**: 目前返回 501，待後續實作 email 發送功能。
 
 3. **OTP 有效期**: 現已統一定義於 `lib/constants/otp.ts`。
+
+---
+
+## 第四輪修復詳細內容
+
+### 16. OTP Send 缺少 purpose 驗證 🟡
+
+**問題**: OTP send 端點沒有驗證 purpose 是否為有效值，可能接受非預期的用途。
+
+**修復檔案**: `app/api/auth/otp/send/route.ts`
+
+**修復方式**:
+
+- 加入 `VALID_PURPOSES` 常量和白名單驗證
+
+```typescript
+const VALID_PURPOSES = [
+  "register",
+  "reset-password",
+  "update-contact",
+] as const;
+
+if (!purpose || !VALID_PURPOSES.includes(purpose)) {
+  return NextResponse.json({ error: "無效的驗證用途" }, { status: 400 });
+}
+```
+
+---
+
+### 17. OTP 過期時間硬編碼 🟢
+
+**問題**: OTP 過期時間在多處硬編碼為 `10 * 60 * 1000`，不一致且難以維護。
+
+**修復檔案**:
+
+- `app/api/auth/otp/send/route.ts`
+- `app/api/auth/reset-password/send/route.ts`
+
+**修復方式**:
+
+- 導入 `OTP_CONFIG` 並使用 `OTP_CONFIG.EXPIRY_MS`
+
+---
+
+### 18. MAX_ATTEMPTS 硬編碼 🟢
+
+**問題**: OTP 最大嘗試次數在多處硬編碼為 `5`。
+
+**修復檔案**:
+
+- `app/api/auth/otp/verify/route.ts`
+- `app/api/auth/reset-password/verify/route.ts`
+
+**修復方式**:
+
+- 導入 `OTP_CONFIG` 並使用 `OTP_CONFIG.MAX_ATTEMPTS`
+
+---
+
+### 19. Profile API Email OTP 邏輯不明確 🟢
+
+**問題**: 更新 email 時查詢的是用戶手機的 OTP，設計意圖不明確。
+
+**修復檔案**: `app/api/user/profile/route.ts`
+
+**修復方式**:
+
+- 加入設計說明註釋
+
+```typescript
+// 設計說明：更新 email 需要先用當前手機號碼驗證身份
+// OTP 發送到用戶現有手機，確認是本人操作後才允許更改 email
+```
+
+---
+
+### 20. getClientIP Fallback 可繞過 Rate Limit 🟡
+
+**問題**: 每次請求生成唯一識別符，攻擊者若能觸發此 fallback 可完全繞過 rate limit。
+
+**修復檔案**: `lib/server/rate-limit.ts`
+
+**修復方式**:
+
+- 改用固定的 `"unknown_ip"` 標識符
+- 所有無法識別 IP 的請求共享同一個 rate limit bucket
+
+```typescript
+console.warn(
+  "getClientIP: Unable to determine client IP, using shared fallback bucket"
+);
+return "unknown_ip";
+```
+
+---
+
+## 第四輪修改檔案清單
+
+| 檔案                                          | 修改內容                  |
+| --------------------------------------------- | ------------------------- |
+| `app/api/auth/otp/send/route.ts`              | purpose 驗證 + OTP_CONFIG |
+| `app/api/auth/otp/verify/route.ts`            | OTP_CONFIG.MAX_ATTEMPTS   |
+| `app/api/auth/reset-password/send/route.ts`   | OTP_CONFIG.EXPIRY_MS      |
+| `app/api/auth/reset-password/verify/route.ts` | OTP_CONFIG.MAX_ATTEMPTS   |
+| `app/api/user/profile/route.ts`               | 設計說明註釋              |
+| `lib/server/rate-limit.ts`                    | getClientIP fallback 改進 |
+
+---
+
+## 最終總結
+
+| 輪次     | 嚴重  | 中等  | 建議   | 總計   |
+| -------- | ----- | ----- | ------ | ------ |
+| 第一輪   | 3     | 3     | 1      | 7      |
+| 第二輪   | 0     | 2     | 2      | 4      |
+| 第三輪   | 0     | 0     | 4      | 4      |
+| 第四輪   | 0     | 2     | 3      | 5      |
+| **總計** | **3** | **7** | **10** | **20** |
+
+所有 **20 項問題** 已全部修復。

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { prisma } from "@/lib/db";
 import { rateLimit, getClientIP, RATE_LIMIT_CONFIGS } from "@/lib/server";
+import { OTP_CONFIG } from "@/lib/constants/otp";
 
 interface SendResetCodeRequest {
     phone?: string;
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
             });
 
             const code = generateOtpCode();
-            const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+            const expiresAt = new Date(Date.now() + OTP_CONFIG.EXPIRY_MS);
 
             await prisma.otp.create({
                 data: {

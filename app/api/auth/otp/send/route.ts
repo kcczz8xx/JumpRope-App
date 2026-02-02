@@ -3,6 +3,9 @@ import crypto from "crypto";
 import { prisma } from "@/lib/db";
 import { OtpPurpose } from "@prisma/client";
 import { rateLimit, getClientIP, RATE_LIMIT_CONFIGS } from "@/lib/server";
+import { OTP_CONFIG } from "@/lib/constants/otp";
+
+const VALID_PURPOSES = ["register", "reset-password", "update-contact"] as const;
 
 interface SendOtpRequest {
     phone: string;
@@ -43,6 +46,13 @@ export async function POST(request: NextRequest) {
 
         const body: SendOtpRequest = await request.json();
         const { phone, email, purpose } = body;
+
+        if (!purpose || !VALID_PURPOSES.includes(purpose)) {
+            return NextResponse.json(
+                { error: "無效的驗證用途" },
+                { status: 400 }
+            );
+        }
 
         if (!phone) {
             return NextResponse.json(
@@ -110,7 +120,7 @@ export async function POST(request: NextRequest) {
         });
 
         const code = generateOtpCode();
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+        const expiresAt = new Date(Date.now() + OTP_CONFIG.EXPIRY_MS);
 
         await prisma.otp.create({
             data: {

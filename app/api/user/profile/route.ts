@@ -88,6 +88,8 @@ export async function PATCH(request: NextRequest) {
         if (email !== undefined) {
             if (email) {
                 if (currentUser?.email !== email) {
+                    // 設計說明：更新 email 需要先用當前手機號碼驗證身份
+                    // OTP 發送到用戶現有手機，確認是本人操作後才允許更改 email
                     const verifiedOtp = await prisma.otp.findFirst({
                         where: {
                             phone: currentUser?.phone || "",
