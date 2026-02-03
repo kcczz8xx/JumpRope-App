@@ -11,7 +11,7 @@ model AuditLog {
 
   // 操作者
   userId String?
-  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   // 操作資訊
   action     String // 操作類型（如 SCHOOL_CREATE, OTP_SEND）

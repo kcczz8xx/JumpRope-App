@@ -2,7 +2,7 @@
 // 到校服務模組 - 課堂
 // ============================================
 
-/// 到校課堂
+/// 到校課堂（核心業務單位）
 model SchoolLesson {
   id String @id @default(cuid())
 
@@ -10,39 +10,47 @@ model SchoolLesson {
   course   SchoolCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   // 課堂基本資料
-  lessonDate DateTime // 上課日期
-  startTime  String // 開始時間（HH:mm 格式）
-  endTime    String // 結束時間（HH:mm 格式）
-  weekday    Int // 星期（1-7，1=Monday）
+  lessonDate DateTime
+  startTime  String // HH:mm 格式
+  endTime    String // HH:mm 格式
+  weekday    Int // 1-7
 
   // 課堂類型
-  lessonType LessonType  @default(REGULAR) // 恆常/補堂/加操
-  lessonTerm CourseTerm? // 所屬學期（若課程分學期）
-
-  // 學生資料
-  studentCount Int? // 實際學生人數
+  lessonType LessonType  @default(REGULAR)
+  lessonTerm CourseTerm?
 
   // 課堂狀態
   lessonStatus LessonStatus @default(SCHEDULED)
 
-  // 收費資料（用於生成 Invoice）
-  feeMode    String? // 收費模式（關聯到 Course 的 chargingModel）
-  feePerMode Decimal? @db.Decimal(10, 2) // 單價
-  feeLesson  Decimal? @db.Decimal(10, 2) // 本課堂收費金額
+  // 參與人數（用於費用計算）
+  tutorCount   Int  @default(1)
+  studentCount Int?
 
-  // 發票狀態（此課堂是否已納入發票）
-  invoiceStatus String?        @default("NOT_INVOICED") // 發票狀態（未開立/已開立/已付款）
-  invoiceId     String? // 關聯的發票 ID（可選）
-  invoice       SchoolInvoice? @relation(fields: [invoiceId], references: [id])
+  // 費用明細（支援多種收費模式混合）
+  feeItems SchoolLessonFeeItem[]
 
-  // 付款狀態
-  paymentStatus PaymentStatus @default(PENDING)
+  // 課堂總金額（自動計算）
+  totalRevenue Decimal? @db.Decimal(10, 2) // 向學校收費總額
+  totalExpense Decimal? @db.Decimal(10, 2) // 支付導師總額
+
+  // 發票狀態
+  invoiceStatus String? @default("NOT_INVOICED") // NOT_INVOICED | INVOICED | PAID
+
+  // 取消/延期資訊
+  cancellationReason String?       @db.Text
+  cancelledAt        DateTime?
+  cancelledBy        String?
+  postponedToDate    DateTime?
+  postponedLessonId  String?       @unique
+  postponedLesson    SchoolLesson? @relation("LessonPostpone", fields: [postponedLessonId], references: [id], onDelete: SetNull)
+  originalLesson     SchoolLesson? @relation("LessonPostpone")
 
   // 備註
   remarks String? @db.Text
 
   // 關聯
-  tutorLessons SchoolTutorLesson[] // 導師任教記錄
+  tutorLessons SchoolTutorLesson[]
+  invoiceItems SchoolInvoiceItem[]
 
   // 系統欄位
   createdAt DateTime  @default(now())
@@ -53,6 +61,5 @@ model SchoolLesson {
   @@index([lessonDate])
   @@index([lessonStatus])
   @@index([invoiceStatus])
-  @@index([invoiceId])
   @@map("school_lessons")
 }

@@ -39,15 +39,6 @@ model SchoolTutorLesson {
   paymentStatus PaymentStatus @default(PENDING)
   paymentId     String? // 關聯到薪資發放記錄（未來擴展）
 
-  // 課堂資料（冗餘，方便查詢）
-  lessonDate     DateTime? // 上課日期
-  startTime      String? // 開始時間
-  endTime        String? // 結束時間
-  lessonLocation String? // 上課地點（學校名稱）
-
-  // 教案
-  lessonPlanId String? // 教案 ID（未來擴展）
-
   // 備註
   attendanceRemarks String? @db.Text
 
@@ -62,6 +53,5 @@ model SchoolTutorLesson {
   @@index([courseId])
   @@index([attendanceStatus])
   @@index([paymentStatus])
-  @@index([lessonDate])
   @@map("school_tutor_lessons")
 }

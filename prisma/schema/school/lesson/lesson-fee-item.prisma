@@ -1,0 +1,42 @@
+// ============================================
+// 到校服務模組 - 課堂費用明細
+// ============================================
+
+/// 課堂費用明細（支援多種收費模式混合）
+/// 每堂課可能有：導師費 + 學生費 + 特殊費用等
+model SchoolLessonFeeItem {
+  id String @id @default(cuid())
+
+  lessonId String
+  lesson   SchoolLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  // 對應的課程收費方案（用於追蹤）
+  feeStructureId String?
+
+  // 費用類型
+  feeType String // TUTOR_FEE | STUDENT_FEE | SPECIAL_EVENT | EQUIPMENT | VENUE_RENTAL
+
+  // 計算方向
+  direction FeeItemDirection
+
+  // 計算資料
+  calculationMode ChargingModel
+  unitPrice       Decimal       @db.Decimal(10, 2)
+  quantity        Int
+  subtotal        Decimal       @db.Decimal(10, 2) // 自動計算：unitPrice × quantity
+
+  // 計算公式追蹤
+  calculationFormula String? @db.Text // 例如："2 tutors × $500 = $1000"
+
+  // 備註
+  remarks String? @db.Text
+
+  // 系統欄位
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([lessonId])
+  @@index([feeType])
+  @@index([direction])
+  @@map("school_lesson_fee_items")
+}

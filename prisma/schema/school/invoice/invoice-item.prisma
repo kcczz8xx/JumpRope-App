@@ -1,0 +1,43 @@
+// ============================================
+// 到校服務模組 - 發票項目明細
+// ============================================
+
+/// 發票項目明細（以課堂為單位）
+model SchoolInvoiceItem {
+  id String @id @default(cuid())
+
+  invoiceId String
+  invoice   SchoolInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  // 項目類型
+  itemType String // LESSON | EQUIPMENT | OTHER_SERVICE | ADJUSTMENT
+
+  // 如果是課堂項目
+  lessonId String?
+  lesson   SchoolLesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+
+  // 如果是課程級別項目
+  courseId String?
+  course   SchoolCourse? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+
+  // 項目描述
+  description String @db.Text
+
+  // 金額計算
+  unitPrice Decimal @db.Decimal(10, 2)
+  quantity  Int
+  subtotal  Decimal @db.Decimal(10, 2)
+
+  // 備註
+  remarks String? @db.Text
+
+  // 系統欄位
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([invoiceId])
+  @@index([lessonId])
+  @@index([courseId])
+  @@index([itemType])
+  @@map("school_invoice_items")
+}

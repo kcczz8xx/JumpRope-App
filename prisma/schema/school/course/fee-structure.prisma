@@ -1,0 +1,42 @@
+// ============================================
+// 到校服務模組 - 課程收費方案
+// ============================================
+
+/// 課程收費方案（支援多種收費模式混合）
+/// 一個課程可以有多個收費項目（例如：導師費 + 學生費 + 特別活動費）
+model SchoolCourseFeeStructure {
+  id String @id @default(cuid())
+
+  courseId String
+  course   SchoolCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  // 收費項目類型
+  feeType String // TUTOR_FEE | STUDENT_FEE | SPECIAL_EVENT | EQUIPMENT | VENUE_RENTAL
+
+  // 計算方向（收入或支出）
+  direction FeeItemDirection // REVENUE（向學校收費）| EXPENSE（支付導師）
+
+  // 收費計算模式
+  calculationMode ChargingModel // PER_LESSON | HOURLY | FULL_COURSE | TEAM_ACTIVITY
+
+  // 收費標準
+  unitPrice Decimal @db.Decimal(10, 2)
+
+  // 計算單位
+  unitType String // TUTOR_COUNT | STUDENT_COUNT | LESSON_COUNT | HOUR_COUNT
+
+  // 是否啟用
+  isActive Boolean @default(true)
+
+  // 備註
+  remarks String? @db.Text
+
+  // 系統欄位
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseId])
+  @@index([feeType])
+  @@index([isActive])
+  @@map("school_course_fee_structures")
+}

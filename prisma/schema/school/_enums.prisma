@@ -108,10 +108,23 @@ enum CourseTerm {
 }
 
 enum CourseStatus {
-  DRAFT // 草稿
-  SCHEDULED // 已排程
+  DRAFT // 草稿（資料未完整）
+  SCHEDULED // 已排程（資料完整，課堂已排定）
   ACTIVE // 進行中
   COMPLETED // 已完成
   CANCELLED // 已取消
   SUSPENDED // 已暫停
+}
+
+enum InvoicingPeriodStatus {
+  OPEN // 開放中（可新增課堂）
+  CLOSED // 已關閉（無法新增課堂）
+  INVOICED // 已開立發票
+  PAID // 已付款
+  CANCELLED // 已取消
+}
+
+enum FeeItemDirection {
+  REVENUE // 收入（向學校收費）
+  EXPENSE // 支出（支付導師薪資）
 }

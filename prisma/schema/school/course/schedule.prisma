@@ -1,0 +1,38 @@
+// ============================================
+// 到校服務模組 - 課程時間表
+// ============================================
+
+/// 課程時間表（支援分學期調整）
+/// 用於自動生成課堂記錄
+model SchoolCourseSchedule {
+  id String @id @default(cuid())
+
+  courseId String
+  course   SchoolCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  // 上課時間
+  weekday   Int // 1=Monday, 2=Tuesday, ..., 7=Sunday
+  startTime String // HH:mm 格式
+  endTime   String // HH:mm 格式
+
+  // 有效期間
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+
+  // 學期標記
+  courseTerm CourseTerm?
+
+  // 是否自動生成課堂
+  autoGenerateLessons Boolean @default(true)
+
+  // 備註
+  remarks String? @db.Text
+
+  // 系統欄位
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseId])
+  @@index([effectiveFrom, effectiveTo])
+  @@map("school_course_schedules")
+}

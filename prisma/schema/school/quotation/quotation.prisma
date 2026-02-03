@@ -10,10 +10,16 @@ model SchoolQuotation {
   school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
   // 報價編號
-  quotationNumber String @unique // 自動生成（例如：Q2024-001）
+  quotationNumber String @unique
 
   // 報價狀態
   status QuotationStatus @default(DRAFT)
+
+  // 版本控制（支援修訂歷史）
+  version   Int               @default(1)
+  parentId  String?
+  parent    SchoolQuotation?  @relation("QuotationRevisions", fields: [parentId], references: [id], onDelete: SetNull)
+  revisions SchoolQuotation[] @relation("QuotationRevisions")
 
   // 查詢需求記錄
   inquiryDate           DateTime? // 查詢日期
@@ -50,5 +56,6 @@ model SchoolQuotation {
   @@index([schoolId])
   @@index([status])
   @@index([quotationNumber])
+  @@index([parentId])
   @@map("school_quotations")
 }

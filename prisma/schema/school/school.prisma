@@ -32,11 +32,12 @@ model School {
   remarks String? @db.Text
 
   // 關聯
-  contacts   SchoolContact[]
-  quotations SchoolQuotation[]
-  courses    SchoolCourse[]
-  invoices   SchoolInvoice[]
-  receipts   SchoolReceipt[]
+  contacts         SchoolContact[]
+  quotations       SchoolQuotation[]
+  courses          SchoolCourse[]
+  invoices         SchoolInvoice[]
+  invoicingPeriods InvoicingPeriod[]
+  receipts         SchoolReceipt[]
 
   // 系統欄位
   createdAt DateTime  @default(now())
