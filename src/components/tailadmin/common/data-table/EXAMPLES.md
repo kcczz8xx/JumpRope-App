@@ -366,10 +366,25 @@ export default function OrdersPage() {
 
 ## 範例 4: 課程管理(實際應用)
 
+使用 Server Component + Server Actions 模式：
+
 ```tsx
+// page.tsx (Server Component)
+import { getCoursesAction } from "@/features/school-service";
+import { CourseList } from "./CourseList";
+
+export default async function CoursesPage() {
+  const result = await getCoursesAction();
+  const courses = result.success ? result.data : [];
+
+  return <CourseList courses={courses} />;
+}
+```
+
+```tsx
+// CourseList.tsx (Client Component)
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { DataTable, DataTableColumn } from "@/components/common/data-table";
 
@@ -389,19 +404,11 @@ interface Course {
   };
 }
 
-export default function CoursesPage() {
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+interface CourseListProps {
+  courses: Course[];
+}
 
-  useEffect(() => {
-    fetch("/api/school-service/courses")
-      .then((res) => res.json())
-      .then((data) => {
-        setCourses(data);
-        setIsLoading(false);
-      });
-  }, []);
-
+export function CourseList({ courses }: CourseListProps) {
   const columns: DataTableColumn<Course>[] = [
     {
       key: "courseName",

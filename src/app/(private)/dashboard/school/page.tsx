@@ -1,8 +1,10 @@
 import PageBreadcrumb from "@/components/tailadmin/common/PageBreadCrumb";
 import { Metadata } from "next";
-import { MetricCards } from "@/features/school-service/components/pages/overview/MetricCards";
-import { ActivityTimeline } from "@/features/school-service/components/pages/overview/ActivityTimeline";
-import { QuickActions } from "@/features/school-service/components/pages/overview/QuickActions";
+import {
+  MetricCards,
+  ActivityTimeline,
+  QuickActions,
+} from "@/features/school-service";
 import { dashboardMockData } from "@/lib/mock-data/school-service";
 
 export const metadata: Metadata = {

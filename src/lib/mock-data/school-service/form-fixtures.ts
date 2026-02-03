@@ -1,4 +1,4 @@
-import { SchoolBasicData, SchoolContactData, CourseItemData, CourseTerm, ChargingModel } from '@/features/school-service/components/types/course';
+import { SchoolBasicData, SchoolContactData, CourseItemData, CourseTerm, ChargingModel } from '@/features/school-service/components/types';
 
 const random = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 const randomInt = (min: number, max: number): number => Math.floor(Math.random() * (max - min + 1)) + min;

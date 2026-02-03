@@ -4,6 +4,8 @@ import { Modal } from "@/components/tailadmin/ui/modal";
 import Label from "@/components/tailadmin/form/Label";
 import Input from "@/components/tailadmin/form/input/InputField";
 import Button from "@/components/tailadmin/ui/button/Button";
+import { FormError } from "@/components/shared/forms";
+import { updateChildSchema } from "../../schemas";
 
 export interface UserChildFormData {
   id?: string;
@@ -35,14 +37,38 @@ export default function UserChildEditModal({
   isLoading = false,
 }: UserChildEditModalProps) {
   const [school, setSchool] = useState(initialData.school || "");
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (isOpen && initialData) {
       setSchool(initialData.school || "");
+      setErrors({});
     }
   }, [isOpen, initialData]);
 
   const handleSave = () => {
+    const formData = {
+      id: initialData.id || "",
+      nameChinese: initialData.nameChinese || "",
+      nameEnglish: initialData.nameEnglish || "",
+      birthYear: initialData.birthYear || "",
+      school,
+      gender: initialData.gender || undefined,
+    };
+
+    const result = updateChildSchema.safeParse(formData);
+
+    if (!result.success) {
+      const newErrors: Record<string, string> = {};
+      result.error.issues.forEach((issue) => {
+        const field = issue.path[0] as string;
+        newErrors[field] = issue.message;
+      });
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
     onSave({
       id: initialData.id,
       nameChinese: initialData.nameChinese || "",
@@ -113,8 +139,12 @@ export default function UserChildEditModal({
               type="text"
               placeholder="請輸入就讀學校"
               value={school}
-              onChange={(e) => setSchool(e.target.value)}
+              onChange={(e) => {
+                setSchool(e.target.value);
+                setErrors((prev) => ({ ...prev, school: "" }));
+              }}
             />
+            <FormError message={errors.school} />
           </div>
         </div>
 

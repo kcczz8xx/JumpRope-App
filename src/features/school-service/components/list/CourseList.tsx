@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { DataTable, DataTableColumn } from "@/components/tailadmin/common/data-table";
-import TableDropdown from "@/components/tailadmin/common/TableDropdown";
 import {
-  CourseStatus,
-  COURSE_TERM_LABELS,
-} from "@/features/school-service/components/types/course";
+  DataTable,
+  DataTableColumn,
+} from "@/components/tailadmin/common/data-table";
+import TableDropdown from "@/components/tailadmin/common/TableDropdown";
+import { CourseStatus, COURSE_TERM_LABELS } from "../types";
 import { CourseWithSchool as Course } from "@/lib/mock-data/school-service/client";
 
 const STATUS_LABELS: Record<CourseStatus, string> = {
@@ -197,7 +197,12 @@ export function CourseList({ courses }: CourseListProps) {
       ]}
       searchable
       searchPlaceholder="搜尋課程或學校..."
-      searchKeys={["courseName", "school.schoolName", "academicYear", "courseType"]}
+      searchKeys={[
+        "courseName",
+        "school.schoolName",
+        "academicYear",
+        "courseType",
+      ]}
       selectable
       pagination
       pageSize={10}

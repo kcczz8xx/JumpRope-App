@@ -61,6 +61,25 @@ export const authOptions: NextAuthConfig = {
         error: "/signin",
     },
     callbacks: {
+        authorized({ auth, request: { nextUrl } }) {
+            const isLoggedIn = !!auth?.user;
+            const isProtectedRoute = nextUrl.pathname.startsWith("/dashboard");
+            const isAuthRoute = ["/signin", "/signup", "/reset-password"].some(
+                (route) => nextUrl.pathname.startsWith(route)
+            );
+
+            // 未登入訪問受保護路由 → 拒絕（middleware 會處理重定向）
+            if (isProtectedRoute && !isLoggedIn) {
+                return false;
+            }
+
+            // 已登入訪問認證頁面 → 重定向到 dashboard
+            if (isAuthRoute && isLoggedIn) {
+                return Response.redirect(new URL("/dashboard", nextUrl));
+            }
+
+            return true;
+        },
         async jwt({ token, user }) {
             if (user) {
                 token.id = user.id;

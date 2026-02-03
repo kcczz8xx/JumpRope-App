@@ -1,6 +1,6 @@
 import PageBreadcrumb from "@/components/tailadmin/common/PageBreadCrumb";
 import { Metadata } from "next";
-import { CourseList } from "@/features/school-service/components/list/CourseList";
+import { CourseList } from "@/features/school-service";
 import { prisma } from "@/lib/db";
 
 export const metadata: Metadata = {

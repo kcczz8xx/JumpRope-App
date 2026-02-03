@@ -2,8 +2,7 @@ import PageBreadcrumb from "@/components/tailadmin/common/PageBreadCrumb";
 import { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
-import { SchoolInfoCards } from "@/features/school-service/components/pages/detailed/SchoolInfoCards";
-import { CourseCards } from "@/features/school-service/components/pages/detailed/CourseCards";
+import { SchoolInfoCards, CourseCards } from "@/features/school-service";
 
 export const metadata: Metadata = {
   title: "學校詳情 | 學校服務",

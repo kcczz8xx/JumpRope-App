@@ -3,16 +3,7 @@
  */
 
 import { z } from "zod";
-
-export const COURSE_TERMS = ["FULL_YEAR", "FIRST_TERM", "SECOND_TERM", "SUMMER"] as const;
-export const CHARGING_MODELS = [
-  "STUDENT_PER_LESSON",
-  "TUTOR_PER_LESSON",
-  "STUDENT_HOURLY",
-  "TUTOR_HOURLY",
-  "STUDENT_FULL_COURSE",
-  "TEAM_ACTIVITY",
-] as const;
+import { COURSE_TERMS, CHARGING_MODELS } from "./common";
 
 export const createCourseSchema = z.object({
   schoolId: z.string().min(1, "請選擇學校"),

@@ -64,6 +64,7 @@
     "react-dropzone": "^14.3.8",
     "react-hook-form": "^7.71.1",
     "react-international-phone": "^4.7.0",
+    "server-only": "^0.0.1",
     "simplebar-react": "^3.3.2",
     "sonner": "^2.0.7",
     "swiper": "^11.2.10",

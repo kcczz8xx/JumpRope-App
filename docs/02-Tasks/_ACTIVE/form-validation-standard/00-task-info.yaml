@@ -1,0 +1,42 @@
+title: 表單驗證規範化
+status: active
+priority: high
+created: 2026-02-03
+estimated_effort: 3-4 days
+
+description: |
+  建立統一的表單驗證規範，使用 Zod Schema + React Hook Form，
+  確保前後端驗證邏輯一致，提升程式碼品質和可維護性。
+
+goals:
+  - 建立 Zod Schema 規範模板
+  - 安裝並配置 React Hook Form + zodResolver
+  - 遷移現有表單（SignInForm、SignUpForm、ResetPasswordForm）
+  - 更新 STRUCTURE.md 文檔
+
+context_files:
+  - src/features/auth/components/signin/SignInForm.tsx
+  - src/features/auth/components/signup/SignUpForm.tsx
+  - src/features/auth/components/reset-password/ResetPasswordForm.tsx
+  - src/lib/patterns/server-action.ts
+  - src/features/STRUCTURE.md
+
+dependencies:
+  - react-hook-form
+  - "@hookform/resolvers"
+
+phases:
+  - name: "Phase 1: 基礎設施"
+    tasks:
+      - 安裝 react-hook-form 和 @hookform/resolvers
+      - 建立 schemas/ 目錄結構和範本
+      - 確認 createAction 支援 schema 驗證
+  - name: "Phase 2: 遷移表單"
+    tasks:
+      - 遷移 SignInForm（最簡單，先練手）
+      - 遷移 SignUpForm（多步驟，較複雜）
+      - 遷移 ResetPasswordForm
+  - name: "Phase 3: 文檔更新"
+    tasks:
+      - 更新 STRUCTURE.md 加入表單驗證規範
+      - 建立表單驗證最佳實踐指南

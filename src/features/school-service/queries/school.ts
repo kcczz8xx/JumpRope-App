@@ -1,3 +1,5 @@
+"use server";
+
 /**
  * School Service Queries - 學校查詢
  *

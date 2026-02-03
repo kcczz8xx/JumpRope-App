@@ -7,15 +7,10 @@ import SearchableSelect from "@/components/tailadmin/form/select/SearchableSelec
 import Switch from "@/components/tailadmin/form/switch/Switch";
 import TextArea from "@/components/tailadmin/form/input/TextArea";
 import Button from "@/components/tailadmin/ui/button/Button";
+import { FormError } from "@/components/shared/forms";
+import { updateBankSchema, type UpdateBankInput } from "../../schemas";
 
-export interface UserBankFormData {
-  bankName: string;
-  accountNumber: string;
-  accountHolderName: string;
-  fpsId: string;
-  fpsEnabled: boolean;
-  notes: string;
-}
+export type UserBankFormData = UpdateBankInput & { fpsEnabled?: boolean };
 
 interface UserBankEditModalProps {
   isOpen: boolean;
@@ -60,6 +55,7 @@ export default function UserBankEditModal({
     fpsEnabled: false,
     notes: "",
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (isOpen) {
@@ -71,6 +67,7 @@ export default function UserBankEditModal({
         fpsEnabled: initialData.fpsEnabled || false,
         notes: initialData.notes || "",
       });
+      setErrors({});
     }
   }, [isOpen, initialData]);
 
@@ -79,6 +76,26 @@ export default function UserBankEditModal({
     value: string | boolean
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    if (typeof value === "string") {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
+
+  const handleSave = () => {
+    const result = updateBankSchema.safeParse(formData);
+
+    if (!result.success) {
+      const newErrors: Record<string, string> = {};
+      result.error.issues.forEach((issue) => {
+        const field = issue.path[0] as string;
+        newErrors[field] = issue.message;
+      });
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
+    onSave({ ...result.data, fpsEnabled: formData.fpsEnabled });
   };
 
   return (
@@ -101,6 +118,7 @@ export default function UserBankEditModal({
               defaultValue={formData.bankName}
               onChange={(value) => handleChange("bankName", value)}
             />
+            <FormError message={errors.bankName} />
           </div>
 
           <div className="col-span-1 sm:col-span-2">
@@ -111,6 +129,7 @@ export default function UserBankEditModal({
               value={formData.accountNumber}
               onChange={(e) => handleChange("accountNumber", e.target.value)}
             />
+            <FormError message={errors.accountNumber} />
           </div>
 
           <div className="col-span-1 sm:col-span-2">
@@ -123,6 +142,7 @@ export default function UserBankEditModal({
                 handleChange("accountHolderName", e.target.value)
               }
             />
+            <FormError message={errors.accountHolderName} />
           </div>
 
           <div className="col-span-1">
@@ -177,11 +197,7 @@ export default function UserBankEditModal({
             >
               取消
             </Button>
-            <Button
-              size="sm"
-              onClick={() => onSave(formData)}
-              disabled={isLoading}
-            >
+            <Button size="sm" onClick={handleSave} disabled={isLoading}>
               {isLoading ? "儲存中..." : "儲存"}
             </Button>
           </div>

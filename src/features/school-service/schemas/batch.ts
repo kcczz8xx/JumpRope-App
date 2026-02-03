@@ -5,7 +5,7 @@
 import { z } from "zod";
 import { createSchoolSchema } from "./school";
 import { schoolContactSchema } from "./contact";
-import { COURSE_TERMS, CHARGING_MODELS } from "./course";
+import { COURSE_TERMS, CHARGING_MODELS } from "./common";
 
 const batchCourseSchema = z.object({
   courseName: z.string().min(1, "請輸入課程名稱"),

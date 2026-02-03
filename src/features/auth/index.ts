@@ -10,11 +10,17 @@
  */
 
 // ===== Components =====
-export { default as SignInForm } from "./components/SignInForm";
-export { default as SignUpForm } from "./components/SignUpForm";
-export { default as OtpForm } from "./components/OtpForm";
-export { default as ResetPasswordForm } from "./components/ResetPasswordForm";
-export { PermissionGate } from "./components/PermissionGate";
+export {
+    SignInForm,
+    SignUpForm,
+    OtpForm,
+    ResetPasswordForm,
+    PermissionGate,
+    RequireAuth,
+    RequireRole,
+    RequireAdmin,
+    RequireStaff,
+} from "./components";
 
 // ===== Server Actions =====
 export {

@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { DataTable, DataTableColumn } from "@/components/tailadmin/common/data-table";
+import {
+  DataTable,
+  DataTableColumn,
+} from "@/components/tailadmin/common/data-table";
 import {
   LessonStatus,
   LessonWithDetails,
   LESSON_STATUS_LABELS,
   LESSON_STATUS_COLORS,
-} from "@/features/school-service/components/types/lesson";
+} from "../types";
 import { getWeekdayName } from "@/lib/mock-data/school-service/client";
 
 interface LessonListProps {
@@ -70,7 +73,13 @@ export function LessonList({ lessons }: LessonListProps) {
         <div className="text-sm">
           <div className="text-gray-600 dark:text-gray-300">
             <span className="font-medium">導師</span>{" "}
-            <span className={lesson.assignedTutors < lesson.requiredTutors ? "text-warning-500" : "text-success-500"}>
+            <span
+              className={
+                lesson.assignedTutors < lesson.requiredTutors
+                  ? "text-warning-500"
+                  : "text-success-500"
+              }
+            >
               {lesson.assignedTutors}/{lesson.requiredTutors}
             </span>
           </div>
@@ -111,7 +120,11 @@ export function LessonList({ lessons }: LessonListProps) {
             stroke="currentColor"
             strokeWidth={2}
           >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M9 5l7 7-7 7"
+            />
           </svg>
         </Link>
       ),
@@ -129,10 +142,12 @@ export function LessonList({ lessons }: LessonListProps) {
           key: "lessonStatus",
           label: "狀態",
           type: "select",
-          options: Object.entries(LESSON_STATUS_LABELS).map(([value, label]) => ({
-            label,
-            value,
-          })),
+          options: Object.entries(LESSON_STATUS_LABELS).map(
+            ([value, label]) => ({
+              label,
+              value,
+            })
+          ),
         },
       ]}
       searchable

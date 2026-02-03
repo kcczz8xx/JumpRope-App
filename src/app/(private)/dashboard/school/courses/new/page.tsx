@@ -1,6 +1,10 @@
 import PageBreadcrumb from "@/components/tailadmin/common/PageBreadCrumb";
-import { NewCourseForm } from "@/features/school-service/components/course";
-import { getSchoolsAction } from "@/features/school-service";
+import {
+  NewCourseForm,
+  getSchoolsAction,
+  batchCreateWithSchoolAction,
+  getSchoolByIdAction,
+} from "@/features/school-service";
 
 export default async function NewCoursePage() {
   const result = await getSchoolsAction();
@@ -9,7 +13,11 @@ export default async function NewCoursePage() {
   return (
     <>
       <PageBreadcrumb pageTitle="新增課程" />
-      <NewCourseForm schools={schools} />
+      <NewCourseForm
+        schools={schools}
+        batchCreateAction={batchCreateWithSchoolAction}
+        getSchoolByIdAction={getSchoolByIdAction}
+      />
     </>
   );
 }
