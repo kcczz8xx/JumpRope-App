@@ -3,28 +3,29 @@
  *
  * 共用型別定義，供各子目錄元件使用
  * 
- * ⚠️ Enums 和常數從 schemas/common.ts 導入（Single Source of Truth）
+ * ⚠️ Enums 從 @prisma/client 導入（Single Source of Truth）
+ * ⚠️ Enum Configs 從 @/features/_core/configs/enums 導入
  * 此檔案只保留：UI Labels、Helper functions、純 UI 相關 types
  */
 
-// ===== Import from schemas（Single Source of Truth）=====
-
+// ===== Import from Prisma（Single Source of Truth）=====
 import {
-    // Enums
     CourseTerm,
     ChargingModel,
     CourseStatus,
     SalaryCalculationMode,
     LessonType,
     LessonStatus,
-    // Constants
+} from "@prisma/client";
+
+// ===== Import from schemas（向後兼容）=====
+import {
     COURSE_TERMS,
     CHARGING_MODELS,
     COURSE_STATUSES,
     LESSON_TYPES,
     LESSON_STATUSES,
     DEFAULT_COURSE_TYPES,
-    // Types
     type CourseType,
     type CourseTermType,
     type ChargingModelType,

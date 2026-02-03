@@ -15,32 +15,14 @@ export {
   type ErrorDefinition,
 } from "./error-codes";
 
-// 權限（封裝 lib/rbac，加入 session 自動取得）
-export {
-  checkPermission,
-  checkAnyPermission,
-  checkAllPermissions,
-  requirePermission,
-  hasRole,
-  isRoleAtLeast,
-  isAdmin,
-  isStaffOrAdmin,
-  checkOwnership,
-  createOwnershipChecker,
-  type Permission,
-  type UserRole,
-  type OwnershipResourceType,
-} from "./permission";
+// 權限、審計 — Server-only，使用 server.ts 導入
+// import { checkPermission, logAudit } from "@/features/_core/server";
 
-// 審計
-export {
-  logAudit,
-  getAuditLogs,
-  getUserRecentActions,
-  getResourceHistory,
-  type AuditEntry,
-  type AuditLogFilters,
-} from "./audit";
+// 權限類型（可在 Client 使用）
+export type { Permission, UserRole, OwnershipResourceType } from "./permission";
 
 // 常數
 export * from "./constants";
+
+// 原子化欄位系統
+export * from "./components/fields";

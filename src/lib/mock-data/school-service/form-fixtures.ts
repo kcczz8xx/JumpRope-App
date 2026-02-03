@@ -115,14 +115,14 @@ export const formFixtures = {
         const requiredTutors = randomInt(1, 3);
         const maxStudents = randomInt(15, 40);
 
-        const chargingModels = [
+        const chargingModels: ChargingModel[][] = [
             [ChargingModel.STUDENT_PER_LESSON],
             [ChargingModel.TUTOR_PER_LESSON],
             [ChargingModel.STUDENT_PER_LESSON, ChargingModel.TUTOR_PER_LESSON],
             [ChargingModel.STUDENT_HOURLY],
             [ChargingModel.STUDENT_FULL_COURSE],
         ];
-        const chargingModel = random(chargingModels);
+        const chargingModel: ChargingModel[] = random(chargingModels);
 
         const fees: Partial<CourseItemData> = {};
         if (chargingModel.includes(ChargingModel.STUDENT_PER_LESSON)) {

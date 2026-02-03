@@ -78,7 +78,10 @@ export * from "./entity";
 import { createAction, success, failure } from "@/lib/patterns";
 import { createEntitySchema, type CreateEntityInput } from "../schemas";
 
-export const createEntityAction = createAction<CreateEntityInput, { id: string }>(
+export const createEntityAction = createAction<
+  CreateEntityInput,
+  { id: string }
+>(
   async (input, ctx) => {
     // ctx.session 自動提供
     const entity = await prisma.entity.create({ data: input });
@@ -128,7 +131,8 @@ export { getEntityById, listEntities } from "./entity";
 
 **位置**: `components/`
 
-**原則**: 
+**原則**:
+
 - 從 schemas 導入型別
 - Server Actions 透過 props 傳遞
 - UI Labels 放在 `types.ts`
@@ -152,7 +156,7 @@ export function getDefaultFormData(): EntityFormData {
 }
 
 // components/[domain]/EntityForm.tsx
-"use client";
+("use client");
 
 import { Status, STATUS_LABELS } from "../types";
 import type { ActionResult } from "@/lib/patterns";
@@ -187,13 +191,13 @@ export { getEntityById, listEntities } from "./queries";
 
 ### 邏輯分類與放置原則
 
-| 邏輯類型 | 位置 | 範例 |
-|:-----|:-----|:-----|
-| **驗證邏輯** | `schemas/` | 跨欄位驗證、條件必填 |
-| **UI 狀態邏輯** | `hooks/` | 步驟控制、欄位連動 |
-| **資料轉換** | `components/[form]/_utils.ts` | 表單 ↔ API 格式 |
-| **業務規則** | `actions/_helpers.ts` | 價格計算、唯一性檢查 |
-| **預設值** | `components/types.ts` | `getDefaultFormData()` |
+| 邏輯類型        | 位置                          | 範例                   |
+| :-------------- | :---------------------------- | :--------------------- |
+| **驗證邏輯**    | `schemas/`                    | 跨欄位驗證、條件必填   |
+| **UI 狀態邏輯** | `hooks/`                      | 步驟控制、欄位連動     |
+| **資料轉換**    | `components/[form]/_utils.ts` | 表單 ↔ API 格式        |
+| **業務規則**    | `actions/_helpers.ts`         | 價格計算、唯一性檢查   |
+| **預設值**      | `components/types.ts`         | `getDefaultFormData()` |
 
 ### 複雜表單結構
 
@@ -233,12 +237,12 @@ components/[form-name]/
 
 ## 檔案大小限制
 
-| 類型 | 限制 | 超過時 |
-|:-----|:-----|:-----|
+| 類型        | 限制     | 超過時     |
+| :---------- | :------- | :--------- |
 | Action 檔案 | < 150 行 | 按實體拆分 |
-| Component | < 200 行 | 拆子元件 |
+| Component   | < 200 行 | 拆子元件   |
 | Schema 檔案 | < 100 行 | 按實體拆分 |
-| Hook | < 100 行 | 拆分邏輯 |
+| Hook        | < 100 行 | 拆分邏輯   |
 
 ---
 
@@ -292,6 +296,174 @@ import { ... } from "@/features/other-feature/components/...";
 - [ ] 檔案大小在限制內
 - [ ] Zod 驗證完整
 - [ ] Type-check 通過
+
+---
+
+## 原子化欄位系統
+
+### 概述
+
+`_core/components/fields/` 提供可重用的原子化表單欄位，支援三種顯示模式：
+
+| 模式       | 用途       | 範例場景           |
+| :--------- | :--------- | :----------------- |
+| `edit`     | 可編輯輸入 | 表單、Modal        |
+| `readonly` | 純顯示     | 詳情頁、已提交表單 |
+| `compact`  | 精簡顯示   | 列表、卡片         |
+
+### 使用方式
+
+```typescript
+// 組件
+import {
+  PhoneField,
+  EmailField,
+  DateRangeField,
+  CourseStatusField,
+  ContactField,
+  AddressField,
+  FIELD_STYLES,
+  type FieldProps,
+} from "@/features/_core";
+
+// Schemas
+import {
+  phoneSchema,
+  emailSchema,
+  dateRangeSchema,
+} from "@/features/_core/schemas";
+```
+
+### 基礎欄位範例
+
+```tsx
+// Edit 模式（預設）
+<PhoneField
+  value={phone}
+  onChange={setPhone}
+  label="電話號碼"
+  required
+  error={errors.phone?.message}
+/>
+
+// Readonly 模式
+<PhoneField
+  value={phone}
+  mode="readonly"
+  label="電話號碼"
+/>
+
+// Compact 模式（用於列表）
+<PhoneField value={phone} mode="compact" />
+```
+
+### Enum 欄位範例
+
+```tsx
+// 使用預建的 Enum 欄位
+<CourseStatusField
+  value={status}
+  onChange={setStatus}
+  label="課程狀態"
+/>
+
+// readonly 模式顯示 Badge
+<CourseStatusField value="ACTIVE" mode="readonly" />
+// 顯示為：[進行中] ← 綠色 Badge
+```
+
+### 複合欄位範例
+
+```tsx
+// 聯絡人欄位（包含姓名、電話、電郵）
+<ContactField
+  value={{ name: "張三", phone: "12345678", email: "test@example.com" }}
+  onChange={setContact}
+  label="聯絡人"
+/>
+
+// 地址欄位
+<AddressField
+  value={{ line1: "觀塘道123號", district: "觀塘", region: "九龍" }}
+  onChange={setAddress}
+  label="學校地址"
+  showDistrict
+  showRegion
+/>
+```
+
+### 搭配 react-hook-form
+
+```tsx
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { PhoneField, EmailField } from "@/features/_core";
+import { phoneSchema, emailSchema } from "@/features/_core/schemas";
+
+const schema = z.object({
+  phone: phoneSchema,
+  email: emailSchema,
+});
+
+function MyForm() {
+  const {
+    control,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(schema),
+  });
+
+  return (
+    <form>
+      <Controller
+        name="phone"
+        control={control}
+        render={({ field }) => (
+          <PhoneField
+            {...field}
+            label="電話號碼"
+            required
+            error={errors.phone?.message}
+          />
+        )}
+      />
+    </form>
+  );
+}
+```
+
+### 可用組件一覽
+
+| 類別     | 組件                                                                                    | 放置位置   |
+| :------- | :-------------------------------------------------------------------------------------- | :--------- |
+| 基礎     | PhoneField, EmailField, ChineseNameField, EnglishNameField, CurrencyField, RemarksField | `_shared/` |
+| 日期時間 | DateField, TimeField                                                                    | `_shared/` |
+| 日期範圍 | DateRangeField, AcademicYearField                                                       | `course/`  |
+| 時間範圍 | TimeRangeField                                                                          | `lesson/`  |
+| Enum     | CourseStatusField, CourseTermField, ChargingModelField                                  | `course/`  |
+| Enum     | LessonStatusField, LessonTypeField                                                      | `lesson/`  |
+| Enum     | InvoiceStatusField, PaymentMethodField                                                  | `invoice/` |
+| Enum     | PartnershipStatusField                                                                  | `school/`  |
+| 複合     | ContactField                                                                            | `invoice/` |
+| 複合     | SchoolContactField, AddressField                                                        | `school/`  |
+
+### 自訂 Enum 欄位
+
+```typescript
+import { createEnumField, type EnumOption } from "@/features/_core";
+
+const MY_STATUS_OPTIONS: EnumOption<string>[] = [
+  { value: "PENDING", label: "待處理", color: "yellow" },
+  { value: "APPROVED", label: "已批准", color: "green" },
+  { value: "REJECTED", label: "已拒絕", color: "red" },
+];
+
+export const MyStatusField = createEnumField(
+  "MyStatusField",
+  MY_STATUS_OPTIONS,
+  "gray" // 預設 badge 顏色
+);
+```
 
 ---
 

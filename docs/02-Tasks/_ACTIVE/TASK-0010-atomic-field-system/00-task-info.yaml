@@ -1,0 +1,28 @@
+id: TASK-0010
+title: 原子化欄位系統
+description: 建立可重用的原子化表單欄位組件，統一管理資料庫欄位的 UI 呈現與驗證邏輯
+status: active
+priority: high
+created: 2026-02-03
+updated: 2026-02-03
+owner: AI Assistant
+
+# 預估工作量
+estimated_days: 5
+complexity: high
+
+# 影響範圍
+affected_modules:
+  - features/school-service
+  - features/user
+  - features/_core (新增)
+
+# 前置任務
+dependencies: []
+
+# 標籤
+tags:
+  - refactoring
+  - ui-components
+  - forms
+  - dx-improvement
