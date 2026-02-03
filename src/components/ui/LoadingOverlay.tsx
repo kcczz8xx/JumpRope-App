@@ -2,22 +2,46 @@
 
 import { cn } from "@/lib/utils/cn";
 import Image from "next/image";
+import { useState, useEffect } from "react";
 
 interface LoadingOverlayProps {
   isLoading: boolean;
   fullScreen?: boolean;
+  delay?: number;
 }
 
 export default function LoadingOverlay({
   isLoading,
   fullScreen = true,
+  delay = 200,
 }: LoadingOverlayProps) {
-  if (!isLoading) return null;
+  const [showLoader, setShowLoader] = useState(false);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+
+    if (isLoading) {
+      // 只有當 loading 持續超過 delay 時間才顯示
+      timer = setTimeout(() => {
+        setShowLoader(true);
+      }, delay);
+    } else {
+      setShowLoader(false);
+    }
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [isLoading, delay]);
+
+  // 如果載入完成或還未超過延遲時間，不顯示
+  if (!showLoader || !isLoading) return null;
 
   return (
     <div
       className={cn(
         "flex flex-col items-center justify-center bg-white dark:bg-gray-900 z-[999999]",
+        "animate-in fade-in duration-150",
         fullScreen ? "fixed inset-0" : "absolute inset-0"
       )}
     >

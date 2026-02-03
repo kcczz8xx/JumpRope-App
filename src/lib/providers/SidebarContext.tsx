@@ -1,18 +1,23 @@
 "use client";
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import { usePathname } from "next/navigation";
+
+const STORAGE_KEY = "sidebar-expanded";
 
 type SidebarContextType = {
   isExpanded: boolean;
   isMobileOpen: boolean;
   isHovered: boolean;
-  activeItem: string | null;
-  openSubmenu: string | null;
+  isInitialized: boolean;
   toggleSidebar: () => void;
   toggleMobileSidebar: () => void;
   setIsHovered: (isHovered: boolean) => void;
-  setActiveItem: (item: string | null) => void;
-  toggleSubmenu: (item: string) => void;
 };
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
@@ -32,9 +37,17 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const [activeItem, setActiveItem] = useState<string | null>(null);
-  const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   const pathname = usePathname();
+
+  // 從 localStorage 讀取並初始化展開狀態
+  useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored !== null) {
+      setIsExpanded(stored === "true");
+    }
+    setIsInitialized(true);
+  }, []);
 
   // Close sidebar on route change (for mobile)
   useEffect(() => {
@@ -58,17 +71,21 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, []);
 
-  const toggleSidebar = () => {
-    setIsExpanded((prev) => !prev);
-  };
+  const toggleSidebar = useCallback(() => {
+    setIsExpanded((prev) => {
+      const next = !prev;
+      localStorage.setItem(STORAGE_KEY, String(next));
+      return next;
+    });
+  }, []);
 
-  const toggleMobileSidebar = () => {
+  const toggleMobileSidebar = useCallback(() => {
     setIsMobileOpen((prev) => !prev);
-  };
+  }, []);
 
-  const toggleSubmenu = (item: string) => {
-    setOpenSubmenu((prev) => (prev === item ? null : item));
-  };
+  const handleSetIsHovered = useCallback((hovered: boolean) => {
+    setIsHovered(hovered);
+  }, []);
 
   return (
     <SidebarContext.Provider
@@ -76,13 +93,10 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
         isExpanded: isMobile ? false : isExpanded,
         isMobileOpen,
         isHovered,
-        activeItem,
-        openSubmenu,
+        isInitialized,
         toggleSidebar,
         toggleMobileSidebar,
-        setIsHovered,
-        setActiveItem,
-        toggleSubmenu,
+        setIsHovered: handleSetIsHovered,
       }}
     >
       {children}

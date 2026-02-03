@@ -1,11 +1,13 @@
 "use client";
 
 import { useSidebar } from "@/lib/providers/SidebarContext";
+import { usePermission } from "@/hooks/usePermission";
 import AppHeader from "@/components/layout/private/AppHeader";
 import AppSidebar from "@/components/layout/private/AppSidebar";
 import AppFooter from "@/components/layout/private/AppFooter";
 import Backdrop from "@/components/layout/private/Backdrop";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
+import LoadingOverlay from "@/components/ui/LoadingOverlay";
 import React from "react";
 import { usePathname } from "next/navigation";
 
@@ -15,6 +17,7 @@ interface DashboardShellProps {
 
 export default function DashboardShell({ children }: DashboardShellProps) {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
+  const { isLoading } = usePermission();
   const pathname = usePathname();
 
   const getRouteSpecificStyles = () => {
@@ -39,18 +42,21 @@ export default function DashboardShell({ children }: DashboardShellProps) {
     : "xl:ml-[90px]";
 
   return (
-    <div className="min-h-screen xl:flex">
-      <AppSidebar />
-      <Backdrop />
-      <div
-        className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out ${mainContentMargin}`}
-      >
-        <AppHeader />
-        <ErrorBoundary>
-          <div className={`grow ${getRouteSpecificStyles()}`}>{children}</div>
-        </ErrorBoundary>
-        <AppFooter />
+    <>
+      <LoadingOverlay isLoading={isLoading} />
+      <div className="min-h-screen xl:flex">
+        <AppSidebar />
+        <Backdrop />
+        <div
+          className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out ${mainContentMargin}`}
+        >
+          <AppHeader />
+          <ErrorBoundary>
+            <div className={`grow ${getRouteSpecificStyles()}`}>{children}</div>
+          </ErrorBoundary>
+          <AppFooter />
+        </div>
       </div>
-    </div>
+    </>
   );
 }
